@@ -1,0 +1,47 @@
+{
+  "county": "Fairfax County, Virginia",
+  "fips": "51059",
+  "last_updated": "2025-01-24",
+  "sources": {
+    "sales_data": {
+      "provider": "Fairfax County Tax Administration",
+      "url": "https://data-fairfaxcountygis.opendata.arcgis.com/datasets/tax-administrations-real-estate-sales-data",
+      "update_frequency": "Weekly",
+      "coverage": "All property sales in Fairfax County",
+      "last_download": null,
+      "notes": "Relational table - must join to parcels"
+    },
+    "road_centerlines": {
+      "provider": "Fairfax County GIS",
+      "url": "https://data-fairfaxcountygis.opendata.arcgis.com/datasets/roadway-centerlines",
+      "update_frequency": "Weekly",
+      "coverage": "Fairfax County, City of Fairfax, Falls Church, Arlington, Alexandria",
+      "last_download": null,
+      "notes": "Includes route numbers, classification, speed limits"
+    },
+    "zoning_districts": {
+      "provider": "Fairfax County GIS",
+      "url": "https://data-fairfaxcountygis.opendata.arcgis.com/datasets/[FIND_URL]",
+      "update_frequency": "Weekly",
+      "coverage": "Current zoning classifications",
+      "last_download": null,
+      "notes": "Need to locate in full data inventory"
+    },
+    "school_boundaries": {
+      "provider": "Fairfax County Public Schools / Fairfax County GIS",
+      "url": "Multiple datasets for elementary, middle, high, and AAP",
+      "update_frequency": "Annually",
+      "coverage": "FCPS attendance areas",
+      "last_download": null,
+      "notes": "Separate layers for regular and Advanced Academic Program (AAP)"
+    },
+    "subdivisions": {
+      "provider": "Fairfax County GIS",
+      "url": "https://data-fairfaxcountygis.opendata.arcgis.com/datasets/subdivisions",
+      "update_frequency": "Weekly",
+      "coverage": "All recorded subdivisions",
+      "last_download": null,
+      "notes": "Alternative to manual HOA database"
+    }
+  }
+}

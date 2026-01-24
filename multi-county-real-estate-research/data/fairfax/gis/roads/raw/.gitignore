@@ -1,4 +1,2 @@
-# Ignore all raw data files - too large for GitHub
-*
-!README.md
-!.gitignore
+# Allow all files in this directory to be tracked
+

@@ -1,0 +1,755 @@
+<?xml version="1.0" encoding="UTF-8"?><metadata>
+    <idinfo>
+        <citation>
+            <citeinfo>
+                <origin/>
+                <title>GISMGR.ROADWAYS</title>
+                <geoform>vector digital data</geoform>
+            </citeinfo>
+        </citation>
+        <descript>
+            <abstract>Roadway centerlines for all of Fairfax County, Fairfax City, City of Falls Church, City of Alexandria, and Arlington County. It also contains centerlines for a 1-3 mile buffer into Loudoun County and Prince William County.</abstract>
+            <purpose>Roadway centerlines for all of Fairfax County, Fairfax City, City of Falls Church, City of Alexandria, and Arlington County. It also contains centerlines for a 1-3 mile buffer into Loudoun County and Prince William County.</purpose>
+        </descript>
+        <status>
+            <progress>Complete</progress>
+            <update>Continually</update>
+        </status>
+        <spdom>
+            <bounding>
+                <westbc>-77.774643</westbc>
+                <eastbc>-76.724627</eastbc>
+                <northbc>39.29069</northbc>
+                <southbc>38.538636</southbc>
+            </bounding>
+        </spdom>
+        <keywords>
+            <theme>
+                <themekt>None</themekt>
+                <themekey>Centerlines</themekey>
+                <themekey>Roadways</themekey>
+            </theme>
+        </keywords>
+        <accconst>None</accconst>
+        <useconst>https://www.fairfaxcounty.gov/maps/disclaimer</useconst>
+        <ptcontac>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>Fairfax County, VA</cntorg>
+                    <cntper>Greg Thomas</cntper>
+                </cntorgp>
+                <cntpos>GIS Data Administrator</cntpos>
+                <cntaddr>
+                    <addrtype>mailing and physical</addrtype>
+                    <address>12000 Government Center Pkwy Suite 117</address>
+                    <city>Fairfax</city>
+                    <state>VA</state>
+                    <postal>22035</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>(703) 324-2712</cntvoice>
+                <cnttdd>711</cnttdd>
+                <cntfax>(703) 324-3937</cntfax>
+                <cntemail>gis.helpq@fairfaxcounty.gov</cntemail>
+            </cntinfo>
+        </ptcontac>
+        <datacred>Fairfax County, Virginia</datacred>
+        <native>Microsoft Windows XP Version 5.1 (Build 2600) Service Pack 2; ESRI ArcCatalog 9.3.1.1850</native>
+    </idinfo>
+    <dataqual>
+        <lineage>
+            <srcinfo>
+                <srcscale>7600</srcscale>
+                <typesrc>onLine</typesrc>
+                <srccontr>Street centerlines with street names and address ranges for City of Falls Church, City of Alexandria, Arlington County, and a 1-3 mile buffer into Loudoun County and Prince William County</srccontr>
+            </srcinfo>
+            <srcinfo>
+                <srcscale>2400</srcscale>
+                <typesrc>onLine</typesrc>
+                <srccontr>Fairfax City street segments, street names, address ranges</srccontr>
+            </srcinfo>
+            <srcinfo>
+                <srccite>
+                    <citeinfo>
+                        <title>GISMGR.STREET_CENTERLINES</title>
+                    </citeinfo>
+                </srccite>
+                <srcscale>7600</srcscale>
+                <typesrc>onLine</typesrc>
+                <srccitea>GISMGR.STREET_CENTERLINES</srccitea>
+                <srccontr>Fairfax County street centerlines and some attributes including street name and address ranges</srccontr>
+            </srcinfo>
+            <procstep>
+                <procdesc>Extract data from multi-modal transportation model to make a layer usable by the GIS community. The process involves joining multiple tables (centerlines, address ranges, street inventory) to house the attributes of the street centerlines that can be available for GIS use. This process will happen on a regular basis (daily or weekly) to have the most up to date street centerline information available to the GIS users as possible.</procdesc>
+            </procstep>
+            <procstep>
+                <procdesc>All source data was provided to Spatial Systems Associates. The data was loaded into the transportation data model by matching existing attributes with new attributes within the model and making any changes to the values to fit into the domains. For geometry the data was edgematched at the boundary of each jurisdiction and Fairfax County. There were areas that needed to be adjusted because it did not match. The primary adjustments were made to the Fairfax County data trying to leave the VGIN RCL data as is as much as possible. Once the data was matched and seamless at the jurisdiction borders it was loaded into the data model. Geometry issues do remain in the VGIN RCL data that is not adjacent to the County jurisdictional boundary that has not been completely fixed. The fix for this is in discussion with VGIN and surrounding jurisdictions. For attributes, as many that could be mapped into the data model were loaded. The Fairfax County street names and address ranges were validated using the MAR point data. The Fairfax City and VGIN RCL data was not able to be validated due to lack of address points from those surrounding jurisdictions as well as time and manpower. The oneway attribute was reviewed and corrected on the major roads that go into and out of the County to allow for proper routing. Speed limits for segments outside of the County were originally coded as 33 mph but are now being reviewed on a segment by segment basis using various online sources to get a more accurate speed limit value on all segments throughout the region. Roadway names on major roads segments outside of the County were standardized so that they were consistent across the region (i.e. I66 and I95)</procdesc>
+                <proccont>
+                    <cntinfo>
+                        <cntorgp>
+                            <cntorg>Fairfax County GIS</cntorg>
+                            <cntper>Greg Thomas</cntper>
+                        </cntorgp>
+                        <cntpos>GIS Data Adminstrator</cntpos>
+                        <cntaddr>
+                            <addrtype>mailing and physical</addrtype>
+                            <address>12000 Government Center Pkwy Suite 117</address>
+                            <city>Fairfax</city>
+                            <state>VA</state>
+                            <postal>22035</postal>
+                            <country>US</country>
+                        </cntaddr>
+                        <cntvoice>(703) 324-2712</cntvoice>
+                        <cnttdd>711</cnttdd>
+                        <cntfax>(703) 324-3937</cntfax>
+                        <cntemail>gis.helpq@fairfaxcounty.gov</cntemail>
+                    </cntinfo>
+                </proccont>
+            </procstep>
+        </lineage>
+    </dataqual>
+    <spdoinfo>
+        <indspref>Roadway centerlines</indspref>
+        <direct>Vector</direct>
+        <ptvctinf>
+            <sdtsterm>
+                <sdtstype>Complete chain</sdtstype>
+                <ptvctcnt>81206</ptvctcnt>
+            </sdtsterm>
+        </ptvctinf>
+    </spdoinfo>
+    <eainfo>
+        <detailed>
+            <enttyp>
+                <enttypl>GISMGR.ROADWAYS_old</enttypl>
+            </enttyp>
+            <attr>
+                <attrlabl>OBJECTID</attrlabl>
+                <attrdef>Internal feature number.</attrdef>
+                <attrdefs>ESRI</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Sequential unique whole numbers that are automatically generated.</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>TRANS_ID</attrlabl>
+                <attrdef>Unique ID for linear features within transportation model</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Sequential unique whole numbers that are automatically generated.</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>L_JURISDICTION</attrlabl>
+                <attrdef>Left side jurisdiction</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>1</edomv>
+                        						
+                        <edomvd>CITY OF ALEXANDRIA</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>R_JURISDICTION</attrlabl>
+                <attrdef>Right side jurisdiction</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>1</edomv>
+                        						
+                        <edomvd>CITY OF ALEXANDRIA</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>L_POSTAL_AREA</attrlabl>
+                <attrdef>Left side zip code</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <codesetd>
+                        						
+                        <codesetn>USPS ZIPCODES</codesetn>
+                        						
+                        <codesets>USPS</codesets>
+                        					
+                    </codesetd>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>R_POSTAL_AREA</attrlabl>
+                <attrdef>Right side zip code</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <codesetd>
+                        						
+                        <codesetn>USPS ZIPCODES</codesetn>
+                        						
+                        <codesets>USPS</codesets>
+                        					
+                    </codesetd>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>DATA_SOURCE</attrlabl>
+                <attrdef>Data source</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>1</edomv>
+                        						
+                        <edomvd>CITY OF ALEXANDRIA</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>EFF_DATE</attrlabl>
+                <attrdef>Effective Date of segment</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Date</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>LAST_UPDATE</attrlabl>
+                <attrdef>Date of last update for segment</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Date</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>SEGID</attrlabl>
+                <attrdef>Unique segment ID</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Sequential unique identifier</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>RANGE_ID</attrlabl>
+            </attr>
+            <attr>
+                <attrlabl>MAR_STREET_NAME_KEY</attrlabl>
+                <attrdef>MAR street name key</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Key identifier of street name in master address repository</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>FULLNAME</attrlabl>
+                <attrdef>Full street name</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Street name concatenated together from prefix, name, type, and suffix</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>RW_PREFIX</attrlabl>
+                <attrdef>Street name prefix</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>E</edomv>
+                        						
+                        <edomvd>EAST</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>RW_NAME</attrlabl>
+                <attrdef>Street name</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Street name without prefix, type, or suffix</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>RW_TYPE_USPS</attrlabl>
+                <attrdef>Street type USPS standard</attrdef>
+                <attrdefs>USPS</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>ALY</edomv>
+                        						
+                        <edomvd>ALLEY</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>RW_SUFFIX</attrlabl>
+                <attrdef>Street name suffix</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>E</edomv>
+                        						
+                        <edomvd>EAST</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>RW_SUFFIX_DIR</attrlabl>
+                <attrdef>Street name suffix directional</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>EB</edomv>
+                        						
+                        <edomvd>EASTBOUND</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>FX_SOURCE</attrlabl>
+                <attrdef>Fairfax County source</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>50</edomv>
+                        						
+                        <edomvd>CAPTURED VIA GPS</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>CFCC</attrlabl>
+                <attrdef>Census feature class codes</attrdef>
+                <attrdefs>US Dept of Census</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>A00</edomv>
+                        						
+                        <edomvd>Road, major and minor categories unknown</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>ROAD_CLASS</attrlabl>
+                <attrdef>Road classification</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>AIR</edomv>
+                        						
+                        <edomvd>AIRPORT</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>FFX_CLASS</attrlabl>
+                <attrdef>Fairfax classification</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>ALY</edomv>
+                        						
+                        <edomvd>ALLEY</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>BRIDGE</attrlabl>
+                <attrdef>Is segment a bridge</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>Y</edomv>
+                        						
+                        <edomvd>YES</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>LOW_WATER</attrlabl>
+                <attrdef>Is segment in a low water crossing</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>Y</edomv>
+                        						
+                        <edomvd>YES</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>MAINT_RES</attrlabl>
+                <attrdef>Maintenance responsibility</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>0</edomv>
+                        						
+                        <edomvd>PRIVATE</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>STATUS</attrlabl>
+                <attrdef>Street segment status</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>A</edomv>
+                        						
+                        <edomvd>APPROVED/RECORDED</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>AUTHORIZE_USE</attrlabl>
+                <attrdef>Authorized use of segment</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>0</edomv>
+                        						
+                        <edomvd>ALL</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>TH_L_FROM_ADD</attrlabl>
+                <attrdef>Theoretical left from address</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical address value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>TH_L_TO_ADD</attrlabl>
+                <attrdef>Theoretical left to address</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical address value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>TH_R_FROM_ADD</attrlabl>
+                <attrdef>Theoretical right from address</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical address value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>TH_R_TO_ADD</attrlabl>
+                <attrdef>Theoretical right to address</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical address value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>AC_L_FROM_ADD</attrlabl>
+                <attrdef>Actual left from address</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical address value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>AC_L_TO_ADD</attrlabl>
+                <attrdef>Actual left to address</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical address value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>AC_R_FROM_ADD</attrlabl>
+                <attrdef>Actual right from address</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical address value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>AC_R_TO_ADD</attrlabl>
+                <attrdef>Actual right to address</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical address value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>VEHIC_MIN_WIDTH</attrlabl>
+                <attrdef>Vehicle minimum width</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical restriction value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>VEHIC_MAX_HEIGHT</attrlabl>
+                <attrdef>Vehicle maximum height</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical restriction value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>VEHIC_MAX_WEIGHT</attrlabl>
+                <attrdef>Vehicle maximum weight</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical restriction value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>VEHIC_MAX_WIDTH</attrlabl>
+                <attrdef>Vehicle maximum width</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical restriction value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>VEHIC_MAX_LENGTH</attrlabl>
+                <attrdef>Vehicle maximum length</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical restriction value</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>SPEED_LIMIT_CAR</attrlabl>
+                <attrdef>Speed limit</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <rdom>
+                        						
+                        <rdommin>1</rdommin>
+                        						
+                        <rdommax>65</rdommax>
+                        					
+                    </rdom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>ONEWAY</attrlabl>
+                <attrdef>Oneway segment</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>Y</edomv>
+                        						
+                        <edomvd>ONEWAY TRAFFIC ALLOWED ON SEGMENT</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>DIVIDED</attrlabl>
+                <attrdef>Divided road</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>Y</edomv>
+                        						
+                        <edomvd>YES</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>GATE</attrlabl>
+                <attrdef>Gated segment</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <edom>
+                        						
+                        <edomv>0</edomv>
+                        						
+                        <edomvd>ALL LANES BLOCKED BY GATE</edomvd>
+                        					
+                    </edom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>TIME_FACTOR</attrlabl>
+                <attrdef>Time factor for traversing segment to account for travel restrictions on segment</attrdef>
+                <attrdefs>Fairfax County</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Numerical restriction value - 1 is no additional time factor</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>ROUTE_ALIAS</attrlabl>
+                <attrdef>VDOT route number for segment</attrdef>
+                <attrdefs>VDOT</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Route number as text</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>SHAPE</attrlabl>
+                <attrdef>Feature geometry.</attrdef>
+                <attrdefs>ESRI</attrdefs>
+                <attrdomv>
+                    					
+                    <udom>Coordinates defining the features.</udom>
+                    				
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>SHAPE.LEN</attrlabl>
+                <attrdef>Length in feet</attrdef>
+                <attrdefs>ESRI</attrdefs>
+            </attr>
+        </detailed>
+    </eainfo>
+    <metainfo>
+        <metd>20090929</metd>
+        <metc>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>Fairfax County GIS</cntorg>
+                    <cntper>Greg Thomas</cntper>
+                </cntorgp>
+                <cntpos>GIS Data Administrator</cntpos>
+                <cntaddr>
+                    <addrtype>mailing and physical</addrtype>
+                    <address>12000 Government Center Pkwy Suite 117</address>
+                    <city>Fairfax</city>
+                    <state>VA</state>
+                    <postal>22035</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>(703) 324-2712</cntvoice>
+                <cnttdd>711</cnttdd>
+                <cntfax>(703) 324-3937</cntfax>
+                <cntemail>gis.helpq@fairfaxcounty.gov</cntemail>
+            </cntinfo>
+        </metc>
+        <metstdn>FGDC Content Standard for Digital Geospatial Metadata</metstdn>
+        <metstdv>FGDC-STD-001-1998</metstdv>
+        <mettc>local time</mettc>
+    </metainfo>
+</metadata>

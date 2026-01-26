@@ -1,0 +1,4 @@
+# Ignore all raw data files - too large for GitHub
+*
+!README.md
+!.gitignore

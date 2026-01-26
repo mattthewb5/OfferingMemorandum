@@ -1,0 +1,49 @@
+# Fairfax County - File Size Management
+# Keep raw downloads LOCAL only, commit processed files only
+
+# Raw data directories - NEVER commit
+sales/raw/*
+!sales/raw/README.md
+!sales/raw/.gitignore
+
+gis/*/raw/*
+!gis/*/raw/README.md
+!gis/*/raw/.gitignore
+
+building_permits/raw/*
+!building_permits/raw/README.md
+!building_permits/raw/.gitignore
+
+crime/raw/*
+!crime/raw/README.md
+!crime/raw/.gitignore
+
+# Exclude large files by extension
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.sbn
+*.sbx
+*.shp.xml
+*.zip
+*.7z
+*.xlsx
+*.xls
+*.csv.gz
+
+# Exclude backup and temp files
+*_backup.*
+*_temp.*
+*.bak
+*.tmp
+
+# Allow exceptions for small config files
+!config/*.csv
+!config/*.json
+!schools/performance/*.csv
+
+# Allow processed Parquet files (optimized size)
+!**/processed/*.parquet
+!**/processed/*.geojson

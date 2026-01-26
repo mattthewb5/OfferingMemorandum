@@ -7,6 +7,7 @@ Complete guide for using Fairfax County analysis modules.
 1. **Crime Analysis** - Safety scoring and crime density
 2. **Building Permits Analysis** - Development pressure and construction activity
 3. **Healthcare Analysis** - Healthcare access scoring and quality metrics
+4. **Subdivisions Analysis** - Neighborhood identification and boundary lookups
 
 ## Quick Start
 
@@ -62,6 +63,32 @@ print(f"CMS Rating: {metrics['cms_rating']} stars")
 print(f"Leapfrog Grade: {metrics['leapfrog_grade']}")
 ```
 
+### Subdivisions Analysis
+```python
+from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
+
+analyzer = FairfaxSubdivisionsAnalysis()
+
+# Look up subdivision for a property
+subdivision = analyzer.get_subdivision(38.8969, -77.4327)
+
+# Display results
+if subdivision['found']:
+    print(f"Subdivision: {subdivision['subdivision_name']}")
+    print(f"Section: {subdivision['section'] or 'N/A'}")
+    print(f"Plat Date: {subdivision['record_date'] or 'N/A'}")
+else:
+    print(f"Not in recorded subdivision: {subdivision['message']}")
+
+# Find nearby subdivisions
+nearby = analyzer.get_nearby_subdivisions(38.8969, -77.4327, radius_miles=1.0)
+for sub in nearby[:5]:
+    print(f"  {sub['subdivision_name']}: {sub['distance_miles']} mi")
+
+# Search by name
+results = analyzer.search_subdivisions("RESTON", limit=10)
+```
+
 ## Feature Examples
 
 ### Property Detail Page
@@ -69,6 +96,7 @@ print(f"Leapfrog Grade: {metrics['leapfrog_grade']}")
 from core.fairfax_crime_analysis import FairfaxCrimeAnalysis
 from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
+from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
 
 def get_property_intelligence(lat, lon):
     """Get complete property intelligence."""
@@ -76,6 +104,7 @@ def get_property_intelligence(lat, lon):
     crime_analyzer = FairfaxCrimeAnalysis()
     permits_analyzer = FairfaxPermitsAnalysis()
     healthcare_analyzer = FairfaxHealthcareAnalysis()
+    subdivisions_analyzer = FairfaxSubdivisionsAnalysis()
 
     # Crime analysis
     safety = crime_analyzer.calculate_safety_score(lat, lon, 0.5, 6)
@@ -87,6 +116,9 @@ def get_property_intelligence(lat, lon):
 
     # Healthcare analysis
     healthcare = healthcare_analyzer.calculate_healthcare_access_score(lat, lon)
+
+    # Subdivision lookup
+    subdivision = subdivisions_analyzer.get_subdivision(lat, lon)
 
     return {
         'safety': {
@@ -104,6 +136,11 @@ def get_property_intelligence(lat, lon):
             'rating': healthcare['rating'],
             'hospitals_nearby': healthcare['hospitals_within_10mi'],
             'urgent_care_nearby': healthcare['urgent_care_within_3mi']
+        },
+        'subdivision': {
+            'name': subdivision['subdivision_name'],
+            'section': subdivision['section'],
+            'found': subdivision['found']
         }
     }
 ```
@@ -322,12 +359,104 @@ Get healthcare facilities within radius of a point.
 
 **Returns:** DataFrame with nearby facilities, sorted by distance.
 
+### FairfaxSubdivisionsAnalysis
+
+#### `get_subdivision(lat, lon)`
+
+Get the subdivision containing a point.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'found': True,                         # Whether point is in a subdivision
+    'subdivision_name': 'DULLES BUSINESS PARK',
+    'section': None,                       # Section number if available
+    'phase': None,                         # Phase if available
+    'block': None,                         # Block if available
+    'record_date': '2005-03-15',          # Plat recording date
+    'deed_book': 'DB1234',                # Deed book reference
+    'deed_page': '567',                   # Deed page reference
+    'message': None                        # Error message if not found
+}
+```
+
+#### `get_nearby_subdivisions(lat, lon, radius_miles=1.0, limit=10)`
+
+Get subdivisions near a point (by centroid distance).
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+- `radius_miles`: Search radius (default: 1.0 miles)
+- `limit`: Maximum number of results (default: 10)
+
+**Returns:**
+```python
+[
+    {
+        'subdivision_name': 'RESTON',
+        'distance_miles': 0.25,
+        'section': '39',
+        'phase': None,
+        'record_date': '1985-06-20'
+    },
+    ...
+]
+```
+
+#### `get_subdivision_stats()`
+
+Get summary statistics about the subdivision dataset.
+
+**Returns:**
+```python
+{
+    'total_features': 11430,
+    'unique_subdivision_names': 4927,
+    'top_subdivisions_by_sections': {
+        'RESTON': 439,
+        'NORTH SPRINGFIELD': 62,
+        ...
+    },
+    'geographic_bounds': {
+        'min_longitude': -77.537,
+        'min_latitude': 38.617,
+        'max_longitude': -77.042,
+        'max_latitude': 39.058
+    },
+    'date_range': {
+        'earliest': '1870-06-01',
+        'latest': '2025-12-30'
+    },
+    'features_with_section': 3052,
+    'features_with_phase': 201
+}
+```
+
+#### `search_subdivisions(name_pattern, limit=20)`
+
+Search for subdivisions by name (case-insensitive partial match).
+
+**Returns:**
+```python
+[
+    {'subdivision_name': 'RESTON', 'section_count': 439},
+    {'subdivision_name': 'GLADE CLUSTER - RESTON', 'section_count': 3},
+    ...
+]
+```
+
 ## Data Refresh
 
 All modules automatically use the latest data:
 - **Crime**: Updated daily via GitHub Actions
 - **Permits**: Updated weekly via GitHub Actions
 - **Healthcare**: Base data annual, CMS quarterly, Leapfrog bi-annual
+- **Subdivisions**: Static (boundaries rarely change)
 
 No manual refresh needed - just reload the module.
 
@@ -336,7 +465,8 @@ No manual refresh needed - just reload the module.
 - Crime module: ~1,000 incidents (fast queries)
 - Permits module: ~41,000 permits (slightly slower, still <1 sec)
 - Healthcare module: ~77 facilities (fast queries)
-- All use in-memory DataFrames (no database required)
+- Subdivisions module: ~11,430 polygons with spatial indexing (fast point-in-polygon)
+- All use in-memory DataFrames/GeoDataFrames (no database required)
 - Consider caching results for frequently-queried locations
 
 ## Error Handling
@@ -388,8 +518,9 @@ python tests/test_fairfax_analysis.py
 
 Expected output:
 ```
-Crime Analysis Module:      PASS
-Permits Analysis Module:    PASS
-Healthcare Analysis Module: PASS
+Crime Analysis Module:       PASS
+Permits Analysis Module:     PASS
+Healthcare Analysis Module:  PASS
+Subdivisions Analysis Module: PASS
 ALL MODULES PASSED - Ready for integration!
 ```

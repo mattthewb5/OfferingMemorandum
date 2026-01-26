@@ -1,7 +1,7 @@
 """
 Comprehensive test script for Fairfax County analysis modules.
 
-Tests crime, permits, and healthcare analysis with multiple locations.
+Tests crime, permits, healthcare, and subdivisions analysis with multiple locations.
 """
 
 import sys
@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from core.fairfax_crime_analysis import FairfaxCrimeAnalysis
 from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
+from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
 
 
 def test_crime_analysis():
@@ -187,6 +188,99 @@ def test_healthcare_analysis():
         return False
 
 
+def test_subdivisions_analysis():
+    """Test subdivisions analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Subdivisions Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxSubdivisionsAnalysis()
+        stats = analyzer.get_subdivision_stats()
+        print(f"  Loaded {stats['total_features']:,} subdivision features")
+        print(f"  Unique subdivision names: {stats['unique_subdivision_names']:,}")
+
+        # Validate dataset size
+        assert stats['total_features'] > 10000, "Expected 10,000+ subdivision features"
+        assert stats['unique_subdivision_names'] >= 4927, "Expected 4,927+ unique subdivisions"
+
+        # Test point-in-polygon lookup with known subdivision (Dulles Business Park area)
+        print("\n--- Testing: Point-in-Polygon Lookup ---")
+        test_lat = 38.8969
+        test_lon = -77.4327
+
+        result = analyzer.get_subdivision(test_lat, test_lon)
+        print(f"  Location: ({test_lat}, {test_lon})")
+        print(f"  Found: {result['found']}")
+        print(f"  Subdivision: {result['subdivision_name']}")
+
+        assert result['found'] is True, "Expected to find subdivision for test point"
+        assert result['subdivision_name'] == "DULLES BUSINESS PARK", \
+            f"Expected 'DULLES BUSINESS PARK', got '{result['subdivision_name']}'"
+
+        # Test handling of point outside subdivision boundaries
+        print("\n--- Testing: Point Outside Subdivisions ---")
+        outside_lat = 38.5  # South of Fairfax County
+        outside_lon = -77.3
+
+        result_outside = analyzer.get_subdivision(outside_lat, outside_lon)
+        print(f"  Location: ({outside_lat}, {outside_lon})")
+        print(f"  Found: {result_outside['found']}")
+        print(f"  Message: {result_outside['message']}")
+
+        assert result_outside['found'] is False, "Expected not to find subdivision outside bounds"
+        assert result_outside['subdivision_name'] is None, "Subdivision name should be None"
+        assert result_outside['message'] is not None, "Should have message for not found"
+
+        # Test None/invalid coordinates
+        print("\n--- Testing: Invalid Coordinates ---")
+        result_invalid = analyzer.get_subdivision(None, None)
+        print(f"  Found: {result_invalid['found']}")
+        assert result_invalid['found'] is False, "Should handle None gracefully"
+
+        # Test nearby subdivisions
+        print("\n--- Testing: Nearby Subdivisions ---")
+        nearby = analyzer.get_nearby_subdivisions(test_lat, test_lon, radius_miles=1.0, limit=5)
+        print(f"  Found {len(nearby)} nearby subdivisions")
+        for sub in nearby[:3]:
+            print(f"    {sub['subdivision_name']}: {sub['distance_miles']} mi")
+
+        assert len(nearby) > 0, "Expected to find nearby subdivisions"
+        assert all('subdivision_name' in s for s in nearby), "Missing subdivision_name in results"
+        assert all('distance_miles' in s for s in nearby), "Missing distance_miles in results"
+
+        # Test data structure completeness
+        print("\n--- Testing: Return Data Structure ---")
+        expected_keys = ['found', 'subdivision_name', 'section', 'phase', 'block',
+                        'record_date', 'deed_book', 'deed_page', 'message']
+        missing_keys = [k for k in expected_keys if k not in result]
+        assert len(missing_keys) == 0, f"Missing keys in result: {missing_keys}"
+        print(f"  All {len(expected_keys)} expected keys present: ✓")
+
+        # Test search functionality
+        print("\n--- Testing: Subdivision Search ---")
+        search_results = analyzer.search_subdivisions("RESTON", limit=5)
+        print(f"  Search 'RESTON': {len(search_results)} results")
+        assert len(search_results) > 0, "Expected to find RESTON subdivisions"
+        assert search_results[0]['subdivision_name'] == 'RESTON', "RESTON should be first result"
+
+        # Test stats structure
+        print("\n--- Testing: Statistics ---")
+        assert 'top_subdivisions_by_sections' in stats, "Missing top_subdivisions_by_sections"
+        assert 'geographic_bounds' in stats, "Missing geographic_bounds"
+        assert 'RESTON' in stats['top_subdivisions_by_sections'], "RESTON should be in top subdivisions"
+        print(f"  Top subdivision: RESTON with {stats['top_subdivisions_by_sections']['RESTON']} sections")
+
+        print("\n  Subdivisions Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Subdivisions Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Run all tests."""
     print("\n" + "=" * 68 + "=")
@@ -196,16 +290,18 @@ def main():
     crime_passed = test_crime_analysis()
     permits_passed = test_permits_analysis()
     healthcare_passed = test_healthcare_analysis()
+    subdivisions_passed = test_subdivisions_analysis()
 
     print("\n" + "=" * 70)
     print("FINAL RESULTS")
     print("=" * 70)
-    print(f"Crime Analysis Module:      {'PASS' if crime_passed else 'FAIL'}")
-    print(f"Permits Analysis Module:    {'PASS' if permits_passed else 'FAIL'}")
-    print(f"Healthcare Analysis Module: {'PASS' if healthcare_passed else 'FAIL'}")
+    print(f"Crime Analysis Module:       {'PASS' if crime_passed else 'FAIL'}")
+    print(f"Permits Analysis Module:     {'PASS' if permits_passed else 'FAIL'}")
+    print(f"Healthcare Analysis Module:  {'PASS' if healthcare_passed else 'FAIL'}")
+    print(f"Subdivisions Analysis Module: {'PASS' if subdivisions_passed else 'FAIL'}")
     print("=" * 70)
 
-    if crime_passed and permits_passed and healthcare_passed:
+    if crime_passed and permits_passed and healthcare_passed and subdivisions_passed:
         print("\n  ALL MODULES PASSED - Ready for integration!")
         return 0
     else:

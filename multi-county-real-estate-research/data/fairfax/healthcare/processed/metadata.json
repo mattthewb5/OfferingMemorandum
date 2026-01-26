@@ -1,0 +1,52 @@
+{
+  "last_updated": "2026-01-26T22:29:26.470128",
+  "total_facilities": 77,
+  "by_type": {
+    "hospitals": 13,
+    "urgent_care": 64
+  },
+  "cms_integration": {
+    "hospitals_matched": 8,
+    "with_ratings": 6,
+    "rating_distribution": {
+      "3": 2,
+      "5": 3,
+      "4": 1
+    }
+  },
+  "leapfrog_integration": {
+    "hospitals_graded": 7,
+    "grade_distribution": {
+      "A": 6,
+      "B": 1
+    }
+  },
+  "by_city": {
+    "ALEXANDRIA": 11,
+    "FAIRFAX": 10,
+    "ARLINGTON": 9,
+    "FALLS CHURCH": 6,
+    "STERLING": 5,
+    "RESTON": 4,
+    "SPRINGFIELD": 4,
+    "CHANTILLY": 4,
+    "MCLEAN": 4,
+    "HERNDON": 4,
+    "VIENNA": 3,
+    "CENTREVILLE": 2,
+    "LORTON": 2,
+    "ANNANDALE": 2,
+    "BURKE": 1,
+    "FORT BELVOIR": 1,
+    "WOODBRIDGE": 1,
+    "BETHESDA": 1,
+    "OAKTON": 1,
+    "GREAT FALLS": 1,
+    "ASHBURN": 1
+  },
+  "data_sources": {
+    "base": "Fairfax County GIS (2026-01-26)",
+    "cms": "CMS Hospital Compare (2025-12-28)",
+    "leapfrog": "Hospital Safety Grade (Fall 2024)"
+  }
+}

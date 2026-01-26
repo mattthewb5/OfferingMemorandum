@@ -186,6 +186,36 @@ python scripts/fairfax_permits_etl.py --analyze 38.9 -77.3
 - Permits without issued_date fall back to submitted_date
 - The ETL respects API rate limits with 1.5s delays between requests
 
+## Analysis Module
+
+Python module for permits analysis: `core/fairfax_permits_analysis.py`
+
+### Usage
+```python
+from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
+
+analyzer = FairfaxPermitsAnalysis()
+
+# Development pressure
+pressure = analyzer.calculate_development_pressure(lat=38.8462, lon=-77.3064, radius_miles=1.0)
+print(f"Pressure: {pressure['score']}/100 ({pressure['trend']})")
+
+# Permit trends
+trends = analyzer.get_permit_trends(lat=38.8462, lon=-77.3064)
+print(f"Yearly: {trends['yearly']}")
+
+# Breakdown
+breakdown = analyzer.get_permit_breakdown(lat=38.8462, lon=-77.3064)
+print(f"Residential: {breakdown['by_major_category']['residential']['count']}")
+```
+
+### Functions
+
+- `get_permits_near_point()` - Spatial query for nearby permits
+- `calculate_development_pressure()` - Pressure score (0-100) with trend
+- `get_permit_trends()` - Yearly and categorical trends
+- `get_permit_breakdown()` - Type breakdown with percentages
+
 ## Refresh Schedule
 
 - **Recommended:** Weekly refresh via `--recent` flag

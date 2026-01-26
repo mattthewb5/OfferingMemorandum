@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-01-26T18:02:39.082014",
+  "last_updated": "2026-01-26T18:40:59.425942",
   "total_incidents": 1004,
   "date_range": {
     "min": "2026-01-18",
@@ -15,8 +15,8 @@
   },
   "geocoding": {
     "total": 1004,
-    "geocoded": 26,
-    "pct_geocoded": 2.6
+    "geocoded": 801,
+    "pct_geocoded": 79.8
   },
   "cities": {
     "ALEX": 172,

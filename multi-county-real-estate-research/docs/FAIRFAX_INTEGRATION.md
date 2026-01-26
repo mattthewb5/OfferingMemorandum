@@ -6,6 +6,7 @@ Complete guide for using Fairfax County analysis modules.
 
 1. **Crime Analysis** - Safety scoring and crime density
 2. **Building Permits Analysis** - Development pressure and construction activity
+3. **Healthcare Analysis** - Healthcare access scoring and quality metrics
 
 ## Quick Start
 
@@ -41,15 +42,40 @@ print(f"Trend: {pressure['trend']}")
 print(f"Permits (24 months): {pressure['total_permits']}")
 ```
 
+### Healthcare Analysis
+```python
+from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
+
+analyzer = FairfaxHealthcareAnalysis()
+
+# Healthcare access score
+access = analyzer.calculate_healthcare_access_score(38.8462, -77.3064)
+
+# Display results
+print(f"Healthcare Access: {access['score']}/100")
+print(f"Rating: {access['rating']}")
+print(f"Hospitals within 10mi: {access['hospitals_within_10mi']}")
+
+# Get quality metrics for specific hospital
+metrics = analyzer.get_quality_metrics("INOVA FAIRFAX")
+print(f"CMS Rating: {metrics['cms_rating']} stars")
+print(f"Leapfrog Grade: {metrics['leapfrog_grade']}")
+```
+
 ## Feature Examples
 
 ### Property Detail Page
 ```python
+from core.fairfax_crime_analysis import FairfaxCrimeAnalysis
+from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
+from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
+
 def get_property_intelligence(lat, lon):
     """Get complete property intelligence."""
 
     crime_analyzer = FairfaxCrimeAnalysis()
     permits_analyzer = FairfaxPermitsAnalysis()
+    healthcare_analyzer = FairfaxHealthcareAnalysis()
 
     # Crime analysis
     safety = crime_analyzer.calculate_safety_score(lat, lon, 0.5, 6)
@@ -58,6 +84,9 @@ def get_property_intelligence(lat, lon):
     # Permits analysis
     development = permits_analyzer.calculate_development_pressure(lat, lon, 1.0, 24)
     permit_trends = permits_analyzer.get_permit_trends(lat, lon, 1.0, 24)
+
+    # Healthcare analysis
+    healthcare = healthcare_analyzer.calculate_healthcare_access_score(lat, lon)
 
     return {
         'safety': {
@@ -69,6 +98,12 @@ def get_property_intelligence(lat, lon):
             'score': development['score'],
             'trend': development['trend'],
             'permits_24mo': development['total_permits']
+        },
+        'healthcare': {
+            'score': healthcare['score'],
+            'rating': healthcare['rating'],
+            'hospitals_nearby': healthcare['hospitals_within_10mi'],
+            'urgent_care_nearby': healthcare['urgent_care_within_3mi']
         }
     }
 ```
@@ -226,11 +261,73 @@ Get permits within radius of a point.
 
 **Returns:** DataFrame with nearby permits, sorted by distance.
 
+### FairfaxHealthcareAnalysis
+
+#### `calculate_healthcare_access_score(lat, lon)`
+
+Calculate a healthcare access score (0-100) for a location.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'score': 100,                    # 0-100 (higher = better access)
+    'rating': 'Excellent Access',    # Rating string
+    'hospitals_within_10mi': 7,
+    'urgent_care_within_3mi': 5,
+    'breakdown': {
+        'nearest_hospital': {
+            'name': 'INOVA FAIR OAKS HOSPITAL',
+            'distance_miles': 2.5,
+            'cms_rating': 5,
+            'leapfrog_grade': 'A'
+        },
+        'urgent_care_nearby': {'count_within_3mi': 5}
+    }
+}
+```
+
+#### `get_quality_metrics(facility_name)`
+
+Get quality metrics for a specific facility.
+
+**Returns:**
+```python
+{
+    'name': 'INOVA FAIRFAX HOSPITAL',
+    'facility_type': 'hospital',
+    'cms_facility_id': '490063',
+    'cms_rating': 5,
+    'leapfrog_grade': 'A',
+    'leapfrog_notes': '27+ consecutive A',
+    'emergency_services': 'Yes',
+    'address': '3300 GALLOWS RD',
+    'city': 'FALLS CHURCH',
+    'phone': '(703) 776-4001'
+}
+```
+
+#### `compare_facilities(lat, lon, radius_miles=10.0, facility_type='hospital', top_n=5)`
+
+Compare nearby facilities ranked by quality and distance.
+
+**Returns:** DataFrame with ranked facilities including composite scores.
+
+#### `get_facilities_near_point(lat, lon, radius_miles=10.0, facility_type=None)`
+
+Get healthcare facilities within radius of a point.
+
+**Returns:** DataFrame with nearby facilities, sorted by distance.
+
 ## Data Refresh
 
-Both modules automatically use the latest data:
+All modules automatically use the latest data:
 - **Crime**: Updated daily via GitHub Actions
 - **Permits**: Updated weekly via GitHub Actions
+- **Healthcare**: Base data annual, CMS quarterly, Leapfrog bi-annual
 
 No manual refresh needed - just reload the module.
 
@@ -238,7 +335,8 @@ No manual refresh needed - just reload the module.
 
 - Crime module: ~1,000 incidents (fast queries)
 - Permits module: ~41,000 permits (slightly slower, still <1 sec)
-- Both use in-memory DataFrames (no database required)
+- Healthcare module: ~77 facilities (fast queries)
+- All use in-memory DataFrames (no database required)
 - Consider caching results for frequently-queried locations
 
 ## Error Handling
@@ -271,6 +369,15 @@ except Exception as e:
 | 25-49 | Moderate | Average activity |
 | 0-24 | Low | Minimal construction |
 
+### Healthcare Access Score
+| Score | Rating | Description |
+|-------|--------|-------------|
+| 85-100 | Excellent Access | Multiple quality hospitals nearby |
+| 70-84 | Good Access | Hospital within 5 miles |
+| 55-69 | Moderate Access | Hospital within 10 miles |
+| 40-54 | Limited Access | Distant from hospitals |
+| 0-39 | Poor Access | Very limited options |
+
 ## Testing
 
 Run the test suite to verify modules:
@@ -281,7 +388,8 @@ python tests/test_fairfax_analysis.py
 
 Expected output:
 ```
-Crime Analysis Module:    PASS
-Permits Analysis Module:  PASS
+Crime Analysis Module:      PASS
+Permits Analysis Module:    PASS
+Healthcare Analysis Module: PASS
 ALL MODULES PASSED - Ready for integration!
 ```

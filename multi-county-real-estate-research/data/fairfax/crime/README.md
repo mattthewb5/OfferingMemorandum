@@ -112,6 +112,36 @@ python3 scripts/fairfax_crime_etl.py --show-fbi-instructions
 0 6 * * * /path/to/scripts/run_daily_crime_update.sh >> /var/log/crime_etl.log 2>&1
 ```
 
+## Analysis Module
+
+Python module for crime analysis: `core/fairfax_crime_analysis.py`
+
+### Usage
+```python
+from core.fairfax_crime_analysis import FairfaxCrimeAnalysis
+
+analyzer = FairfaxCrimeAnalysis()
+
+# Safety score
+safety = analyzer.calculate_safety_score(lat=38.8462, lon=-77.3064, radius_miles=0.5)
+print(f"Safety: {safety['score']}/100 ({safety['rating']})")
+
+# Crime trends
+trends = analyzer.get_crime_trends(lat=38.8462, lon=-77.3064, months_back=12)
+print(f"Trend: {trends['trend']}")
+
+# Breakdown
+breakdown = analyzer.get_crime_breakdown(lat=38.8462, lon=-77.3064)
+print(f"Violent: {breakdown['violent']['count']} ({breakdown['violent']['percentage']}%)")
+```
+
+### Functions
+
+- `get_crimes_near_point()` - Spatial query for nearby crimes
+- `calculate_safety_score()` - Safety score (0-100) with rating
+- `get_crime_trends()` - Trend analysis (increasing/stable/decreasing)
+- `get_crime_breakdown()` - Category breakdown with percentages
+
 ## Privacy Notes
 
 - Addresses are 100-block anonymized by Fairfax County

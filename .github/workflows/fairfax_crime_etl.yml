@@ -1,0 +1,82 @@
+name: Fairfax Crime Data - Daily Update
+
+on:
+  # Runs daily at 6 AM UTC (1 AM Eastern, 2 AM EDT)
+  schedule:
+    - cron: '0 6 * * *'
+
+  # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      max_geocode:
+        description: 'Maximum addresses to geocode'
+        required: false
+        default: '100'
+
+jobs:
+  update-crime-data:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # Required for pushing commits
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for proper commits
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas pyarrow requests
+
+      - name: Run crime ETL
+        run: |
+          cd $GITHUB_WORKSPACE
+          python multi-county-real-estate-research/scripts/fairfax_crime_etl.py \
+            --fetch-weekly \
+            --max-geocode ${{ github.event.inputs.max_geocode || '100' }}
+        continue-on-error: false
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet multi-county-real-estate-research/data/fairfax/crime/processed/; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push if changed
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add multi-county-real-estate-research/data/fairfax/crime/processed/
+          # Only add geocode cache if it exists
+          if [ -d "multi-county-real-estate-research/data/fairfax/crime/raw/geocoded" ]; then
+            git add multi-county-real-estate-research/data/fairfax/crime/raw/geocoded/ || true
+          fi
+          git commit -m "Auto-update: Fairfax crime data $(date '+%Y-%m-%d')"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report status
+        if: always()
+        run: |
+          METADATA_FILE="multi-county-real-estate-research/data/fairfax/crime/processed/metadata.json"
+          if [ -f "$METADATA_FILE" ]; then
+            echo "✅ Crime data updated successfully"
+            echo ""
+            echo "=== Metadata ==="
+            cat "$METADATA_FILE"
+          else
+            echo "⚠️ No metadata file found - check if ETL completed"
+          fi

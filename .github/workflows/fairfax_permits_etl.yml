@@ -1,0 +1,85 @@
+name: Fairfax Building Permits - Weekly Update
+
+on:
+  # Runs weekly on Monday at 3 AM UTC (10 PM Sunday Eastern, 11 PM EDT)
+  schedule:
+    - cron: '0 3 * * 1'
+
+  # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      full_refresh:
+        description: 'Run full refresh instead of incremental'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  update-permits-data:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # Required for pushing commits
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas pyarrow requests
+
+      - name: Run permits ETL (incremental)
+        if: ${{ github.event.inputs.full_refresh != 'true' }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          python multi-county-real-estate-research/scripts/fairfax_permits_etl.py --recent
+        continue-on-error: false
+
+      - name: Run permits ETL (full refresh)
+        if: ${{ github.event.inputs.full_refresh == 'true' }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          python multi-county-real-estate-research/scripts/fairfax_permits_etl.py
+        continue-on-error: false
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet multi-county-real-estate-research/data/fairfax/building_permits/processed/; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push if changed
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add multi-county-real-estate-research/data/fairfax/building_permits/processed/
+          git commit -m "Auto-update: Fairfax building permits $(date '+%Y-%m-%d')"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report status
+        if: always()
+        run: |
+          METADATA_FILE="multi-county-real-estate-research/data/fairfax/building_permits/processed/metadata.json"
+          if [ -f "$METADATA_FILE" ]; then
+            echo "✅ Building permits updated successfully"
+            echo ""
+            echo "=== Metadata ==="
+            cat "$METADATA_FILE"
+          else
+            echo "⚠️ No metadata file found - check if ETL completed"
+          fi

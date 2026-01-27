@@ -8,6 +8,9 @@ Complete guide for using Fairfax County analysis modules.
 2. **Building Permits Analysis** - Development pressure and construction activity
 3. **Healthcare Analysis** - Healthcare access scoring and quality metrics
 4. **Subdivisions Analysis** - Neighborhood identification and boundary lookups
+5. **Schools Analysis** - School assignments and facility lookups
+6. **Zoning Analysis** - Zoning districts, overlays, and land use
+7. **Flood Analysis** - FEMA flood zones, dam inundation, and easements
 
 ## Quick Start
 
@@ -89,6 +92,87 @@ for sub in nearby[:5]:
 results = analyzer.search_subdivisions("RESTON", limit=10)
 ```
 
+### Schools Analysis
+```python
+from core.fairfax_schools_analysis import FairfaxSchoolsAnalysis
+
+analyzer = FairfaxSchoolsAnalysis()
+
+# Get assigned schools for a property
+schools = analyzer.get_assigned_schools(38.8969, -77.4327)
+
+# Display results
+if schools['all_assigned']:
+    print(f"Elementary: {schools['elementary']['school_name']}")
+    print(f"  Distance: {schools['elementary']['distance_miles']} miles")
+    print(f"Middle: {schools['middle']['school_name']}")
+    print(f"High: {schools['high']['school_name']}")
+
+# Find nearby elementary schools
+nearby = analyzer.get_school_facilities(
+    38.8969, -77.4327,
+    radius_miles=3.0,
+    school_types=['ES'],
+    limit=5
+)
+for school in nearby:
+    print(f"  {school['school_name']}: {school['distance_miles']} mi")
+```
+
+### Zoning Analysis
+```python
+from core.fairfax_zoning_analysis import FairfaxZoningAnalysis
+
+analyzer = FairfaxZoningAnalysis()
+
+# Get zoning for a property
+zoning = analyzer.get_zoning(38.8969, -77.4327)
+
+# Display results
+print(f"Zone Code: {zoning['zone_code']}")
+print(f"Zone Type: {zoning['zone_type']}")
+print(f"Description: {zoning['zone_description']}")
+print(f"Has Proffer: {zoning['has_proffer']}")
+
+# Check for overlays
+for overlay in zoning['overlays']:
+    print(f"Overlay: {overlay['overlay_type']}")
+    if 'decibel_level' in overlay:
+        print(f"  Noise Level: {overlay['decibel_level']} dB")
+
+# Check airport noise
+noise = analyzer.check_airport_noise(38.8969, -77.4327)
+if noise:
+    print(f"Airport Noise: {noise['decibel_level']} dB")
+```
+
+### Flood Analysis
+```python
+from core.fairfax_flood_analysis import FairfaxFloodAnalysis
+
+analyzer = FairfaxFloodAnalysis()
+
+# Get comprehensive flood risk
+flood = analyzer.get_flood_risk(38.8969, -77.4327)
+
+# Display results
+print(f"Overall Risk: {flood['overall_risk']}")
+print(f"Insurance Required: {flood['insurance_required']}")
+
+if flood['fema_zone']:
+    print(f"FEMA Zone: {flood['fema_zone']['zone_code']}")
+    print(f"Risk Level: {flood['fema_zone']['risk_level']}")
+    print(f"Description: {flood['fema_zone']['zone_description']}")
+
+# Check dam inundation risks
+for dam in flood['dam_inundation_risks']:
+    print(f"Dam Risk: {dam['dam_name']}")
+
+# Check floodplain easement
+if flood['floodplain_easement']['in_easement']:
+    print("Property is in a recorded floodplain easement")
+```
+
 ## Feature Examples
 
 ### Property Detail Page
@@ -97,6 +181,9 @@ from core.fairfax_crime_analysis import FairfaxCrimeAnalysis
 from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
 from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
+from core.fairfax_schools_analysis import FairfaxSchoolsAnalysis
+from core.fairfax_zoning_analysis import FairfaxZoningAnalysis
+from core.fairfax_flood_analysis import FairfaxFloodAnalysis
 
 def get_property_intelligence(lat, lon):
     """Get complete property intelligence."""
@@ -105,6 +192,9 @@ def get_property_intelligence(lat, lon):
     permits_analyzer = FairfaxPermitsAnalysis()
     healthcare_analyzer = FairfaxHealthcareAnalysis()
     subdivisions_analyzer = FairfaxSubdivisionsAnalysis()
+    schools_analyzer = FairfaxSchoolsAnalysis()
+    zoning_analyzer = FairfaxZoningAnalysis()
+    flood_analyzer = FairfaxFloodAnalysis()
 
     # Crime analysis
     safety = crime_analyzer.calculate_safety_score(lat, lon, 0.5, 6)
@@ -112,13 +202,21 @@ def get_property_intelligence(lat, lon):
 
     # Permits analysis
     development = permits_analyzer.calculate_development_pressure(lat, lon, 1.0, 24)
-    permit_trends = permits_analyzer.get_permit_trends(lat, lon, 1.0, 24)
 
     # Healthcare analysis
     healthcare = healthcare_analyzer.calculate_healthcare_access_score(lat, lon)
 
     # Subdivision lookup
     subdivision = subdivisions_analyzer.get_subdivision(lat, lon)
+
+    # School assignments
+    schools = schools_analyzer.get_assigned_schools(lat, lon)
+
+    # Zoning
+    zoning = zoning_analyzer.get_zoning(lat, lon)
+
+    # Flood risk
+    flood = flood_analyzer.get_flood_risk(lat, lon)
 
     return {
         'safety': {
@@ -141,6 +239,22 @@ def get_property_intelligence(lat, lon):
             'name': subdivision['subdivision_name'],
             'section': subdivision['section'],
             'found': subdivision['found']
+        },
+        'schools': {
+            'elementary': schools['elementary']['school_name'] if schools['elementary'] else None,
+            'middle': schools['middle']['school_name'] if schools['middle'] else None,
+            'high': schools['high']['school_name'] if schools['high'] else None,
+            'all_assigned': schools['all_assigned']
+        },
+        'zoning': {
+            'zone_code': zoning['zone_code'],
+            'zone_type': zoning['zone_type'],
+            'overlays': [o['overlay_type'] for o in zoning['overlays']]
+        },
+        'flood': {
+            'risk_level': flood['overall_risk'],
+            'insurance_required': flood['insurance_required'],
+            'fema_zone': flood['fema_zone']['zone_code'] if flood['fema_zone'] else None
         }
     }
 ```
@@ -450,6 +564,291 @@ Search for subdivisions by name (case-insensitive partial match).
 ]
 ```
 
+### FairfaxSchoolsAnalysis
+
+#### `get_assigned_schools(lat, lon)`
+
+Get school assignments for elementary, middle, and high schools.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'elementary': {
+        'school_name': 'Lees Corner',
+        'grades': 'K-6',
+        'address': '13001 RIDGEFAIR DR',
+        'city': 'FAIRFAX',
+        'distance_miles': 1.25,
+        'region': 5
+    },
+    'middle': {
+        'school_name': 'Franklin',
+        'grades': '7-8',
+        'distance_miles': 0.97
+    },
+    'high': {
+        'school_name': 'Chantilly',
+        'grades': '9-12',
+        'distance_miles': 1.82
+    },
+    'all_assigned': True,
+    'message': None
+}
+```
+
+#### `get_school_facilities(lat, lon, radius_miles=5.0, school_types=None, limit=10)`
+
+Find nearby school facilities.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+- `radius_miles`: Search radius (default: 5.0 miles)
+- `school_types`: Optional list of type codes (ES, MS, HS, etc.)
+- `limit`: Maximum results (default: 10)
+
+**Returns:**
+```python
+[
+    {
+        'school_name': 'Brookfield',
+        'school_type': 'ES',
+        'type_description': 'Elementary',
+        'grades': 'K-6',
+        'address': '4200 LEES CORNER RD',
+        'city': 'CHANTILLY',
+        'distance_miles': 1.24
+    },
+    ...
+]
+```
+
+#### `search_schools(query, limit=10)`
+
+Search schools by name.
+
+**Parameters:**
+- `query`: Search string (case-insensitive partial match)
+- `limit`: Maximum results (default: 10)
+
+**Returns:** List of matching schools with details.
+
+#### `get_statistics()`
+
+Get summary statistics about the school dataset.
+
+**Returns:**
+```python
+{
+    'attendance_zones': {
+        'elementary': 142,
+        'middle': 26,
+        'high': 24,
+        'total': 192
+    },
+    'facilities': {
+        'total': 269,
+        'by_type': {'ES': 142, 'MS': 26, 'HS': 27, ...}
+    },
+    'geographic_bounds': {...}
+}
+```
+
+### FairfaxZoningAnalysis
+
+#### `get_zoning(lat, lon)`
+
+Get zoning district and overlays for a location.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'zone_code': 'I-3',
+    'zone_type': 'industrial',
+    'zone_type_description': 'Industrial - Manufacturing and warehousing',
+    'zone_description': 'Industrial, Light-general',
+    'has_proffer': False,
+    'public_land': False,
+    'cluster': None,
+    'overlays': [
+        {'overlay_type': 'water_supply_protection'},
+        {'overlay_type': 'highway_corridor'},
+        {'overlay_type': 'airport_noise_impact', 'decibel_level': 60.0}
+    ],
+    'message': None
+}
+```
+
+#### `get_overlays(lat, lon)`
+
+Get all overlay districts for a location.
+
+**Returns:**
+```python
+[
+    {'overlay_type': 'highway_corridor'},
+    {
+        'overlay_type': 'airport_noise_impact',
+        'decibel_level': 60.0,
+        'noise_description': 'Low-moderate aircraft noise - Background noise level'
+    }
+]
+```
+
+#### `check_airport_noise(lat, lon)`
+
+Check if location is in an airport noise impact zone.
+
+**Returns:**
+```python
+{
+    'in_noise_zone': True,
+    'decibel_level': 60.0,
+    'description': 'Low-moderate aircraft noise - Background noise level'
+}
+```
+Returns `None` if not in a noise zone.
+
+#### `search_zones(zone_code_pattern, limit=20)`
+
+Search for zoning districts by code pattern.
+
+**Returns:**
+```python
+[
+    {'zone_code': 'R-1', 'zone_type': 'residential', 'description': '...', 'district_count': 1163},
+    {'zone_code': 'R-12', 'zone_type': 'residential', 'description': '...', 'district_count': 90},
+    ...
+]
+```
+
+#### `get_statistics()`
+
+Get summary statistics about the zoning dataset.
+
+**Returns:**
+```python
+{
+    'districts': {
+        'total': 6431,
+        'unique_zone_codes': 74,
+        'by_type': {'residential': 3962, 'commercial': 910, ...}
+    },
+    'overlays': {
+        'total': 73,
+        'by_type': {'commercial_development': 16, 'historic': 15, ...}
+    }
+}
+```
+
+### FairfaxFloodAnalysis
+
+#### `get_flood_risk(lat, lon)`
+
+Get comprehensive flood risk assessment.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'fema_zone': {
+        'zone_code': 'AE',
+        'zone_subtype': None,
+        'risk_level': 'high',
+        'risk_description': 'High flood risk - Properties require flood insurance...',
+        'zone_description': '1% annual chance flood zone with Base Flood Elevation',
+        'insurance_required': True
+    },
+    'dam_inundation_risks': [
+        {'dam_name': 'Lake Accotink Dam', 'dam_owner': '...', 'break_type': 'PMF Overtopping'}
+    ],
+    'floodplain_easement': {
+        'in_easement': False,
+        'easement_count': 0
+    },
+    'overall_risk': 'high',
+    'overall_risk_description': 'High flood risk - Properties require flood insurance...',
+    'insurance_required': True,
+    'message': None
+}
+```
+
+#### `get_fema_zone(lat, lon)`
+
+Get FEMA flood zone for a location.
+
+**Returns:**
+```python
+{
+    'zone_code': 'AE',
+    'risk_level': 'high',
+    'zone_description': '1% annual chance flood zone with Base Flood Elevation',
+    'insurance_required': True
+}
+```
+
+#### `get_dam_inundation_risk(lat, lon)`
+
+Check if location is in any dam break inundation zones.
+
+**Returns:**
+```python
+[
+    {'dam_name': 'Burke Lake Dam', 'dam_owner': 'Fairfax County', 'break_type': 'PMF Overtopping'}
+]
+```
+
+#### `check_floodplain_easement(lat, lon)`
+
+Check if location is within a recorded floodplain easement.
+
+**Returns:**
+```python
+{
+    'in_easement': True,
+    'easement_count': 1,
+    'easements': [{'easement_id': 12345, 'easement_type': 'floodplain'}]
+}
+```
+
+#### `get_dams()`
+
+Get list of all dams with inundation data.
+
+**Returns:** Sorted list of dam names.
+
+#### `get_statistics()`
+
+Get summary statistics about the flood dataset.
+
+**Returns:**
+```python
+{
+    'fema_zones': {
+        'total': 3313,
+        'by_risk_level': {'high': 1196, 'moderate': 7, 'minimal': 2110},
+        'by_zone_code': {'X': 2110, 'AE': 677, 'A': 515, ...}
+    },
+    'dam_inundation': {
+        'total_zones': 17,
+        'unique_dams': 16,
+        'dam_names': ['Burke Lake Dam', 'Fox Lake Dam', ...]
+    },
+    'easements': {'total': 897}
+}
+```
+
 ## Data Refresh
 
 All modules automatically use the latest data:
@@ -457,6 +856,9 @@ All modules automatically use the latest data:
 - **Permits**: Updated weekly via GitHub Actions
 - **Healthcare**: Base data annual, CMS quarterly, Leapfrog bi-annual
 - **Subdivisions**: Static (boundaries rarely change)
+- **Schools**: Updated annually (school year boundaries)
+- **Zoning**: Updated as zoning changes occur
+- **Flood**: FEMA data updated periodically
 
 No manual refresh needed - just reload the module.
 
@@ -466,6 +868,9 @@ No manual refresh needed - just reload the module.
 - Permits module: ~41,000 permits (slightly slower, still <1 sec)
 - Healthcare module: ~77 facilities (fast queries)
 - Subdivisions module: ~11,430 polygons with spatial indexing (fast point-in-polygon)
+- Schools module: 192 attendance zones + 269 facilities with spatial indexing
+- Zoning module: 6,431 districts + 73 overlays with spatial indexing
+- Flood module: 3,313 FEMA zones + 17 dam zones + 897 easements with spatial indexing
 - All use in-memory DataFrames/GeoDataFrames (no database required)
 - Consider caching results for frequently-queried locations
 
@@ -518,9 +923,12 @@ python tests/test_fairfax_analysis.py
 
 Expected output:
 ```
-Crime Analysis Module:       PASS
-Permits Analysis Module:     PASS
-Healthcare Analysis Module:  PASS
+Crime Analysis Module:        PASS
+Permits Analysis Module:      PASS
+Healthcare Analysis Module:   PASS
 Subdivisions Analysis Module: PASS
-ALL MODULES PASSED - Ready for integration!
+Schools Analysis Module:      PASS
+Zoning Analysis Module:       PASS
+Flood Analysis Module:        PASS
+ALL 7 MODULES PASSED - Ready for integration!
 ```

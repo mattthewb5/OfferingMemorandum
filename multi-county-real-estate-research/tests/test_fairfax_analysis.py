@@ -1,7 +1,7 @@
 """
 Comprehensive test script for Fairfax County analysis modules.
 
-Tests crime, permits, healthcare, and subdivisions analysis with multiple locations.
+Tests crime, permits, healthcare, subdivisions, schools, zoning, and flood analysis.
 """
 
 import sys
@@ -14,6 +14,9 @@ from core.fairfax_crime_analysis import FairfaxCrimeAnalysis
 from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
 from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
+from core.fairfax_schools_analysis import FairfaxSchoolsAnalysis
+from core.fairfax_zoning_analysis import FairfaxZoningAnalysis
+from core.fairfax_flood_analysis import FairfaxFloodAnalysis
 
 
 def test_crime_analysis():
@@ -281,6 +284,259 @@ def test_subdivisions_analysis():
         return False
 
 
+def test_schools_analysis():
+    """Test schools analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Schools Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxSchoolsAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['attendance_zones']['total']} attendance zones")
+        print(f"    Elementary: {stats['attendance_zones']['elementary']}")
+        print(f"    Middle: {stats['attendance_zones']['middle']}")
+        print(f"    High: {stats['attendance_zones']['high']}")
+        print(f"  Loaded {stats['facilities']['total']} school facilities")
+
+        # Validate dataset
+        assert stats['attendance_zones']['elementary'] == 142, "Expected 142 elementary zones"
+        assert stats['attendance_zones']['middle'] == 26, "Expected 26 middle zones"
+        assert stats['attendance_zones']['high'] == 24, "Expected 24 high zones"
+        assert stats['facilities']['total'] == 269, "Expected 269 facilities"
+
+        # Test school assignment lookup
+        print("\n--- Testing: School Assignment Lookup ---")
+        test_lat = 38.8969
+        test_lon = -77.4327
+
+        assigned = analyzer.get_assigned_schools(test_lat, test_lon)
+        print(f"  Location: ({test_lat}, {test_lon})")
+        print(f"  All assigned: {assigned['all_assigned']}")
+
+        for level in ['elementary', 'middle', 'high']:
+            school = assigned.get(level)
+            if school:
+                print(f"  {level.title()}: {school['school_name']} ({school['distance_miles']} mi)")
+            else:
+                print(f"  {level.title()}: Not assigned")
+
+        assert assigned['all_assigned'] is True, "Expected all schools to be assigned"
+        assert assigned['elementary'] is not None, "Expected elementary assignment"
+        assert assigned['middle'] is not None, "Expected middle assignment"
+        assert assigned['high'] is not None, "Expected high assignment"
+
+        # Test None coordinates
+        print("\n--- Testing: Invalid Coordinates ---")
+        result_invalid = analyzer.get_assigned_schools(None, None)
+        assert result_invalid['all_assigned'] is False, "Should handle None gracefully"
+        assert result_invalid['message'] is not None, "Should have error message"
+        print(f"  Handled None coordinates: ✓")
+
+        # Test facility search
+        print("\n--- Testing: Nearby Facilities ---")
+        nearby = analyzer.get_school_facilities(
+            test_lat, test_lon, radius_miles=3.0, school_types=['ES'], limit=5
+        )
+        print(f"  Elementary schools within 3 mi: {len(nearby)}")
+        for school in nearby[:3]:
+            print(f"    {school['school_name']}: {school['distance_miles']} mi")
+
+        assert len(nearby) > 0, "Expected to find nearby elementary schools"
+        assert all('distance_miles' in s for s in nearby), "Missing distance_miles"
+        assert nearby == sorted(nearby, key=lambda x: x['distance_miles']), "Not sorted by distance"
+
+        # Test school search
+        print("\n--- Testing: School Search ---")
+        results = analyzer.search_schools("Fairfax", limit=5)
+        print(f"  Search 'Fairfax': {len(results)} results")
+        assert len(results) > 0, "Expected to find schools with 'Fairfax'"
+
+        print("\n  Schools Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Schools Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def test_zoning_analysis():
+    """Test zoning analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Zoning Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxZoningAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['districts']['total']} zoning districts")
+        print(f"    Unique zone codes: {stats['districts']['unique_zone_codes']}")
+        print(f"  Loaded {stats['overlays']['total']} overlay districts")
+
+        # Validate dataset
+        assert stats['districts']['total'] == 6431, "Expected 6431 districts"
+        assert stats['districts']['unique_zone_codes'] == 74, "Expected 74 unique codes"
+        assert stats['overlays']['total'] == 73, "Expected 73 overlays"
+
+        # Test zoning lookup
+        print("\n--- Testing: Zoning Lookup ---")
+        test_lat = 38.8969
+        test_lon = -77.4327
+
+        zoning = analyzer.get_zoning(test_lat, test_lon)
+        print(f"  Location: ({test_lat}, {test_lon})")
+        print(f"  Zone Code: {zoning['zone_code']}")
+        print(f"  Zone Type: {zoning['zone_type']}")
+        print(f"  Overlays: {len(zoning['overlays'])}")
+
+        assert zoning['zone_code'] is not None, "Expected zone code"
+        assert zoning['zone_type'] is not None, "Expected zone type"
+        assert zoning['message'] is None, "Should not have error message"
+
+        # Test overlay detection
+        print("\n--- Testing: Overlay Detection ---")
+        overlays = analyzer.get_overlays(test_lat, test_lon)
+        print(f"  Found {len(overlays)} overlays")
+        for overlay in overlays:
+            print(f"    {overlay['overlay_type']}")
+            if 'decibel_level' in overlay:
+                print(f"      Noise: {overlay['decibel_level']} dB")
+
+        # Test airport noise check
+        print("\n--- Testing: Airport Noise Check ---")
+        noise = analyzer.check_airport_noise(test_lat, test_lon)
+        if noise:
+            print(f"  In noise zone: Yes ({noise['decibel_level']} dB)")
+        else:
+            print("  In noise zone: No")
+
+        # Test None coordinates
+        print("\n--- Testing: Invalid Coordinates ---")
+        result_invalid = analyzer.get_zoning(None, None)
+        assert result_invalid['zone_code'] is None, "Should handle None gracefully"
+        assert result_invalid['message'] is not None, "Should have error message"
+        print(f"  Handled None coordinates: ✓")
+
+        # Test zone search
+        print("\n--- Testing: Zone Search ---")
+        results = analyzer.search_zones("R-1", limit=5)
+        print(f"  Search 'R-1': {len(results)} zone codes")
+        for zone in results[:3]:
+            print(f"    {zone['zone_code']}: {zone['district_count']} districts")
+
+        assert len(results) > 0, "Expected to find R-1 zones"
+
+        # Test zone type counts
+        print("\n--- Testing: Zone Type Counts ---")
+        type_counts = analyzer.get_zone_types()
+        assert 'residential' in type_counts, "Missing residential in type counts"
+        assert type_counts['residential'] > 0, "Expected residential zones"
+        print(f"  Residential: {type_counts.get('residential', 0)}")
+        print(f"  Commercial: {type_counts.get('commercial', 0)}")
+
+        print("\n  Zoning Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Zoning Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def test_flood_analysis():
+    """Test flood analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Flood Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxFloodAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['fema_zones']['total']} FEMA flood zones")
+        print(f"    High risk: {stats['fema_zones']['by_risk_level'].get('high', 0)}")
+        print(f"    Moderate: {stats['fema_zones']['by_risk_level'].get('moderate', 0)}")
+        print(f"    Minimal: {stats['fema_zones']['by_risk_level'].get('minimal', 0)}")
+        print(f"  Loaded {stats['dam_inundation']['total_zones']} dam inundation zones")
+        print(f"  Loaded {stats['easements']['total']} floodplain easements")
+
+        # Validate dataset
+        assert stats['fema_zones']['total'] == 3313, "Expected 3313 FEMA zones"
+        assert stats['dam_inundation']['unique_dams'] == 16, "Expected 16 unique dams"
+        assert stats['easements']['total'] == 897, "Expected 897 easements"
+
+        # Test flood risk lookup (minimal risk area)
+        print("\n--- Testing: Flood Risk Lookup (Minimal Risk) ---")
+        test_lat = 38.8969
+        test_lon = -77.4327
+
+        flood = analyzer.get_flood_risk(test_lat, test_lon)
+        print(f"  Location: ({test_lat}, {test_lon})")
+        print(f"  Overall Risk: {flood['overall_risk']}")
+        print(f"  Insurance Required: {flood['insurance_required']}")
+
+        if flood['fema_zone']:
+            print(f"  FEMA Zone: {flood['fema_zone']['zone_code']}")
+        else:
+            print(f"  FEMA Zone: None (not in mapped zone)")
+
+        print(f"  Dam Risks: {len(flood['dam_inundation_risks'])}")
+        print(f"  In Easement: {flood['floodplain_easement']['in_easement']}")
+
+        assert flood['message'] is None, "Should not have error message"
+
+        # Test high-risk zone lookup
+        print("\n--- Testing: High Risk Zone Lookup ---")
+        # Get a point from a high-risk zone
+        high_risk_zones = analyzer.fema_zones[analyzer.fema_zones['risk_level'] == 'high']
+        high_risk_zone = high_risk_zones.iloc[0]
+        rep_point = high_risk_zone.geometry.representative_point()
+        hr_lat, hr_lon = rep_point.y, rep_point.x
+
+        high_risk_flood = analyzer.get_flood_risk(hr_lat, hr_lon)
+        print(f"  Location: ({hr_lat:.4f}, {hr_lon:.4f})")
+        if high_risk_flood['fema_zone']:
+            print(f"  FEMA Zone: {high_risk_flood['fema_zone']['zone_code']}")
+            print(f"  Risk Level: {high_risk_flood['fema_zone']['risk_level']}")
+            print(f"  Insurance Required: {high_risk_flood['insurance_required']}")
+            assert high_risk_flood['fema_zone']['risk_level'] == 'high', "Expected high risk"
+            assert high_risk_flood['insurance_required'] is True, "High risk should require insurance"
+
+        # Test dam list
+        print("\n--- Testing: Dam List ---")
+        dams = analyzer.get_dams()
+        print(f"  Total dams: {len(dams)}")
+        for dam in dams[:3]:
+            print(f"    {dam}")
+
+        assert len(dams) == 16, "Expected 16 dams"
+        assert "Burke Lake Dam" in dams, "Expected Burke Lake Dam"
+
+        # Test None coordinates
+        print("\n--- Testing: Invalid Coordinates ---")
+        result_invalid = analyzer.get_flood_risk(None, None)
+        assert result_invalid['overall_risk'] == 'unknown', "Should handle None gracefully"
+        assert result_invalid['message'] is not None, "Should have error message"
+        print(f"  Handled None coordinates: ✓")
+
+        # Test zones by risk
+        print("\n--- Testing: Get Zones by Risk ---")
+        high_zones = analyzer.get_zones_by_risk('high')
+        print(f"  High risk zones: {len(high_zones)}")
+        assert len(high_zones) > 0, "Expected high risk zones"
+
+        print("\n  Flood Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Flood Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Run all tests."""
     print("\n" + "=" * 68 + "=")
@@ -291,18 +547,29 @@ def main():
     permits_passed = test_permits_analysis()
     healthcare_passed = test_healthcare_analysis()
     subdivisions_passed = test_subdivisions_analysis()
+    schools_passed = test_schools_analysis()
+    zoning_passed = test_zoning_analysis()
+    flood_passed = test_flood_analysis()
 
     print("\n" + "=" * 70)
     print("FINAL RESULTS")
     print("=" * 70)
-    print(f"Crime Analysis Module:       {'PASS' if crime_passed else 'FAIL'}")
-    print(f"Permits Analysis Module:     {'PASS' if permits_passed else 'FAIL'}")
-    print(f"Healthcare Analysis Module:  {'PASS' if healthcare_passed else 'FAIL'}")
+    print(f"Crime Analysis Module:        {'PASS' if crime_passed else 'FAIL'}")
+    print(f"Permits Analysis Module:      {'PASS' if permits_passed else 'FAIL'}")
+    print(f"Healthcare Analysis Module:   {'PASS' if healthcare_passed else 'FAIL'}")
     print(f"Subdivisions Analysis Module: {'PASS' if subdivisions_passed else 'FAIL'}")
+    print(f"Schools Analysis Module:      {'PASS' if schools_passed else 'FAIL'}")
+    print(f"Zoning Analysis Module:       {'PASS' if zoning_passed else 'FAIL'}")
+    print(f"Flood Analysis Module:        {'PASS' if flood_passed else 'FAIL'}")
     print("=" * 70)
 
-    if crime_passed and permits_passed and healthcare_passed and subdivisions_passed:
-        print("\n  ALL MODULES PASSED - Ready for integration!")
+    all_passed = all([
+        crime_passed, permits_passed, healthcare_passed,
+        subdivisions_passed, schools_passed, zoning_passed, flood_passed
+    ])
+
+    if all_passed:
+        print("\n  ALL 7 MODULES PASSED - Ready for integration!")
         return 0
     else:
         print("\n  Some tests failed - review errors above")

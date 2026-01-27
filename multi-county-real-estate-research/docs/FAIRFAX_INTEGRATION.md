@@ -11,6 +11,9 @@ Complete guide for using Fairfax County analysis modules.
 5. **Schools Analysis** - School assignments and facility lookups
 6. **Zoning Analysis** - Zoning districts, overlays, and land use
 7. **Flood Analysis** - FEMA flood zones, dam inundation, and easements
+8. **Utilities Analysis** - Power line, gas, and telephone proximity
+9. **Parks Analysis** - Park access scoring, trails, and recreational amenities
+10. **Transit Analysis** - Metro and bus accessibility scoring
 
 ## Quick Start
 
@@ -173,6 +176,94 @@ if flood['floodplain_easement']['in_easement']:
     print("Property is in a recorded floodplain easement")
 ```
 
+### Utilities Analysis
+```python
+from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
+
+analyzer = FairfaxUtilitiesAnalysis()
+
+# Check proximity to utility lines (for disclosure)
+proximity = analyzer.check_proximity(38.8969, -77.4327, distance_threshold_miles=0.1)
+if proximity['within_threshold']:
+    print(f"Property within 0.1 mi of utility lines:")
+    for u in proximity['utilities_within_threshold']:
+        print(f"  {u['utility_type']}: {u['distance_miles']} mi")
+
+# Get nearby utilities
+nearby = analyzer.get_nearby_utilities(38.8969, -77.4327, radius_miles=0.5)
+for utility in nearby[:3]:
+    print(f"  {utility['utility_type']}: {utility['operator']} ({utility['distance_miles']} mi)")
+
+# Summary by utility type
+by_type = analyzer.get_utility_types_nearby(38.8969, -77.4327, radius_miles=0.5)
+print(f"Electric: {by_type['electric']['count']} lines")
+print(f"Gas: {by_type['gas']['count']} lines")
+```
+
+### Parks Analysis
+```python
+from core.fairfax_parks_analysis import FairfaxParksAnalysis
+
+analyzer = FairfaxParksAnalysis()
+
+# Calculate park access score
+score = analyzer.calculate_park_access_score(38.8462, -77.3064)
+print(f"Park Access Score: {score['score']}/100 ({score['rating']})")
+print(f"Parks within 1 mi: {score['parks_within_1mi']}")
+print(f"Trail miles within 1 mi: {score['trail_miles_within_1mi']}")
+print(f"Playgrounds within 0.5 mi: {score['playgrounds_within_half_mi']}")
+
+# Get nearby parks
+nearby = analyzer.get_nearby_parks(38.8462, -77.3064, radius_miles=1.0)
+for park in nearby[:3]:
+    print(f"  {park['park_name']}: {park['distance_miles']} mi")
+
+# Get trail access
+trails = analyzer.get_trail_access(38.8462, -77.3064, radius_miles=1.0)
+print(f"Trail segments: {trails['trails_within_radius']}")
+print(f"Total miles: {trails['total_trail_miles']}")
+
+# Find playgrounds
+playgrounds = analyzer.get_recreational_amenities(
+    38.8462, -77.3064,
+    radius_miles=0.5,
+    amenity_types=['PLAYGROUND']
+)
+print(f"Playgrounds nearby: {len(playgrounds)}")
+```
+
+### Transit Analysis
+```python
+from core.fairfax_transit_analysis import FairfaxTransitAnalysis
+
+analyzer = FairfaxTransitAnalysis()
+
+# Calculate transit score
+score = analyzer.calculate_transit_score(38.8777, -77.2714)
+print(f"Transit Score: {score['score']}/100 ({score['rating']})")
+print(f"Metro distance: {score['nearest_metro_distance']} mi")
+print(f"Walk time: {score['metro_walk_time']} min")
+print(f"Bus routes: {score['bus_routes_within_quarter_mi']}")
+
+# Get nearest Metro station
+metro = analyzer.get_nearest_metro_station(38.8777, -77.2714)
+print(f"Station: {metro['station_name']}")
+print(f"Distance: {metro['distance_miles']} mi")
+print(f"Walk time: {metro['walk_time_minutes']} min")
+print(f"Bike time: {metro['bike_time_minutes']} min")
+
+# Get nearby bus routes
+routes = analyzer.get_nearby_bus_routes(38.8777, -77.2714, radius_miles=0.5)
+for route in routes[:3]:
+    print(f"  Route {route['route_number']}: {route['route_name']}")
+
+# Get commute options summary
+commute = analyzer.get_commute_options(38.8777, -77.2714)
+print(f"Metro accessible: {commute['metro']['accessible']}")
+print(f"Bus routes: {commute['bus']['routes_count']}")
+print(f"Overall: {commute['overall_accessibility']}")
+```
+
 ## Feature Examples
 
 ### Property Detail Page
@@ -184,6 +275,9 @@ from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
 from core.fairfax_schools_analysis import FairfaxSchoolsAnalysis
 from core.fairfax_zoning_analysis import FairfaxZoningAnalysis
 from core.fairfax_flood_analysis import FairfaxFloodAnalysis
+from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
+from core.fairfax_parks_analysis import FairfaxParksAnalysis
+from core.fairfax_transit_analysis import FairfaxTransitAnalysis
 
 def get_property_intelligence(lat, lon):
     """Get complete property intelligence."""
@@ -749,6 +843,295 @@ Get summary statistics about the zoning dataset.
 }
 ```
 
+### FairfaxUtilitiesAnalysis
+
+#### `check_proximity(lat, lon, distance_threshold_miles=0.1)`
+
+Check if property is within threshold of any utility line.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+- `distance_threshold_miles`: Distance threshold (default: 0.1 miles / 528 ft)
+
+**Returns:**
+```python
+{
+    'within_threshold': True,
+    'threshold_miles': 0.1,
+    'closest_utility': {
+        'utility_type': 'electric',
+        'operator': 'DOMINION ENERGY',
+        'distance_miles': 0.05
+    },
+    'utilities_within_threshold': [
+        {'utility_type': 'electric', 'operator': 'DOMINION ENERGY', 'distance_miles': 0.05},
+        {'utility_type': 'gas', 'operator': 'WASHINGTON GAS', 'distance_miles': 0.08}
+    ],
+    'message': None
+}
+```
+
+#### `get_nearby_utilities(lat, lon, radius_miles=0.5, utility_types=None, limit=20)`
+
+Find utility lines within radius of a location.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+- `radius_miles`: Search radius (default: 0.5 miles)
+- `utility_types`: Optional filter by type (electric, gas, telephone)
+- `limit`: Maximum number of results (default: 20)
+
+**Returns:**
+```python
+[
+    {
+        'utility_type': 'electric',
+        'operator': 'DOMINION ENERGY',
+        'length_miles': 1.25,
+        'distance_miles': 0.12,
+        'object_id': 12345
+    },
+    ...
+]
+```
+
+#### `get_utility_types_nearby(lat, lon, radius_miles=0.5)`
+
+Get summary of utility types within radius.
+
+**Returns:**
+```python
+{
+    'electric': {'count': 3, 'operators': ['DOMINION ENERGY'], 'total_miles': 2.5, 'closest_distance': 0.12},
+    'gas': {'count': 2, 'operators': ['WASHINGTON GAS'], 'total_miles': 1.8, 'closest_distance': 0.15},
+    'telephone': {'count': 0, 'operators': [], 'total_miles': 0, 'closest_distance': None}
+}
+```
+
+#### `get_statistics()`
+
+Get summary statistics about the utility dataset.
+
+**Returns:**
+```python
+{
+    'total_lines': 125,
+    'by_type': {'electric': 56, 'gas': 65, 'telephone': 4},
+    'miles_by_type': {'electric': 45.2, 'gas': 38.7, 'telephone': 3.1},
+    'operators_by_type': {'electric': ['DOMINION ENERGY'], 'gas': ['WASHINGTON GAS'], ...},
+    'total_miles': 87.0,
+    'geographic_bounds': {...}
+}
+```
+
+### FairfaxParksAnalysis
+
+#### `calculate_park_access_score(lat, lon)`
+
+Calculate a park access score (0-100) for a location.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'score': 85,                      # 0-100 (higher = better access)
+    'rating': 'Excellent',            # Rating string
+    'breakdown': {
+        'park_proximity': 28,         # Max 30 pts - parks within 0.5mi
+        'trail_access': 22,           # Max 25 pts - trails within 0.5mi
+        'amenities': 18,              # Max 20 pts - playgrounds, courts within 0.5mi
+        'variety': 17                 # Max 25 pts - different park types
+    },
+    'parks_within_1mi': 5,
+    'trail_miles_within_1mi': 2.3,
+    'playgrounds_within_half_mi': 2
+}
+```
+
+#### `get_nearby_parks(lat, lon, radius_miles=1.0, park_types=None, limit=10)`
+
+Find parks within radius of a location.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+- `radius_miles`: Search radius (default: 1.0 miles)
+- `park_types`: Optional filter by jurisdiction (county, non-county)
+- `limit`: Maximum number of results (default: 10)
+
+**Returns:**
+```python
+[
+    {
+        'park_name': 'Burke Lake Park',
+        'jurisdiction': 'county',
+        'acres': 888.0,
+        'distance_miles': 0.45
+    },
+    ...
+]
+```
+
+#### `get_trail_access(lat, lon, radius_miles=1.0)`
+
+Get trail access information for a location.
+
+**Returns:**
+```python
+{
+    'trails_within_radius': 12,
+    'total_trail_miles': 5.7,
+    'closest_trail_distance': 0.15,
+    'trail_types': ['paved', 'natural']
+}
+```
+
+#### `get_recreational_amenities(lat, lon, radius_miles=0.5, amenity_types=None, limit=20)`
+
+Find recreational amenities near a location.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+- `radius_miles`: Search radius (default: 0.5 miles)
+- `amenity_types`: Optional filter (PLAYGROUND, TENNIS, BASKETBALL, etc.)
+- `limit`: Maximum results (default: 20)
+
+**Returns:**
+```python
+[
+    {
+        'amenity_type': 'PLAYGROUND',
+        'park_name': 'Wakefield Park',
+        'distance_miles': 0.25
+    },
+    ...
+]
+```
+
+#### `get_statistics()`
+
+Get summary statistics about the parks dataset.
+
+**Returns:**
+```python
+{
+    'parks': {'total': 585, 'county': 421, 'non_county': 164, 'total_acres': 23456.7},
+    'trails': {'total_segments': 5818, 'total_miles': 347.2},
+    'recreation': {'total_features': 14459, 'by_type': {'PLAYGROUND': 234, 'TENNIS': 189, ...}},
+    'geographic_bounds': {...}
+}
+```
+
+### FairfaxTransitAnalysis
+
+#### `calculate_transit_score(lat, lon)`
+
+Calculate a transit access score (0-100) for a location.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'score': 92,                          # 0-100 (higher = better access)
+    'rating': 'Excellent',                # Rating string
+    'breakdown': {
+        'metro_access': 48,               # Max 50 pts - Metro station proximity
+        'bus_coverage': 28,               # Max 30 pts - Bus route coverage
+        'service_variety': 16             # Max 20 pts - Multiple transit options
+    },
+    'nearest_metro_distance': 0.3,
+    'metro_walk_time': 6,
+    'bus_routes_within_quarter_mi': 4
+}
+```
+
+#### `get_nearest_metro_station(lat, lon)`
+
+Get the nearest Metro station.
+
+**Returns:**
+```python
+{
+    'station_name': 'Vienna',
+    'line': 'Orange',
+    'distance_miles': 0.35,
+    'walk_time_minutes': 7,
+    'bike_time_minutes': 2,
+    'accessible': True
+}
+```
+Returns `None` if no Metro station within 5 miles.
+
+#### `get_nearby_bus_routes(lat, lon, radius_miles=0.5, limit=10)`
+
+Find bus routes near a location.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+- `radius_miles`: Search radius (default: 0.5 miles)
+- `limit`: Maximum results (default: 10)
+
+**Returns:**
+```python
+[
+    {
+        'route_number': '401',
+        'route_name': 'FAIRFAX - PENTAGON',
+        'operator': 'Fairfax Connector',
+        'distance_miles': 0.15
+    },
+    ...
+]
+```
+
+#### `get_commute_options(lat, lon)`
+
+Get summary of commute options for a location.
+
+**Returns:**
+```python
+{
+    'metro': {
+        'accessible': True,
+        'station_name': 'Vienna',
+        'distance_miles': 0.35,
+        'walk_time': 7
+    },
+    'bus': {
+        'routes_count': 4,
+        'operators': ['Fairfax Connector', 'Metrobus']
+    },
+    'overall_accessibility': 'Excellent'
+}
+```
+
+#### `get_statistics()`
+
+Get summary statistics about the transit dataset.
+
+**Returns:**
+```python
+{
+    'bus_routes': {'total': 89, 'operators': ['Fairfax Connector']},
+    'metro': {
+        'lines': 44,
+        'stations': 32,
+        'station_names': ['Vienna', 'Dunn Loring', 'West Falls Church', ...]
+    },
+    'geographic_bounds': {...}
+}
+```
+
 ### FairfaxFloodAnalysis
 
 #### `get_flood_risk(lat, lon)`
@@ -859,6 +1242,9 @@ All modules automatically use the latest data:
 - **Schools**: Updated annually (school year boundaries)
 - **Zoning**: Updated as zoning changes occur
 - **Flood**: FEMA data updated periodically
+- **Utilities**: Static (major infrastructure rarely changes)
+- **Parks**: Updated annually (park boundaries and amenities)
+- **Transit**: Updated quarterly (route changes and schedules)
 
 No manual refresh needed - just reload the module.
 
@@ -871,6 +1257,9 @@ No manual refresh needed - just reload the module.
 - Schools module: 192 attendance zones + 269 facilities with spatial indexing
 - Zoning module: 6,431 districts + 73 overlays with spatial indexing
 - Flood module: 3,313 FEMA zones + 17 dam zones + 897 easements with spatial indexing
+- Utilities module: 125 utility lines with spatial indexing (fast line-to-point distance)
+- Parks module: 585 parks + 5,818 trail segments + 14,459 recreation features with spatial indexing
+- Transit module: 89 bus routes + 44 Metro lines + 32 Metro stations with spatial indexing
 - All use in-memory DataFrames/GeoDataFrames (no database required)
 - Consider caching results for frequently-queried locations
 
@@ -913,6 +1302,24 @@ except Exception as e:
 | 40-54 | Limited Access | Distant from hospitals |
 | 0-39 | Poor Access | Very limited options |
 
+### Park Access Score
+| Score | Rating | Description |
+|-------|--------|-------------|
+| 85-100 | Excellent | Multiple parks and trails within walking distance |
+| 70-84 | Very Good | Good park access with recreational amenities |
+| 55-69 | Good | Reasonable park access |
+| 40-54 | Fair | Limited park options nearby |
+| 0-39 | Poor | Few parks or recreational facilities |
+
+### Transit Score
+| Score | Rating | Description |
+|-------|--------|-------------|
+| 85-100 | Excellent | Metro station within walking distance, multiple bus routes |
+| 70-84 | Very Good | Metro accessible, good bus coverage |
+| 55-69 | Good | Reasonable transit options available |
+| 40-54 | Fair | Limited transit, may require driving |
+| 0-39 | Poor | Minimal public transit access |
+
 ## Testing
 
 Run the test suite to verify modules:
@@ -930,5 +1337,8 @@ Subdivisions Analysis Module: PASS
 Schools Analysis Module:      PASS
 Zoning Analysis Module:       PASS
 Flood Analysis Module:        PASS
-ALL 7 MODULES PASSED - Ready for integration!
+Utilities Analysis Module:    PASS
+Parks Analysis Module:        PASS
+Transit Analysis Module:      PASS
+ALL 10 MODULES PASSED - Ready for integration!
 ```

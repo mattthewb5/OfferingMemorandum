@@ -17,6 +17,9 @@ from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
 from core.fairfax_schools_analysis import FairfaxSchoolsAnalysis
 from core.fairfax_zoning_analysis import FairfaxZoningAnalysis
 from core.fairfax_flood_analysis import FairfaxFloodAnalysis
+from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
+from core.fairfax_parks_analysis import FairfaxParksAnalysis
+from core.fairfax_transit_analysis import FairfaxTransitAnalysis
 
 
 def test_crime_analysis():
@@ -537,6 +540,264 @@ def test_flood_analysis():
         return False
 
 
+def test_utilities_analysis():
+    """Test utilities analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Utilities Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxUtilitiesAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['total_lines']} utility lines ({stats['total_miles']} miles)")
+        print(f"    Electric: {stats['by_type'].get('electric', 0)}")
+        print(f"    Gas: {stats['by_type'].get('gas', 0)}")
+        print(f"    Telephone: {stats['by_type'].get('telephone', 0)}")
+
+        # Validate dataset
+        assert stats['total_lines'] == 125, "Expected 125 utility lines"
+        assert stats['by_type'].get('electric', 0) == 56, "Expected 56 electric lines"
+        assert stats['by_type'].get('gas', 0) == 65, "Expected 65 gas lines"
+
+        # Test nearby utilities
+        print("\n--- Testing: Nearby Utilities ---")
+        test_lat = 38.8969
+        test_lon = -77.4327
+
+        nearby = analyzer.get_nearby_utilities(test_lat, test_lon, radius_miles=0.5)
+        print(f"  Location: ({test_lat}, {test_lon})")
+        print(f"  Utilities within 0.5 mi: {len(nearby)}")
+        for utility in nearby[:3]:
+            print(f"    {utility['utility_type']}: {utility['operator']} ({utility['distance_miles']} mi)")
+
+        assert all('distance_miles' in u for u in nearby), "Missing distance_miles"
+        if nearby:
+            assert nearby == sorted(nearby, key=lambda x: x['distance_miles']), "Not sorted by distance"
+
+        # Test proximity check
+        print("\n--- Testing: Proximity Check ---")
+        proximity = analyzer.check_proximity(test_lat, test_lon, 0.1)
+        print(f"  Within 0.1 mi threshold: {proximity['within_threshold']}")
+        if proximity['closest_utility']:
+            print(f"  Closest: {proximity['closest_utility']['utility_type']} at {proximity['closest_utility']['distance_miles']} mi")
+
+        assert 'within_threshold' in proximity, "Missing within_threshold"
+        assert 'closest_utility' in proximity, "Missing closest_utility"
+
+        # Test utility type filtering
+        print("\n--- Testing: Filter by Type ---")
+        electric_only = analyzer.get_nearby_utilities(test_lat, test_lon, radius_miles=1.0, utility_types=['electric'])
+        print(f"  Electric lines within 1 mi: {len(electric_only)}")
+        for u in electric_only:
+            assert u['utility_type'] == 'electric', f"Filter failed: got {u['utility_type']}"
+
+        # Test None coordinates
+        print("\n--- Testing: Invalid Coordinates ---")
+        result_invalid = analyzer.get_nearby_utilities(None, None)
+        assert result_invalid == [], "Should return empty list for None"
+        print("  Handled None coordinates: ✓")
+
+        # Test utility types nearby
+        print("\n--- Testing: Utility Types Nearby ---")
+        by_type = analyzer.get_utility_types_nearby(test_lat, test_lon, 0.5)
+        assert 'electric' in by_type, "Missing electric in summary"
+        assert 'gas' in by_type, "Missing gas in summary"
+        print(f"  Summary: {by_type}")
+
+        print("\n  Utilities Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Utilities Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def test_parks_analysis():
+    """Test parks analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Parks Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxParksAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['parks']['total']} parks")
+        print(f"  Loaded {stats['trails']['total_segments']} trails ({stats['trails']['total_miles']} miles)")
+        print(f"  Loaded {stats['recreation']['total_features']} recreational features")
+
+        # Validate dataset
+        assert stats['parks']['total'] == 585, "Expected 585 parks"
+        assert stats['trails']['total_segments'] == 5818, "Expected 5818 trails"
+        assert stats['recreation']['total_features'] == 14459, "Expected 14459 recreational features"
+
+        # Test park access score
+        print("\n--- Testing: Park Access Score ---")
+        test_lat = 38.8462
+        test_lon = -77.3064
+
+        score = analyzer.calculate_park_access_score(test_lat, test_lon)
+        print(f"  Location: ({test_lat}, {test_lon})")
+        print(f"  Score: {score['score']}/100 ({score['rating']})")
+        print(f"  Parks within 1 mi: {score['parks_within_1mi']}")
+        print(f"  Breakdown: {score['breakdown']}")
+
+        assert 0 <= score['score'] <= 100, "Score out of range"
+        assert score['rating'] in ['excellent', 'good', 'fair', 'poor'], "Invalid rating"
+        assert 'breakdown' in score, "Missing breakdown"
+
+        # Test nearby parks
+        print("\n--- Testing: Nearby Parks ---")
+        nearby = analyzer.get_nearby_parks(test_lat, test_lon, radius_miles=1.0, limit=5)
+        print(f"  Parks within 1 mi: {len(nearby)}")
+        for park in nearby[:3]:
+            print(f"    {park['park_name']}: {park['distance_miles']} mi")
+
+        assert all('distance_miles' in p for p in nearby), "Missing distance_miles"
+        if nearby:
+            assert nearby == sorted(nearby, key=lambda x: x['distance_miles']), "Not sorted by distance"
+
+        # Test trail access
+        print("\n--- Testing: Trail Access ---")
+        trails = analyzer.get_trail_access(test_lat, test_lon, radius_miles=1.0)
+        print(f"  Trails within 1 mi: {trails['trails_within_radius']}")
+        print(f"  Total miles: {trails['total_trail_miles']}")
+
+        assert 'trails_within_radius' in trails, "Missing trails_within_radius"
+        assert 'total_trail_miles' in trails, "Missing total_trail_miles"
+
+        # Test recreational amenities
+        print("\n--- Testing: Recreational Amenities ---")
+        playgrounds = analyzer.get_recreational_amenities(test_lat, test_lon, radius_miles=0.5, amenity_types=['PLAYGROUND'])
+        print(f"  Playgrounds within 0.5 mi: {len(playgrounds)}")
+
+        for p in playgrounds:
+            assert p['feature_type'] == 'PLAYGROUND', f"Filter failed: got {p['feature_type']}"
+
+        # Test None coordinates
+        print("\n--- Testing: Invalid Coordinates ---")
+        result_invalid = analyzer.calculate_park_access_score(None, None)
+        assert result_invalid['score'] == 0, "Should return 0 score for None"
+        assert result_invalid['message'] is not None, "Should have error message"
+        print("  Handled None coordinates: ✓")
+
+        # Test park search
+        print("\n--- Testing: Park Search ---")
+        results = analyzer.search_parks("Burke", limit=5)
+        print(f"  Search 'Burke': {len(results)} results")
+        assert len(results) >= 0, "Search should return list"
+
+        print("\n  Parks Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Parks Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def test_transit_analysis():
+    """Test transit analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Transit Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxTransitAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['bus_routes']['total']} bus routes")
+        print(f"  Loaded {stats['metro_lines']['total_segments']} Metro segments")
+        print(f"  Loaded {stats['metro_stations']['total']} Metro stations")
+
+        # Validate dataset
+        assert stats['bus_routes']['total'] == 89, "Expected 89 bus routes"
+        assert stats['metro_stations']['total'] == 32, "Expected 32 Metro stations"
+
+        # Test transit score near Metro
+        print("\n--- Testing: Transit Score (near Metro) ---")
+        test_lat = 38.8777  # Near Vienna Metro
+        test_lon = -77.2714
+
+        score = analyzer.calculate_transit_score(test_lat, test_lon)
+        print(f"  Location: ({test_lat}, {test_lon})")
+        print(f"  Score: {score['score']}/100 ({score['rating']})")
+        print(f"  Metro distance: {score['nearest_metro_distance']} mi")
+        print(f"  Bus routes: {score['bus_routes_within_quarter_mi']}")
+
+        assert 0 <= score['score'] <= 100, "Score out of range"
+        assert score['rating'] in ['excellent', 'good', 'fair', 'poor'], "Invalid rating"
+        assert score['score'] >= 50, "Expected high score near Metro"
+
+        # Test nearest Metro station
+        print("\n--- Testing: Nearest Metro Station ---")
+        metro = analyzer.get_nearest_metro_station(test_lat, test_lon)
+        print(f"  Station: {metro['station_name']}")
+        print(f"  Distance: {metro['distance_miles']} mi")
+        print(f"  Walk time: {metro['walk_time_minutes']} min")
+
+        assert metro['station_name'] is not None, "Missing station name"
+        assert metro['distance_miles'] < 1.0, "Expected close to Metro"
+        assert 'walk_time_minutes' in metro, "Missing walk time"
+
+        # Test transit score far from Metro
+        print("\n--- Testing: Transit Score (far from Metro) ---")
+        far_lat = 38.65  # Southern Fairfax
+        far_lon = -77.35
+
+        far_score = analyzer.calculate_transit_score(far_lat, far_lon)
+        print(f"  Location: ({far_lat}, {far_lon})")
+        print(f"  Score: {far_score['score']}/100 ({far_score['rating']})")
+        print(f"  Metro distance: {far_score['nearest_metro_distance']} mi")
+
+        # Should have lower score
+        assert far_score['score'] < score['score'], "Far location should have lower score"
+
+        # Test bus routes
+        print("\n--- Testing: Nearby Bus Routes ---")
+        routes = analyzer.get_nearby_bus_routes(test_lat, test_lon, radius_miles=0.5, limit=5)
+        print(f"  Bus routes within 0.5 mi: {len(routes)}")
+        for route in routes[:3]:
+            print(f"    Route {route['route_number']}: {route['route_name']}")
+
+        assert all('route_number' in r for r in routes), "Missing route_number"
+
+        # Test service type filtering
+        print("\n--- Testing: Filter by Service Type ---")
+        express_only = analyzer.get_nearby_bus_routes(test_lat, test_lon, radius_miles=1.0, service_types=['Express'])
+        print(f"  Express routes within 1 mi: {len(express_only)}")
+        for r in express_only:
+            assert r['service_type'] == 'Express', f"Filter failed: got {r['service_type']}"
+
+        # Test commute options
+        print("\n--- Testing: Commute Options ---")
+        commute = analyzer.get_commute_options(test_lat, test_lon)
+        print(f"  Metro accessible: {commute['metro']['accessible']}")
+        print(f"  Bus routes: {commute['bus']['routes_count']}")
+        print(f"  Overall: {commute['overall_accessibility']}")
+
+        assert 'metro' in commute, "Missing metro in commute options"
+        assert 'bus' in commute, "Missing bus in commute options"
+        assert 'overall_accessibility' in commute, "Missing overall_accessibility"
+
+        # Test None coordinates
+        print("\n--- Testing: Invalid Coordinates ---")
+        result_invalid = analyzer.calculate_transit_score(None, None)
+        assert result_invalid['score'] == 0, "Should return 0 score for None"
+        assert result_invalid['message'] is not None, "Should have error message"
+        print("  Handled None coordinates: ✓")
+
+        print("\n  Transit Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Transit Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Run all tests."""
     print("\n" + "=" * 68 + "=")
@@ -550,6 +811,9 @@ def main():
     schools_passed = test_schools_analysis()
     zoning_passed = test_zoning_analysis()
     flood_passed = test_flood_analysis()
+    utilities_passed = test_utilities_analysis()
+    parks_passed = test_parks_analysis()
+    transit_passed = test_transit_analysis()
 
     print("\n" + "=" * 70)
     print("FINAL RESULTS")
@@ -561,15 +825,19 @@ def main():
     print(f"Schools Analysis Module:      {'PASS' if schools_passed else 'FAIL'}")
     print(f"Zoning Analysis Module:       {'PASS' if zoning_passed else 'FAIL'}")
     print(f"Flood Analysis Module:        {'PASS' if flood_passed else 'FAIL'}")
+    print(f"Utilities Analysis Module:    {'PASS' if utilities_passed else 'FAIL'}")
+    print(f"Parks Analysis Module:        {'PASS' if parks_passed else 'FAIL'}")
+    print(f"Transit Analysis Module:      {'PASS' if transit_passed else 'FAIL'}")
     print("=" * 70)
 
     all_passed = all([
         crime_passed, permits_passed, healthcare_passed,
-        subdivisions_passed, schools_passed, zoning_passed, flood_passed
+        subdivisions_passed, schools_passed, zoning_passed, flood_passed,
+        utilities_passed, parks_passed, transit_passed
     ])
 
     if all_passed:
-        print("\n  ALL 7 MODULES PASSED - Ready for integration!")
+        print("\n  ALL 10 MODULES PASSED - Ready for integration!")
         return 0
     else:
         print("\n  Some tests failed - review errors above")

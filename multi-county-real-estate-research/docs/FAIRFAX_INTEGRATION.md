@@ -375,6 +375,38 @@ print("Top 10 High Schools by Pass Rate:")
 print(top_schools.to_string(index=False))
 ```
 
+#### School Quality Scoring Algorithm
+
+The quality score (0-100) uses three factors:
+
+**1. Performance (0-50 points)**
+- Recent overall pass rate × 0.5
+- Example: 90% pass rate = 45 points
+
+**2. Trend (0-30 points) - With Ceiling Recognition**
+- Schools at ≥95% pass rate (excellence ceiling):
+  - Improving or Stable: 30 points (full credit for sustaining excellence)
+  - Declining: 0 points
+- Schools below 95%:
+  - Improving: 30 points (rewarding growth)
+  - Stable: 15 points
+  - Declining: 0 points
+
+*Rationale: Schools already at 95-100% cannot improve further, so they receive
+full credit for maintaining excellence rather than being penalized for "stable"
+trends. This ensures elite schools like Thomas Jefferson HS (#5 nationally) are
+scored appropriately.*
+
+**3. Consistency (0-20 points)**
+- Balance across subjects (Reading, Math, Science)
+- Higher consistency = more well-rounded education
+
+**Rating Categories:**
+- Excellent: 85-100 points
+- Good: 70-84 points
+- Fair: 55-69 points
+- Needs Improvement: <55 points
+
 ## Feature Examples
 
 ### Property Detail Page

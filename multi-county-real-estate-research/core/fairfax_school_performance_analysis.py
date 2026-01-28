@@ -262,16 +262,33 @@ class FairfaxSchoolPerformanceAnalysis:
         else:
             performance_score = 25  # Default for missing data
 
-        # 2. Trend score (0-30 points)
+        # 2. Trend score (0-30 points) - with ceiling recognition
         overall_trend = performance['overall_trend']
-        if overall_trend == 'improving':
-            trend_score = 30
-        elif overall_trend == 'stable':
-            trend_score = 15
-        elif overall_trend == 'declining':
-            trend_score = 0
+
+        # Schools at ≥95% pass rate are at the "ceiling" - can't improve further
+        # Give them full credit for maintaining excellence
+        if recent_overall is not None and recent_overall >= 95.0:
+            # Schools at ceiling - already at excellence
+            if overall_trend in ['improving', 'stable']:
+                trend_score = 30  # Full credit for sustaining excellence
+                trend_note = "Maintaining excellence at ceiling"
+            else:
+                trend_score = 0  # Only penalize if declining from excellence
+                trend_note = "Declining from excellence"
         else:
-            trend_score = 10  # insufficient_data
+            # Schools below ceiling - normal trend scoring
+            if overall_trend == 'improving':
+                trend_score = 30
+                trend_note = "Improving performance"
+            elif overall_trend == 'stable':
+                trend_score = 15
+                trend_note = "Stable performance"
+            elif overall_trend == 'declining':
+                trend_score = 0
+                trend_note = "Declining performance"
+            else:
+                trend_score = 10  # insufficient_data
+                trend_note = "Insufficient trend data"
 
         # 3. Consistency score (0-20 points)
         # Based on subject pass rate balance
@@ -323,6 +340,7 @@ class FairfaxSchoolPerformanceAnalysis:
             'factors': {
                 'performance_score': round(performance_score, 1),
                 'trend_score': round(trend_score, 1),
+                'trend_note': trend_note,
                 'consistency_score': round(consistency_score, 1)
             },
             'recent_pass_rate': performance['recent_overall_pass_rate'],

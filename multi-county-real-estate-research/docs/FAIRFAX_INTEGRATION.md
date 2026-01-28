@@ -14,6 +14,7 @@ Complete guide for using Fairfax County analysis modules.
 8. **Utilities Analysis** - Power line, gas, and telephone proximity
 9. **Parks Analysis** - Park access scoring, trails, and recreational amenities
 10. **Transit Analysis** - Metro and bus accessibility scoring
+11. **Emergency Services Analysis** - Fire and police station proximity with ISO-based fire protection assessment
 
 ## Quick Start
 
@@ -262,6 +263,47 @@ commute = analyzer.get_commute_options(38.8777, -77.2714)
 print(f"Metro accessible: {commute['metro']['accessible']}")
 print(f"Bus routes: {commute['bus']['routes_count']}")
 print(f"Overall: {commute['overall_accessibility']}")
+```
+
+### Emergency Services Analysis (ISO-Based)
+```python
+from core.fairfax_emergency_services_analysis import FairfaxEmergencyServicesAnalysis
+
+analyzer = FairfaxEmergencyServicesAnalysis()
+
+# Get ISO-based fire protection assessment
+fire_assessment = analyzer.assess_fire_protection_iso(38.9188, -77.2311)
+print(f"Fire Protection Assessment:")
+print(f"  Rating: {fire_assessment['rating']}")
+print(f"  Distance: {fire_assessment['fire_distance_miles']} mi")
+print(f"  ISO Status: {fire_assessment['iso_threshold_status']} 5-mile threshold")
+print(f"  ISO Class Range: {fire_assessment['iso_class_range']}")
+print(f"  Insurance Impact: {fire_assessment['insurance_impact']}")
+
+# Get nearest fire station
+fire = analyzer.get_nearest_fire_station(38.9188, -77.2311)
+print(f"Nearest Fire Station:")
+print(f"  {fire['station_name']} - {fire['distance_miles']} mi")
+print(f"  Response time: ~{fire['drive_time_minutes']} minutes")
+
+# Get nearest police station
+police = analyzer.get_nearest_police_station(38.9188, -77.2311)
+print(f"Nearest Police Station:")
+print(f"  {police['station_name']} - {police['distance_miles']} mi")
+print(f"  Phone: {police['phone']}")
+
+# Get coverage area (uses ISO 5-mile standard)
+coverage = analyzer.get_emergency_services_coverage(38.9188, -77.2311)
+print(f"Emergency Services Coverage (5-mile radius):")
+print(f"  Fire stations: {coverage['fire_count']}")
+print(f"  Police stations: {coverage['police_count']}")
+print(f"  Within ISO threshold: {coverage['within_iso_threshold']}")
+
+# Get response time estimates
+response = analyzer.get_response_time_estimates(38.9188, -77.2311)
+print(f"Estimated Response Times:")
+print(f"  Fire: ~{response['fire_response']['estimated_minutes']} minutes")
+print(f"  Police: ~{response['police_response']['estimated_minutes']} minutes")
 ```
 
 ## Feature Examples
@@ -1232,6 +1274,177 @@ Get summary statistics about the flood dataset.
 }
 ```
 
+### FairfaxEmergencyServicesAnalysis
+
+Fire and police station proximity analysis with ISO-based fire protection assessment.
+
+#### Fire Protection Standards
+
+**ISO (Insurance Services Office) Background:**
+- Industry-standard organization evaluating fire protection nationwide
+- ~75% of U.S. insurance companies use ISO ratings for premium calculation
+- ISO Classes range from 1 (best) to 10 (worst)
+
+**Critical ISO Threshold:**
+Properties located MORE THAN 5 ROAD MILES from a fire station automatically
+receive ISO Class 10 rating (highest insurance premiums). Some insurers may
+deny coverage for Class 10 properties.
+
+#### `get_nearest_fire_station(lat, lon)`
+
+Find nearest fire station.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'station_name': 'TYSONS CORNER',
+    'station_full_name': 'Fire Station 29 - Tysons Corner',
+    'station_code': '429',
+    'address': '1560 Spring Hill Road, McLean, VA 22102',
+    'distance_miles': 0.84,
+    'drive_time_minutes': 3,
+    'latitude': 38.9245,
+    'longitude': -77.2198,
+    'jurisdiction': 'Fairfax County'
+}
+```
+
+#### `get_nearest_police_station(lat, lon)`
+
+Find nearest police station.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'station_name': 'McLean Station',
+    'address': '1437 Balls Hill RD',
+    'phone': '703-556-7750',
+    'distance_miles': 1.98,
+    'drive_time_minutes': 6,
+    'latitude': 38.9326,
+    'longitude': -77.1988,
+    'station_type': 'STATION'
+}
+```
+
+#### `assess_fire_protection_iso(lat, lon)`
+
+Assess fire protection using ISO-aligned methodology.
+
+**ISO-Based Rating System:**
+- **Excellent** (≤1 mi): ISO Class 1-3 range, lowest premiums
+- **Very Good** (1-3 mi): ISO Class 3-5 range, low premiums
+- **Good** (3-5 mi): ISO Class 5-8 range, within ISO threshold
+- **Limited** (>5 mi): ISO Class 10, beyond ISO threshold, high premiums
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'fire_distance_miles': 0.84,
+    'rating': 'Excellent',
+    'iso_class_range': '1-3',
+    'iso_threshold_status': 'within',
+    'insurance_impact': 'Lowest premiums - optimal fire protection',
+    'nearest_station_name': 'TYSONS CORNER',
+    'nearest_station_address': '1560 Spring Hill Road, McLean, VA 22102',
+    'methodology': 'Based on ISO Fire Protection Class standards'
+}
+```
+
+#### `get_emergency_services_coverage(lat, lon, fire_radius_miles=5.0, police_radius_miles=5.0)`
+
+Get all emergency services within specified radius.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+- `fire_radius_miles`: Radius for fire stations (default: 5.0 per ISO standard)
+- `police_radius_miles`: Radius for police stations (default: 5.0)
+
+**Returns:**
+```python
+{
+    'fire_stations': [
+        {'station_name': 'TYSONS CORNER', 'distance_miles': 0.84, 'address': '...'},
+        ...
+    ],
+    'police_stations': [
+        {'station_name': 'McLean Station', 'distance_miles': 1.98, 'address': '...'},
+        ...
+    ],
+    'fire_count': 8,
+    'police_count': 3,
+    'nearest_fire_distance': 0.84,
+    'nearest_police_distance': 1.98,
+    'within_iso_threshold': True
+}
+```
+
+#### `get_response_time_estimates(lat, lon)`
+
+Calculate estimated emergency response times.
+
+**Parameters:**
+- `lat`: Latitude
+- `lon`: Longitude
+
+**Returns:**
+```python
+{
+    'fire_response': {
+        'distance_miles': 0.84,
+        'estimated_minutes': 3,
+        'station_name': 'TYSONS CORNER'
+    },
+    'police_response': {
+        'distance_miles': 1.98,
+        'estimated_minutes': 6,
+        'station_name': 'McLean Station'
+    },
+    'note': 'Estimates assume 20 mph average speed for emergency vehicles'
+}
+```
+
+#### `get_statistics()`
+
+Get emergency services dataset statistics.
+
+**Returns:**
+```python
+{
+    'fire_stations': {
+        'total': 47,
+        'by_jurisdiction': {'Fairfax County': 41, 'Fort Belvoir': 4, 'City of Fairfax': 2},
+        'by_type': {'Station': 47}
+    },
+    'police_stations': {
+        'total': 23,
+        'by_type': {'STATION': 14, 'HQ': 3, 'COMM': 2, ...}
+    },
+    'coverage': {
+        'total_emergency_facilities': 70
+    },
+    'geographic_bounds': {
+        'min_latitude': 38.6734,
+        'max_latitude': 38.9987,
+        'min_longitude': -77.4533,
+        'max_longitude': -77.0767
+    }
+}
+```
+
 ## Data Refresh
 
 All modules automatically use the latest data:
@@ -1245,6 +1458,7 @@ All modules automatically use the latest data:
 - **Utilities**: Static (major infrastructure rarely changes)
 - **Parks**: Updated annually (park boundaries and amenities)
 - **Transit**: Updated quarterly (route changes and schedules)
+- **Emergency Services**: Static (fire/police stations rarely move or close, check annually)
 
 No manual refresh needed - just reload the module.
 
@@ -1260,6 +1474,7 @@ No manual refresh needed - just reload the module.
 - Utilities module: 125 utility lines with spatial indexing (fast line-to-point distance)
 - Parks module: 585 parks + 5,818 trail segments + 14,459 recreation features with spatial indexing
 - Transit module: 89 bus routes + 44 Metro lines + 32 Metro stations with spatial indexing
+- Emergency Services module: 47 fire stations + 23 police stations (70 total facilities, simple distance calculations)
 - All use in-memory DataFrames/GeoDataFrames (no database required)
 - Consider caching results for frequently-queried locations
 
@@ -1320,6 +1535,28 @@ except Exception as e:
 | 40-54 | Fair | Limited transit, may require driving |
 | 0-39 | Poor | Minimal public transit access |
 
+### Fire Protection Rating (ISO-Based)
+| Rating | Distance | ISO Class Range | Insurance Impact |
+|--------|----------|-----------------|------------------|
+| Excellent | ≤ 1 mile | 1-3 | Lowest premiums - optimal fire protection |
+| Very Good | 1-3 miles | 3-5 | Low premiums - good fire protection |
+| Good | 3-5 miles | 5-8 | Moderate premiums - within ISO threshold |
+| Limited | > 5 miles | 10 | High premiums - beyond ISO 5-mile threshold |
+
+**About ISO Ratings:**
+The Insurance Services Office (ISO) assigns Public Protection Classifications (PPC)
+to communities based on fire protection capabilities. Approximately 75% of U.S.
+insurance companies use ISO ratings when determining homeowners insurance premiums.
+
+**Critical Threshold:** Properties located more than 5 road miles from a fire station
+automatically receive ISO Class 10 rating, which results in significantly higher
+insurance premiums. Some insurers may deny coverage for Class 10 properties.
+
+**Note:** This assessment provides ISO-aligned distance-based ratings. Actual ISO
+classifications also consider water supply, fire department capabilities, and
+emergency communications. Property owners should consult insurance providers for
+specific premium information.
+
 ## Testing
 
 Run the test suite to verify modules:
@@ -1330,15 +1567,16 @@ python tests/test_fairfax_analysis.py
 
 Expected output:
 ```
-Crime Analysis Module:        PASS
-Permits Analysis Module:      PASS
-Healthcare Analysis Module:   PASS
-Subdivisions Analysis Module: PASS
-Schools Analysis Module:      PASS
-Zoning Analysis Module:       PASS
-Flood Analysis Module:        PASS
-Utilities Analysis Module:    PASS
-Parks Analysis Module:        PASS
-Transit Analysis Module:      PASS
-ALL 10 MODULES PASSED - Ready for integration!
+Crime Analysis Module:              PASS
+Permits Analysis Module:            PASS
+Healthcare Analysis Module:         PASS
+Subdivisions Analysis Module:       PASS
+Schools Analysis Module:            PASS
+Zoning Analysis Module:             PASS
+Flood Analysis Module:              PASS
+Utilities Analysis Module:          PASS
+Parks Analysis Module:              PASS
+Transit Analysis Module:            PASS
+Emergency Services Analysis Module: PASS
+ALL 11 MODULES PASSED - Ready for integration!
 ```

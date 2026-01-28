@@ -1,7 +1,8 @@
 """
 Comprehensive test script for Fairfax County analysis modules.
 
-Tests crime, permits, healthcare, subdivisions, schools, zoning, and flood analysis.
+Tests crime, permits, healthcare, subdivisions, schools, zoning, flood,
+utilities, parks, transit, and emergency services analysis.
 """
 
 import sys
@@ -20,6 +21,7 @@ from core.fairfax_flood_analysis import FairfaxFloodAnalysis
 from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
 from core.fairfax_parks_analysis import FairfaxParksAnalysis
 from core.fairfax_transit_analysis import FairfaxTransitAnalysis
+from core.fairfax_emergency_services_analysis import FairfaxEmergencyServicesAnalysis
 
 
 def test_crime_analysis():
@@ -798,6 +800,138 @@ def test_transit_analysis():
         return False
 
 
+def test_emergency_services_analysis():
+    """Test emergency services analysis module with ISO fire protection standards."""
+    print("\n" + "=" * 70)
+    print("TESTING: Emergency Services Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxEmergencyServicesAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['fire_stations']['total']} fire stations")
+        print(f"  Loaded {stats['police_stations']['total']} police stations")
+        print(f"  Total emergency facilities: {stats['coverage']['total_emergency_facilities']}")
+
+        # Validate dataset
+        assert stats['fire_stations']['total'] == 47, "Expected 47 fire stations"
+        assert stats['police_stations']['total'] == 23, "Expected 23 police stations"
+        assert stats['coverage']['total_emergency_facilities'] == 70, "Expected 70 total facilities"
+
+        # Test jurisdictions
+        assert 'Fairfax County' in stats['fire_stations']['by_jurisdiction'], "Missing Fairfax County"
+        assert stats['fire_stations']['by_jurisdiction']['Fairfax County'] == 41, "Expected 41 Fairfax County stations"
+
+        # Test nearest fire station (Tysons area - should be Excellent)
+        print("\n--- Testing: Nearest Fire Station ---")
+        test_lat = 38.9188
+        test_lon = -77.2311
+        print(f"  Location: ({test_lat}, {test_lon})")
+
+        fire = analyzer.get_nearest_fire_station(test_lat, test_lon)
+        print(f"  Nearest fire: {fire['station_name']} ({fire['distance_miles']} mi)")
+        print(f"  Address: {fire['address']}")
+        print(f"  Drive time: {fire['drive_time_minutes']} min")
+
+        assert fire['station_name'] is not None, "Missing station name"
+        assert fire['distance_miles'] is not None, "Missing distance"
+        assert fire['drive_time_minutes'] is not None, "Missing drive time"
+        assert fire['distance_miles'] < 2.0, "Expected close fire station in Tysons"
+
+        # Test nearest police station
+        print("\n--- Testing: Nearest Police Station ---")
+        police = analyzer.get_nearest_police_station(test_lat, test_lon)
+        print(f"  Nearest police: {police['station_name']} ({police['distance_miles']} mi)")
+
+        assert police['station_name'] is not None, "Missing station name"
+        assert police['distance_miles'] is not None, "Missing distance"
+
+        # Test ISO fire protection assessment
+        print("\n--- Testing: ISO Fire Protection Assessment ---")
+        iso = analyzer.assess_fire_protection_iso(test_lat, test_lon)
+        print(f"  Distance: {iso['fire_distance_miles']} miles")
+        print(f"  Rating: {iso['rating']}")
+        print(f"  ISO Status: {iso['iso_threshold_status']} 5-mile threshold")
+        print(f"  ISO Class Range: {iso['iso_class_range']}")
+
+        assert iso['rating'] in ['Excellent', 'Very Good', 'Good', 'Limited'], "Invalid rating"
+        assert iso['iso_threshold_status'] in ['within', 'beyond'], "Invalid ISO status"
+        assert iso['methodology'] == 'Based on ISO Fire Protection Class standards', "Missing methodology"
+
+        # Test that Tysons should be Excellent (within 1 mile)
+        assert iso['rating'] == 'Excellent', f"Expected 'Excellent' for Tysons, got '{iso['rating']}'"
+        assert iso['iso_threshold_status'] == 'within', "Tysons should be within ISO threshold"
+
+        # Test ISO threshold with far location (beyond 5 miles)
+        print("\n--- Testing: ISO Threshold Edge Case (>5 miles) ---")
+        far_lat = 38.55  # Far south
+        far_lon = -77.3
+
+        far_iso = analyzer.assess_fire_protection_iso(far_lat, far_lon)
+        print(f"  Location: ({far_lat}, {far_lon})")
+        print(f"  Distance: {far_iso['fire_distance_miles']} miles")
+        print(f"  Rating: {far_iso['rating']}")
+        print(f"  ISO Status: {far_iso['iso_threshold_status']}")
+        print(f"  ISO Class: {far_iso['iso_class_range']}")
+
+        if far_iso['fire_distance_miles'] > 5.0:
+            assert far_iso['rating'] == 'Limited', "Beyond 5mi should be 'Limited'"
+            assert far_iso['iso_threshold_status'] == 'beyond', "Beyond 5mi should be 'beyond'"
+            assert far_iso['iso_class_range'] == '10', "Beyond 5mi should be ISO Class 10"
+            print("  [Verified] ISO 5-mile threshold logic correct")
+
+        # Test coverage query
+        print("\n--- Testing: Coverage Query ---")
+        coverage = analyzer.get_emergency_services_coverage(test_lat, test_lon)
+        print(f"  Fire stations within 5 mi: {coverage['fire_count']}")
+        print(f"  Police stations within 5 mi: {coverage['police_count']}")
+        print(f"  Within ISO threshold: {coverage['within_iso_threshold']}")
+
+        assert coverage['fire_count'] > 0, "Expected fire stations within 5mi"
+        assert 'within_iso_threshold' in coverage, "Missing within_iso_threshold"
+        assert coverage['within_iso_threshold'] is True, "Tysons should be within ISO threshold"
+
+        # Test response time estimates
+        print("\n--- Testing: Response Time Estimates ---")
+        response = analyzer.get_response_time_estimates(test_lat, test_lon)
+        print(f"  Fire response: {response['fire_response']['estimated_minutes']} minutes")
+        print(f"  Police response: {response['police_response']['estimated_minutes']} minutes")
+
+        assert response['fire_response']['estimated_minutes'] is not None, "Missing fire response time"
+        assert response['police_response']['estimated_minutes'] is not None, "Missing police response time"
+        assert 'note' in response, "Missing methodology note"
+
+        # Verify response time calculation (distance / 20mph * 60)
+        fire_dist = response['fire_response']['distance_miles']
+        fire_time = response['fire_response']['estimated_minutes']
+        expected_time = max(1, int((fire_dist / 20.0) * 60 + 0.999))  # ceil
+        assert fire_time == expected_time, f"Response time calculation error: {fire_time} vs {expected_time}"
+
+        # Test None/invalid coordinates
+        print("\n--- Testing: Invalid Coordinates ---")
+        fire_invalid = analyzer.get_nearest_fire_station(None, None)
+        assert 'error' in fire_invalid, "Should have error for None"
+        print("  Handled None coordinates: ✓")
+
+        police_invalid = analyzer.get_nearest_police_station(None, None)
+        assert 'error' in police_invalid, "Should have error for None"
+
+        iso_invalid = analyzer.assess_fire_protection_iso(None, None)
+        assert 'error' in iso_invalid, "Should have error for None"
+
+        coverage_invalid = analyzer.get_emergency_services_coverage(None, None)
+        assert 'error' in coverage_invalid, "Should have error for None"
+
+        print("\n  Emergency Services Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Emergency Services Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Run all tests."""
     print("\n" + "=" * 68 + "=")
@@ -814,30 +948,32 @@ def main():
     utilities_passed = test_utilities_analysis()
     parks_passed = test_parks_analysis()
     transit_passed = test_transit_analysis()
+    emergency_passed = test_emergency_services_analysis()
 
     print("\n" + "=" * 70)
     print("FINAL RESULTS")
     print("=" * 70)
-    print(f"Crime Analysis Module:        {'PASS' if crime_passed else 'FAIL'}")
-    print(f"Permits Analysis Module:      {'PASS' if permits_passed else 'FAIL'}")
-    print(f"Healthcare Analysis Module:   {'PASS' if healthcare_passed else 'FAIL'}")
-    print(f"Subdivisions Analysis Module: {'PASS' if subdivisions_passed else 'FAIL'}")
-    print(f"Schools Analysis Module:      {'PASS' if schools_passed else 'FAIL'}")
-    print(f"Zoning Analysis Module:       {'PASS' if zoning_passed else 'FAIL'}")
-    print(f"Flood Analysis Module:        {'PASS' if flood_passed else 'FAIL'}")
-    print(f"Utilities Analysis Module:    {'PASS' if utilities_passed else 'FAIL'}")
-    print(f"Parks Analysis Module:        {'PASS' if parks_passed else 'FAIL'}")
-    print(f"Transit Analysis Module:      {'PASS' if transit_passed else 'FAIL'}")
+    print(f"Crime Analysis Module:              {'PASS' if crime_passed else 'FAIL'}")
+    print(f"Permits Analysis Module:            {'PASS' if permits_passed else 'FAIL'}")
+    print(f"Healthcare Analysis Module:         {'PASS' if healthcare_passed else 'FAIL'}")
+    print(f"Subdivisions Analysis Module:       {'PASS' if subdivisions_passed else 'FAIL'}")
+    print(f"Schools Analysis Module:            {'PASS' if schools_passed else 'FAIL'}")
+    print(f"Zoning Analysis Module:             {'PASS' if zoning_passed else 'FAIL'}")
+    print(f"Flood Analysis Module:              {'PASS' if flood_passed else 'FAIL'}")
+    print(f"Utilities Analysis Module:          {'PASS' if utilities_passed else 'FAIL'}")
+    print(f"Parks Analysis Module:              {'PASS' if parks_passed else 'FAIL'}")
+    print(f"Transit Analysis Module:            {'PASS' if transit_passed else 'FAIL'}")
+    print(f"Emergency Services Analysis Module: {'PASS' if emergency_passed else 'FAIL'}")
     print("=" * 70)
 
     all_passed = all([
         crime_passed, permits_passed, healthcare_passed,
         subdivisions_passed, schools_passed, zoning_passed, flood_passed,
-        utilities_passed, parks_passed, transit_passed
+        utilities_passed, parks_passed, transit_passed, emergency_passed
     ])
 
     if all_passed:
-        print("\n  ALL 10 MODULES PASSED - Ready for integration!")
+        print("\n  ALL 11 MODULES PASSED - Ready for integration!")
         return 0
     else:
         print("\n  Some tests failed - review errors above")

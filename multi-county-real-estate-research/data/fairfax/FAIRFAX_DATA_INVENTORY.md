@@ -195,6 +195,21 @@
 - **Integration Priority:** LOW
 - **Differentiation:** ★★★ (Loudoun lacks this)
 
+#### School Performance Data (VDOE SOL Results)
+- **Location:** `data/fairfax/schools/performance/processed/performance_summary.parquet`
+- **Source:** Virginia Department of Education (VDOE) Standards of Learning Test Results
+- **Format:** Parquet
+- **Records:** 192 schools with 5-year performance summaries
+- **Years:** 2020-2021 through 2024-2025
+- **Key Fields:** school_name, school_type, recent_overall_pass_rate, avg_reading_pass_rate, avg_math_pass_rate, overall_trend, performance_category
+- **Status:** ✅ Verified
+- **Quality Notes:** Complete SOL pass rate data for all Fairfax public schools
+- **Platform Features:** School quality scoring, 5-year trend analysis, performance comparisons
+- **Integration Priority:** HIGH
+- **Implementation:** EASY
+- **Differentiation:** ★★★★ (Unique comprehensive school analytics)
+- **Example Use:** "Which schools have improving test scores? What's the quality score for Terraset Elementary?"
+
 ---
 
 ### INFRASTRUCTURE

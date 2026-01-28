@@ -16,6 +16,7 @@ Complete guide for using Fairfax County analysis modules.
 10. **Transit Analysis** - Metro and bus accessibility scoring
 11. **Emergency Services Analysis** - Fire and police station proximity with ISO-based fire protection assessment
 12. **Cell Towers Analysis** - Cell tower proximity and coverage scoring based on FCC ASR data
+13. **School Performance Analysis** - School quality scoring, 5-year SOL trends, and performance comparisons
 
 ## Quick Start
 
@@ -336,6 +337,44 @@ print(f"Total towers: {stats['total_towers']}")
 print(f"Data source: {stats['data_source']}")
 ```
 
+### School Performance Analysis
+```python
+from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
+
+analyzer = FairfaxSchoolPerformanceAnalysis()
+
+# Get performance for a specific school
+performance = analyzer.get_school_performance("Terraset Elementary")
+print(f"School: {performance['school_name']}")
+print(f"Recent Pass Rate: {performance['recent_overall_pass_rate']}%")
+print(f"5-Year Average: {performance['avg_overall_pass_rate']}%")
+print(f"Trend: {performance['overall_trend']}")
+print(f"Category: {performance['performance_category']}")
+
+# Calculate school quality score (0-100)
+score = analyzer.calculate_school_quality_score("Terraset Elementary")
+print(f"Quality Score: {score['score']}/100 ({score['rating']})")
+print(f"Analysis: {score['analysis']}")
+
+# Get 5-year trends for charts
+trends = analyzer.get_school_trends("Longfellow Middle")
+for year in trends['yearly_data']:
+    print(f"  {year['year']}: {year['overall_pass_rate']}%")
+
+# Compare multiple schools
+comparison = analyzer.compare_schools([
+    "Thomas Jefferson High for Science and Technology",
+    "Longfellow Middle",
+    "Terraset Elementary"
+])
+print(comparison.to_string(index=False))
+
+# Get top performing schools
+top_schools = analyzer.get_top_schools(10, school_type="High")
+print("Top 10 High Schools by Pass Rate:")
+print(top_schools.to_string(index=False))
+```
+
 ## Feature Examples
 
 ### Property Detail Page
@@ -351,6 +390,7 @@ from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
 from core.fairfax_parks_analysis import FairfaxParksAnalysis
 from core.fairfax_transit_analysis import FairfaxTransitAnalysis
 from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
+from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
 
 def get_property_intelligence(lat, lon):
     """Get complete property intelligence."""

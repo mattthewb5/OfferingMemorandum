@@ -23,6 +23,7 @@ from core.fairfax_parks_analysis import FairfaxParksAnalysis
 from core.fairfax_transit_analysis import FairfaxTransitAnalysis
 from core.fairfax_emergency_services_analysis import FairfaxEmergencyServicesAnalysis
 from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
+from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
 
 
 def test_crime_analysis():
@@ -1015,6 +1016,109 @@ def test_cell_towers_analysis():
         return False
 
 
+def test_school_performance_analysis():
+    """Test school performance analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: School Performance Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxSchoolPerformanceAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['total_schools']} schools with performance data")
+        print(f"  School types: {stats['school_types']}")
+        print(f"  Performance categories: {stats['performance_categories']}")
+
+        # Test specific schools
+        test_schools = [
+            ("Terraset Elementary", "Elem"),
+            ("Longfellow Middle", "Middle"),
+            ("Thomas Jefferson High for Science and Technology", "High")
+        ]
+
+        for school_name, expected_type in test_schools:
+            print(f"\n--- Testing: {school_name} ---")
+
+            # Get performance
+            perf = analyzer.get_school_performance(school_name)
+            assert perf['found'], f"School not found: {school_name}"
+            print(f"  Recent Overall: {perf['recent_overall_pass_rate']}%")
+            print(f"  5-Year Average: {perf['avg_overall_pass_rate']}%")
+            print(f"  Trend: {perf['overall_trend']}")
+            print(f"  Category: {perf['performance_category']}")
+
+            # Validate data
+            assert perf['recent_overall_pass_rate'] is not None, "Missing pass rate"
+            assert 0 <= perf['recent_overall_pass_rate'] <= 100, "Invalid pass rate"
+
+            # Quality score
+            score = analyzer.calculate_school_quality_score(school_name)
+            assert score['found'], "Score calculation failed"
+            assert 0 <= score['score'] <= 100, f"Score out of range: {score['score']}"
+            print(f"  Quality Score: {score['score']}/100 ({score['rating']})")
+
+            # Trends
+            trends = analyzer.get_school_trends(school_name)
+            assert trends['found'], "Trends not found"
+            assert trends['years_included'] > 0, "No trend data"
+            assert len(trends['yearly_data']) > 0, "Empty yearly data"
+            print(f"  Years of data: {trends['years_included']}")
+
+        # Test fuzzy matching
+        print("\n--- Testing: Fuzzy Matching ---")
+        perf = analyzer.get_school_performance("Terraset Elem")  # Partial name
+        assert perf['found'], "Fuzzy matching failed"
+        print(f"  'Terraset Elem' matched to: {perf['school_name']}")
+
+        # Test school comparison
+        print("\n--- Testing: School Comparison ---")
+        comparison = analyzer.compare_schools([
+            "Thomas Jefferson High for Science and Technology",
+            "Longfellow Middle"
+        ])
+        assert len(comparison) == 2, "Comparison missing schools"
+        print(f"  Compared {len(comparison)} schools")
+
+        # Test search
+        print("\n--- Testing: Search Functions ---")
+        results = analyzer.search_schools("Elementary", limit=5)
+        assert len(results) > 0, "Search returned no results"
+        print(f"  Search 'Elementary': {len(results)} results")
+
+        # Test get by type
+        high_schools = analyzer.get_schools_by_type("High")
+        print(f"  High schools: {len(high_schools)}")
+        assert len(high_schools) > 0, "No high schools found"
+
+        # Test get by performance
+        excellent = analyzer.get_schools_by_performance("Excellent")
+        print(f"  Excellent schools: {len(excellent)}")
+
+        # Test top schools
+        top = analyzer.get_top_schools(5)
+        assert len(top) == 5, "Top schools wrong count"
+        print(f"  Top 5 schools retrieved: ✓")
+
+        # Verify statistics structure
+        print("\n--- Testing: Statistics Structure ---")
+        assert 'total_schools' in stats, "Missing total_schools"
+        assert 'school_types' in stats, "Missing school_types"
+        assert 'performance_categories' in stats, "Missing performance_categories"
+        assert 'pass_rate_statistics' in stats, "Missing pass_rate_statistics"
+        assert 'top_schools' in stats, "Missing top_schools"
+        print(f"  Statistics structure: ✓")
+        print(f"  Data source: {stats['data_source']}")
+
+        print("\n  School Performance Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  School Performance Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Run all tests."""
     print("\n" + "=" * 68 + "=")
@@ -1033,6 +1137,7 @@ def main():
     transit_passed = test_transit_analysis()
     emergency_passed = test_emergency_services_analysis()
     cell_towers_passed = test_cell_towers_analysis()
+    school_performance_passed = test_school_performance_analysis()
 
     print("\n" + "=" * 70)
     print("FINAL RESULTS")
@@ -1049,17 +1154,18 @@ def main():
     print(f"Transit Analysis Module:            {'PASS' if transit_passed else 'FAIL'}")
     print(f"Emergency Services Analysis Module: {'PASS' if emergency_passed else 'FAIL'}")
     print(f"Cell Towers Analysis Module:        {'PASS' if cell_towers_passed else 'FAIL'}")
+    print(f"School Performance Analysis Module: {'PASS' if school_performance_passed else 'FAIL'}")
     print("=" * 70)
 
     all_passed = all([
         crime_passed, permits_passed, healthcare_passed,
         subdivisions_passed, schools_passed, zoning_passed, flood_passed,
         utilities_passed, parks_passed, transit_passed, emergency_passed,
-        cell_towers_passed
+        cell_towers_passed, school_performance_passed
     ])
 
     if all_passed:
-        print("\n  ALL 12 MODULES PASSED - Ready for integration!")
+        print("\n  ALL 13 MODULES PASSED - Ready for integration!")
         return 0
     else:
         print("\n  Some tests failed - review errors above")

@@ -24,6 +24,7 @@ from core.fairfax_transit_analysis import FairfaxTransitAnalysis
 from core.fairfax_emergency_services_analysis import FairfaxEmergencyServicesAnalysis
 from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
 from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
+from core.fairfax_traffic_analysis import FairfaxTrafficAnalysis
 
 
 def test_crime_analysis():
@@ -1119,6 +1120,91 @@ def test_school_performance_analysis():
         return False
 
 
+def test_traffic_analysis():
+    """Test traffic analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Traffic Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxTrafficAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['total_road_segments']} road segments with traffic data")
+        print(f"  ADT range: {stats['adt_statistics']['min']:,} - {stats['adt_statistics']['max']:,}")
+        print(f"  Traffic levels: {stats['traffic_levels']}")
+
+        # Test locations
+        test_locations = [
+            (38.8462, -77.3064, "Fairfax City"),
+            (38.9458, -77.3375, "Herndon area"),
+            (38.7700, -77.1800, "Springfield area")
+        ]
+
+        for lat, lon, name in test_locations:
+            print(f"\n--- Testing: {name} ({lat}, {lon}) ---")
+
+            # Traffic exposure score
+            exposure = analyzer.calculate_traffic_exposure_score(lat, lon)
+            print(f"  Exposure Score: {exposure['score']}/100 ({exposure['rating']})")
+            print(f"  Nearest road: {exposure['nearest_road']}")
+            print(f"  Analysis: {exposure['analysis'][:50]}...")
+
+            # Validate score range
+            assert 0 <= exposure['score'] <= 100, "Score out of range!"
+            assert 'factors' in exposure, "Missing factors breakdown"
+
+            # Nearby traffic
+            nearby = analyzer.get_nearby_traffic(lat, lon, radius_miles=0.5)
+            print(f"  Roads within 0.5mi: {len(nearby)}")
+            for road in nearby[:2]:
+                assert 'adt' in road, "Missing ADT"
+                assert 'distance_miles' in road, "Missing distance"
+                print(f"    {road['road_name']}: {road['adt']:,} ADT ({road['distance_miles']} mi)")
+
+        # Test road lookup
+        print("\n--- Testing: Road Lookup ---")
+        leesburg = analyzer.get_road_traffic("LEESBURG PIKE", limit=5)
+        print(f"  Leesburg Pike segments: {len(leesburg)}")
+        if len(leesburg) > 0:
+            print(f"    Max ADT: {leesburg[0]['adt']:,}")
+
+        # Test congested roads
+        print("\n--- Testing: Congested Roads ---")
+        congested = analyzer.get_congested_roads(min_adt=50000, limit=10)
+        print(f"  Roads with 50K+ ADT: {len(congested)}")
+        assert len(congested) > 0, "Should have some high-traffic roads"
+
+        # Test commute corridor analysis
+        print("\n--- Testing: Commute Corridor Analysis ---")
+        commute = analyzer.analyze_commute_corridor(38.8462, -77.3064, "east")
+        print(f"  {commute['summary']}")
+        for corridor in commute['corridors'][:3]:
+            print(f"    {corridor['corridor']}: {corridor['max_adt']:,} ADT")
+
+        # Test search
+        print("\n--- Testing: Search ---")
+        search = analyzer.search_roads("ROUTE", limit=5)
+        print(f"  Search 'ROUTE': {len(search)} results")
+
+        # Verify statistics structure
+        print("\n--- Testing: Statistics Structure ---")
+        assert 'total_road_segments' in stats, "Missing total_road_segments"
+        assert 'traffic_levels' in stats, "Missing traffic_levels"
+        assert 'adt_statistics' in stats, "Missing adt_statistics"
+        assert 'top_roads' in stats, "Missing top_roads"
+        print(f"  Statistics structure: ✓")
+        print(f"  Data source: {stats['data_source']}")
+
+        print("\n  Traffic Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Traffic Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Run all tests."""
     print("\n" + "=" * 68 + "=")
@@ -1138,6 +1224,7 @@ def main():
     emergency_passed = test_emergency_services_analysis()
     cell_towers_passed = test_cell_towers_analysis()
     school_performance_passed = test_school_performance_analysis()
+    traffic_passed = test_traffic_analysis()
 
     print("\n" + "=" * 70)
     print("FINAL RESULTS")
@@ -1155,17 +1242,18 @@ def main():
     print(f"Emergency Services Analysis Module: {'PASS' if emergency_passed else 'FAIL'}")
     print(f"Cell Towers Analysis Module:        {'PASS' if cell_towers_passed else 'FAIL'}")
     print(f"School Performance Analysis Module: {'PASS' if school_performance_passed else 'FAIL'}")
+    print(f"Traffic Analysis Module:            {'PASS' if traffic_passed else 'FAIL'}")
     print("=" * 70)
 
     all_passed = all([
         crime_passed, permits_passed, healthcare_passed,
         subdivisions_passed, schools_passed, zoning_passed, flood_passed,
         utilities_passed, parks_passed, transit_passed, emergency_passed,
-        cell_towers_passed, school_performance_passed
+        cell_towers_passed, school_performance_passed, traffic_passed
     ])
 
     if all_passed:
-        print("\n  ALL 13 MODULES PASSED - Ready for integration!")
+        print("\n  ALL 14 MODULES PASSED - FULL LOUDOUN FEATURE PARITY ACHIEVED!")
         return 0
     else:
         print("\n  Some tests failed - review errors above")

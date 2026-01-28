@@ -17,6 +17,9 @@ Complete guide for using Fairfax County analysis modules.
 11. **Emergency Services Analysis** - Fire and police station proximity with ISO-based fire protection assessment
 12. **Cell Towers Analysis** - Cell tower proximity and coverage scoring based on FCC ASR data
 13. **School Performance Analysis** - School quality scoring, 5-year SOL trends, and performance comparisons
+14. **Traffic Analysis** - Traffic exposure scoring, ADT analysis, and commute corridor identification
+
+**FULL LOUDOUN FEATURE PARITY ACHIEVED!**
 
 ## Quick Start
 
@@ -407,6 +410,74 @@ scored appropriately.*
 - Fair: 55-69 points
 - Needs Improvement: <55 points
 
+### Traffic Analysis
+```python
+from core.fairfax_traffic_analysis import FairfaxTrafficAnalysis
+
+analyzer = FairfaxTrafficAnalysis()
+
+# Get traffic exposure score (LOWER traffic = HIGHER score, better for residential)
+exposure = analyzer.calculate_traffic_exposure_score(38.8462, -77.3064)
+print(f"Traffic Exposure: {exposure['score']}/100 ({exposure['rating']})")
+print(f"Nearest road: {exposure['nearest_road']} ({exposure['nearest_adt']:,} ADT)")
+print(f"Distance: {exposure['nearest_distance_miles']} mi")
+print(f"Analysis: {exposure['analysis']}")
+
+# Get nearby traffic data
+nearby = analyzer.get_nearby_traffic(38.8462, -77.3064, radius_miles=0.5)
+for road in nearby[:5]:
+    print(f"  {road['road_name']}: {road['adt']:,} ADT ({road['distance_miles']} mi)")
+
+# Look up specific road traffic
+leesburg = analyzer.get_road_traffic("LEESBURG PIKE")
+print(f"Leesburg Pike max ADT: {leesburg[0]['adt']:,}" if leesburg else "Not found")
+
+# Get most congested roads
+congested = analyzer.get_congested_roads(min_adt=50000, limit=10)
+print(f"Roads with 50K+ ADT: {len(congested)}")
+
+# Analyze commute corridors
+commute = analyzer.analyze_commute_corridor(38.8462, -77.3064, "east")
+for corridor in commute['corridors']:
+    print(f"  {corridor['corridor']}: {corridor['max_adt']:,} ADT")
+```
+
+#### Traffic Exposure Scoring Algorithm
+
+Score is INVERTED: **LOWER** traffic exposure = **HIGHER** score (better for residential)
+
+**1. Distance to Traffic (0-40 points)** - Farther from traffic = better
+- >0.5 mi from traffic: 40 points
+- 0.3-0.5 mi: 30 points
+- 0.1-0.3 mi: 15-20 points
+- <0.1 mi: 5 points
+
+**2. ADT Level (0-40 points)** - Lower traffic = better
+- <5,000 ADT: 40 points
+- 5,000-15,000: 30 points
+- 15,000-30,000: 20 points
+- 30,000-50,000: 10 points
+- >50,000: 5 points
+
+**3. High-Traffic Density (0-20 points)** - Fewer busy roads = better
+- 0 high-traffic roads within 0.5mi: 20 points
+- 1 road: 15 points
+- 2-3 roads: 10 points
+- >3 roads: 5 points
+
+**Rating Categories:**
+- Excellent (85-100): Minimal traffic, quiet residential
+- Good (70-84): Low traffic, manageable
+- Fair (55-69): Moderate traffic, some noise concerns
+- Poor (<55): High traffic exposure
+
+**Traffic Level Categories:**
+- Very Low: <1,000 ADT (quiet residential)
+- Low: 1,000-5,000 ADT (typical residential)
+- Moderate: 5,000-15,000 ADT (collectors)
+- High: 15,000-30,000 ADT (arterials)
+- Very High: 30,000+ ADT (major highways)
+
 ## Feature Examples
 
 ### Property Detail Page
@@ -423,6 +494,7 @@ from core.fairfax_parks_analysis import FairfaxParksAnalysis
 from core.fairfax_transit_analysis import FairfaxTransitAnalysis
 from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
 from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
+from core.fairfax_traffic_analysis import FairfaxTrafficAnalysis
 
 def get_property_intelligence(lat, lon):
     """Get complete property intelligence."""

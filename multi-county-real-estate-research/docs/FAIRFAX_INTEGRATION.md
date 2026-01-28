@@ -15,6 +15,7 @@ Complete guide for using Fairfax County analysis modules.
 9. **Parks Analysis** - Park access scoring, trails, and recreational amenities
 10. **Transit Analysis** - Metro and bus accessibility scoring
 11. **Emergency Services Analysis** - Fire and police station proximity with ISO-based fire protection assessment
+12. **Cell Towers Analysis** - Cell tower proximity and coverage scoring based on FCC ASR data
 
 ## Quick Start
 
@@ -306,6 +307,35 @@ print(f"  Fire: ~{response['fire_response']['estimated_minutes']} minutes")
 print(f"  Police: ~{response['police_response']['estimated_minutes']} minutes")
 ```
 
+### Cell Towers Analysis
+```python
+from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
+
+analyzer = FairfaxCellTowersAnalysis()
+
+# Get cell coverage score for a property
+coverage = analyzer.calculate_coverage_score(38.8462, -77.3064)
+print(f"Cell Coverage Score: {coverage['score']}/100")
+print(f"Rating: {coverage['rating']}")
+print(f"Nearest tower: {coverage['nearest_tower_miles']} mi")
+print(f"Towers within 2mi: {coverage['towers_within_2mi']}")
+print(f"Analysis: {coverage['coverage_analysis']}")
+
+# Get nearest towers
+nearest = analyzer.get_nearest_towers(38.8462, -77.3064, limit=5)
+for tower in nearest:
+    print(f"  {tower['structure_type_desc']}: {tower['distance_miles']} mi, {tower['height_feet']} ft")
+
+# Search towers by city
+springfield_towers = analyzer.get_towers_by_city("Springfield")
+print(f"Towers in Springfield: {len(springfield_towers)}")
+
+# Get statistics
+stats = analyzer.get_statistics()
+print(f"Total towers: {stats['total_towers']}")
+print(f"Data source: {stats['data_source']}")
+```
+
 ## Feature Examples
 
 ### Property Detail Page
@@ -320,6 +350,7 @@ from core.fairfax_flood_analysis import FairfaxFloodAnalysis
 from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
 from core.fairfax_parks_analysis import FairfaxParksAnalysis
 from core.fairfax_transit_analysis import FairfaxTransitAnalysis
+from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
 
 def get_property_intelligence(lat, lon):
     """Get complete property intelligence."""

@@ -22,6 +22,7 @@ from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
 from core.fairfax_parks_analysis import FairfaxParksAnalysis
 from core.fairfax_transit_analysis import FairfaxTransitAnalysis
 from core.fairfax_emergency_services_analysis import FairfaxEmergencyServicesAnalysis
+from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
 
 
 def test_crime_analysis():
@@ -932,6 +933,88 @@ def test_emergency_services_analysis():
         return False
 
 
+def test_cell_towers_analysis():
+    """Test cell towers analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Cell Towers Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxCellTowersAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['total_towers']} cell towers")
+        print(f"  Structure types: {len(stats['structure_types'])}")
+        print(f"  Top city: {list(stats['top_cities'].keys())[0]}")
+
+        # Test locations
+        test_locations = [
+            (38.8462, -77.3064, "Fairfax City"),
+            (38.9458, -77.3375, "Herndon area"),
+            (38.7700, -77.1800, "Springfield area")
+        ]
+
+        for lat, lon, name in test_locations:
+            print(f"\n--- Testing: {name} ({lat}, {lon}) ---")
+
+            # Coverage score
+            coverage = analyzer.calculate_coverage_score(lat, lon)
+            print(f"  Coverage Score: {coverage['score']}/100 ({coverage['rating']})")
+            print(f"  Nearest tower: {coverage['nearest_tower_miles']} mi")
+            print(f"  Towers within 2mi: {coverage['towers_within_2mi']}")
+            print(f"  Towers within 5mi: {coverage['towers_within_5mi']}")
+
+            # Validate score range
+            assert 0 <= coverage['score'] <= 100, "Score out of range!"
+            assert 'factors' in coverage, "Missing factors breakdown"
+
+            # Nearest towers
+            nearest = analyzer.get_nearest_towers(lat, lon, limit=3)
+            print(f"  Nearest towers returned: {len(nearest)}")
+            for tower in nearest:
+                assert 'tower_id' in tower, "Missing tower_id"
+                assert 'distance_miles' in tower, "Missing distance_miles"
+                assert tower['distance_miles'] >= 0, "Invalid distance"
+                print(f"    {tower['structure_type_desc']}: {tower['distance_miles']} mi")
+
+            # Get towers near point
+            nearby = analyzer.get_towers_near_point(lat, lon, radius_miles=3.0)
+            print(f"  Towers within 3mi: {len(nearby)}")
+
+        # Test search and filter functions
+        print("\n--- Testing: Search and Filter Functions ---")
+
+        # Search by city
+        springfield = analyzer.get_towers_by_city("Springfield")
+        print(f"  Towers in Springfield: {len(springfield)}")
+
+        # Search by structure type
+        monopoles = analyzer.get_towers_by_structure_type("POLE")
+        print(f"  Monopole towers: {len(monopoles)}")
+
+        # General search
+        search_results = analyzer.search_towers("Fairfax", limit=5)
+        print(f"  Search 'Fairfax': {len(search_results)} results")
+
+        # Verify statistics structure
+        print("\n--- Testing: Statistics Structure ---")
+        assert 'total_towers' in stats, "Missing total_towers"
+        assert 'structure_types' in stats, "Missing structure_types"
+        assert 'height_statistics' in stats, "Missing height_statistics"
+        assert 'geographic_bounds' in stats, "Missing geographic_bounds"
+        assert stats['county_fips'] == '51059', "Wrong county FIPS"
+        print(f"  Statistics structure: ✓")
+        print(f"  Height range: {stats['height_statistics']['min_feet']}-{stats['height_statistics']['max_feet']} ft")
+
+        print("\n  Cell Towers Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Cell Towers Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Run all tests."""
     print("\n" + "=" * 68 + "=")
@@ -949,6 +1032,7 @@ def main():
     parks_passed = test_parks_analysis()
     transit_passed = test_transit_analysis()
     emergency_passed = test_emergency_services_analysis()
+    cell_towers_passed = test_cell_towers_analysis()
 
     print("\n" + "=" * 70)
     print("FINAL RESULTS")
@@ -964,16 +1048,18 @@ def main():
     print(f"Parks Analysis Module:              {'PASS' if parks_passed else 'FAIL'}")
     print(f"Transit Analysis Module:            {'PASS' if transit_passed else 'FAIL'}")
     print(f"Emergency Services Analysis Module: {'PASS' if emergency_passed else 'FAIL'}")
+    print(f"Cell Towers Analysis Module:        {'PASS' if cell_towers_passed else 'FAIL'}")
     print("=" * 70)
 
     all_passed = all([
         crime_passed, permits_passed, healthcare_passed,
         subdivisions_passed, schools_passed, zoning_passed, flood_passed,
-        utilities_passed, parks_passed, transit_passed, emergency_passed
+        utilities_passed, parks_passed, transit_passed, emergency_passed,
+        cell_towers_passed
     ])
 
     if all_passed:
-        print("\n  ALL 11 MODULES PASSED - Ready for integration!")
+        print("\n  ALL 12 MODULES PASSED - Ready for integration!")
         return 0
     else:
         print("\n  Some tests failed - review errors above")

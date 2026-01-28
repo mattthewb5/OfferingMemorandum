@@ -30,7 +30,7 @@
 
 ### Critical Gaps (vs Loudoun)
 1. **Building Permits** - Loudoun has 1,259 permits; Fairfax has none
-2. **Cell Towers** - Loudoun has 110 towers; Fairfax has none
+2. ~~**Cell Towers**~~ - ✅ RESOLVED: Fairfax now has 148 FCC-registered towers
 3. **Healthcare Facilities** - Loudoun has 29 facilities; Fairfax has none
 4. **Airport Impact Districts** - Loudoun has AIOD; Fairfax has none
 5. **Crime Data** - Neither county has this (high-value opportunity)

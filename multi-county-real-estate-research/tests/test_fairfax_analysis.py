@@ -22,6 +22,9 @@ from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
 from core.fairfax_parks_analysis import FairfaxParksAnalysis
 from core.fairfax_transit_analysis import FairfaxTransitAnalysis
 from core.fairfax_emergency_services_analysis import FairfaxEmergencyServicesAnalysis
+from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
+from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
+from core.fairfax_traffic_analysis import FairfaxTrafficAnalysis
 
 
 def test_crime_analysis():
@@ -932,6 +935,276 @@ def test_emergency_services_analysis():
         return False
 
 
+def test_cell_towers_analysis():
+    """Test cell towers analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Cell Towers Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxCellTowersAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['total_towers']} cell towers")
+        print(f"  Structure types: {len(stats['structure_types'])}")
+        print(f"  Top city: {list(stats['top_cities'].keys())[0]}")
+
+        # Test locations
+        test_locations = [
+            (38.8462, -77.3064, "Fairfax City"),
+            (38.9458, -77.3375, "Herndon area"),
+            (38.7700, -77.1800, "Springfield area")
+        ]
+
+        for lat, lon, name in test_locations:
+            print(f"\n--- Testing: {name} ({lat}, {lon}) ---")
+
+            # Coverage score
+            coverage = analyzer.calculate_coverage_score(lat, lon)
+            print(f"  Coverage Score: {coverage['score']}/100 ({coverage['rating']})")
+            print(f"  Nearest tower: {coverage['nearest_tower_miles']} mi")
+            print(f"  Towers within 2mi: {coverage['towers_within_2mi']}")
+            print(f"  Towers within 5mi: {coverage['towers_within_5mi']}")
+
+            # Validate score range
+            assert 0 <= coverage['score'] <= 100, "Score out of range!"
+            assert 'factors' in coverage, "Missing factors breakdown"
+
+            # Nearest towers
+            nearest = analyzer.get_nearest_towers(lat, lon, limit=3)
+            print(f"  Nearest towers returned: {len(nearest)}")
+            for tower in nearest:
+                assert 'tower_id' in tower, "Missing tower_id"
+                assert 'distance_miles' in tower, "Missing distance_miles"
+                assert tower['distance_miles'] >= 0, "Invalid distance"
+                print(f"    {tower['structure_type_desc']}: {tower['distance_miles']} mi")
+
+            # Get towers near point
+            nearby = analyzer.get_towers_near_point(lat, lon, radius_miles=3.0)
+            print(f"  Towers within 3mi: {len(nearby)}")
+
+        # Test search and filter functions
+        print("\n--- Testing: Search and Filter Functions ---")
+
+        # Search by city
+        springfield = analyzer.get_towers_by_city("Springfield")
+        print(f"  Towers in Springfield: {len(springfield)}")
+
+        # Search by structure type
+        monopoles = analyzer.get_towers_by_structure_type("POLE")
+        print(f"  Monopole towers: {len(monopoles)}")
+
+        # General search
+        search_results = analyzer.search_towers("Fairfax", limit=5)
+        print(f"  Search 'Fairfax': {len(search_results)} results")
+
+        # Verify statistics structure
+        print("\n--- Testing: Statistics Structure ---")
+        assert 'total_towers' in stats, "Missing total_towers"
+        assert 'structure_types' in stats, "Missing structure_types"
+        assert 'height_statistics' in stats, "Missing height_statistics"
+        assert 'geographic_bounds' in stats, "Missing geographic_bounds"
+        assert stats['county_fips'] == '51059', "Wrong county FIPS"
+        print(f"  Statistics structure: ✓")
+        print(f"  Height range: {stats['height_statistics']['min_feet']}-{stats['height_statistics']['max_feet']} ft")
+
+        print("\n  Cell Towers Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Cell Towers Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def test_school_performance_analysis():
+    """Test school performance analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: School Performance Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxSchoolPerformanceAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['total_schools']} schools with performance data")
+        print(f"  School types: {stats['school_types']}")
+        print(f"  Performance categories: {stats['performance_categories']}")
+
+        # Test specific schools
+        test_schools = [
+            ("Terraset Elementary", "Elem"),
+            ("Longfellow Middle", "Middle"),
+            ("Thomas Jefferson High for Science and Technology", "High")
+        ]
+
+        for school_name, expected_type in test_schools:
+            print(f"\n--- Testing: {school_name} ---")
+
+            # Get performance
+            perf = analyzer.get_school_performance(school_name)
+            assert perf['found'], f"School not found: {school_name}"
+            print(f"  Recent Overall: {perf['recent_overall_pass_rate']}%")
+            print(f"  5-Year Average: {perf['avg_overall_pass_rate']}%")
+            print(f"  Trend: {perf['overall_trend']}")
+            print(f"  Category: {perf['performance_category']}")
+
+            # Validate data
+            assert perf['recent_overall_pass_rate'] is not None, "Missing pass rate"
+            assert 0 <= perf['recent_overall_pass_rate'] <= 100, "Invalid pass rate"
+
+            # Quality score
+            score = analyzer.calculate_school_quality_score(school_name)
+            assert score['found'], "Score calculation failed"
+            assert 0 <= score['score'] <= 100, f"Score out of range: {score['score']}"
+            print(f"  Quality Score: {score['score']}/100 ({score['rating']})")
+
+            # Trends
+            trends = analyzer.get_school_trends(school_name)
+            assert trends['found'], "Trends not found"
+            assert trends['years_included'] > 0, "No trend data"
+            assert len(trends['yearly_data']) > 0, "Empty yearly data"
+            print(f"  Years of data: {trends['years_included']}")
+
+        # Test fuzzy matching
+        print("\n--- Testing: Fuzzy Matching ---")
+        perf = analyzer.get_school_performance("Terraset Elem")  # Partial name
+        assert perf['found'], "Fuzzy matching failed"
+        print(f"  'Terraset Elem' matched to: {perf['school_name']}")
+
+        # Test school comparison
+        print("\n--- Testing: School Comparison ---")
+        comparison = analyzer.compare_schools([
+            "Thomas Jefferson High for Science and Technology",
+            "Longfellow Middle"
+        ])
+        assert len(comparison) == 2, "Comparison missing schools"
+        print(f"  Compared {len(comparison)} schools")
+
+        # Test search
+        print("\n--- Testing: Search Functions ---")
+        results = analyzer.search_schools("Elementary", limit=5)
+        assert len(results) > 0, "Search returned no results"
+        print(f"  Search 'Elementary': {len(results)} results")
+
+        # Test get by type
+        high_schools = analyzer.get_schools_by_type("High")
+        print(f"  High schools: {len(high_schools)}")
+        assert len(high_schools) > 0, "No high schools found"
+
+        # Test get by performance
+        excellent = analyzer.get_schools_by_performance("Excellent")
+        print(f"  Excellent schools: {len(excellent)}")
+
+        # Test top schools
+        top = analyzer.get_top_schools(5)
+        assert len(top) == 5, "Top schools wrong count"
+        print(f"  Top 5 schools retrieved: ✓")
+
+        # Verify statistics structure
+        print("\n--- Testing: Statistics Structure ---")
+        assert 'total_schools' in stats, "Missing total_schools"
+        assert 'school_types' in stats, "Missing school_types"
+        assert 'performance_categories' in stats, "Missing performance_categories"
+        assert 'pass_rate_statistics' in stats, "Missing pass_rate_statistics"
+        assert 'top_schools' in stats, "Missing top_schools"
+        print(f"  Statistics structure: ✓")
+        print(f"  Data source: {stats['data_source']}")
+
+        print("\n  School Performance Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  School Performance Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def test_traffic_analysis():
+    """Test traffic analysis module."""
+    print("\n" + "=" * 70)
+    print("TESTING: Traffic Analysis Module")
+    print("=" * 70)
+
+    try:
+        analyzer = FairfaxTrafficAnalysis()
+        stats = analyzer.get_statistics()
+        print(f"  Loaded {stats['total_road_segments']} road segments with traffic data")
+        print(f"  ADT range: {stats['adt_statistics']['min']:,} - {stats['adt_statistics']['max']:,}")
+        print(f"  Traffic levels: {stats['traffic_levels']}")
+
+        # Test locations
+        test_locations = [
+            (38.8462, -77.3064, "Fairfax City"),
+            (38.9458, -77.3375, "Herndon area"),
+            (38.7700, -77.1800, "Springfield area")
+        ]
+
+        for lat, lon, name in test_locations:
+            print(f"\n--- Testing: {name} ({lat}, {lon}) ---")
+
+            # Traffic exposure score
+            exposure = analyzer.calculate_traffic_exposure_score(lat, lon)
+            print(f"  Exposure Score: {exposure['score']}/100 ({exposure['rating']})")
+            print(f"  Nearest road: {exposure['nearest_road']}")
+            print(f"  Analysis: {exposure['analysis'][:50]}...")
+
+            # Validate score range
+            assert 0 <= exposure['score'] <= 100, "Score out of range!"
+            assert 'factors' in exposure, "Missing factors breakdown"
+
+            # Nearby traffic
+            nearby = analyzer.get_nearby_traffic(lat, lon, radius_miles=0.5)
+            print(f"  Roads within 0.5mi: {len(nearby)}")
+            for road in nearby[:2]:
+                assert 'adt' in road, "Missing ADT"
+                assert 'distance_miles' in road, "Missing distance"
+                print(f"    {road['road_name']}: {road['adt']:,} ADT ({road['distance_miles']} mi)")
+
+        # Test road lookup
+        print("\n--- Testing: Road Lookup ---")
+        leesburg = analyzer.get_road_traffic("LEESBURG PIKE", limit=5)
+        print(f"  Leesburg Pike segments: {len(leesburg)}")
+        if len(leesburg) > 0:
+            print(f"    Max ADT: {leesburg[0]['adt']:,}")
+
+        # Test congested roads
+        print("\n--- Testing: Congested Roads ---")
+        congested = analyzer.get_congested_roads(min_adt=50000, limit=10)
+        print(f"  Roads with 50K+ ADT: {len(congested)}")
+        assert len(congested) > 0, "Should have some high-traffic roads"
+
+        # Test commute corridor analysis
+        print("\n--- Testing: Commute Corridor Analysis ---")
+        commute = analyzer.analyze_commute_corridor(38.8462, -77.3064, "east")
+        print(f"  {commute['summary']}")
+        for corridor in commute['corridors'][:3]:
+            print(f"    {corridor['corridor']}: {corridor['max_adt']:,} ADT")
+
+        # Test search
+        print("\n--- Testing: Search ---")
+        search = analyzer.search_roads("ROUTE", limit=5)
+        print(f"  Search 'ROUTE': {len(search)} results")
+
+        # Verify statistics structure
+        print("\n--- Testing: Statistics Structure ---")
+        assert 'total_road_segments' in stats, "Missing total_road_segments"
+        assert 'traffic_levels' in stats, "Missing traffic_levels"
+        assert 'adt_statistics' in stats, "Missing adt_statistics"
+        assert 'top_roads' in stats, "Missing top_roads"
+        print(f"  Statistics structure: ✓")
+        print(f"  Data source: {stats['data_source']}")
+
+        print("\n  Traffic Analysis Module: ALL TESTS PASSED")
+        return True
+
+    except Exception as e:
+        print(f"\n  Traffic Analysis Module: FAILED - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Run all tests."""
     print("\n" + "=" * 68 + "=")
@@ -949,6 +1222,9 @@ def main():
     parks_passed = test_parks_analysis()
     transit_passed = test_transit_analysis()
     emergency_passed = test_emergency_services_analysis()
+    cell_towers_passed = test_cell_towers_analysis()
+    school_performance_passed = test_school_performance_analysis()
+    traffic_passed = test_traffic_analysis()
 
     print("\n" + "=" * 70)
     print("FINAL RESULTS")
@@ -964,16 +1240,20 @@ def main():
     print(f"Parks Analysis Module:              {'PASS' if parks_passed else 'FAIL'}")
     print(f"Transit Analysis Module:            {'PASS' if transit_passed else 'FAIL'}")
     print(f"Emergency Services Analysis Module: {'PASS' if emergency_passed else 'FAIL'}")
+    print(f"Cell Towers Analysis Module:        {'PASS' if cell_towers_passed else 'FAIL'}")
+    print(f"School Performance Analysis Module: {'PASS' if school_performance_passed else 'FAIL'}")
+    print(f"Traffic Analysis Module:            {'PASS' if traffic_passed else 'FAIL'}")
     print("=" * 70)
 
     all_passed = all([
         crime_passed, permits_passed, healthcare_passed,
         subdivisions_passed, schools_passed, zoning_passed, flood_passed,
-        utilities_passed, parks_passed, transit_passed, emergency_passed
+        utilities_passed, parks_passed, transit_passed, emergency_passed,
+        cell_towers_passed, school_performance_passed, traffic_passed
     ])
 
     if all_passed:
-        print("\n  ALL 11 MODULES PASSED - Ready for integration!")
+        print("\n  ALL 14 MODULES PASSED - FULL LOUDOUN FEATURE PARITY ACHIEVED!")
         return 0
     else:
         print("\n  Some tests failed - review errors above")

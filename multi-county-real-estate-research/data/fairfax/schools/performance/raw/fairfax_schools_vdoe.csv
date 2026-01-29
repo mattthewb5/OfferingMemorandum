@@ -1,0 +1,973 @@
+School_ID,School_Name,Division_Name,School_Type,Year,History_Pass_Rate,Math_Pass_Rate,Reading_Pass_Rate,Science_Pass_Rate,Writing_Pass_Rate,Overall_Pass_Rate
+20,Fairfax High,Fairfax County,High,2020-2021,,40.0,78.0,67.0,83.0,67.0
+20,Fairfax High,Fairfax County,High,2021-2022,,79.0,91.0,79.0,88.0,84.2
+20,Fairfax High,Fairfax County,High,2022-2023,67.0,78.0,90.0,79.0,,78.5
+20,Fairfax High,Fairfax County,High,2023-2024,43.0,77.0,87.0,76.0,36.0,63.8
+20,Fairfax High,Fairfax County,High,2024-2025,,80.0,87.0,75.0,,80.7
+32,Herndon High,Fairfax County,High,2020-2021,,49.0,54.0,48.0,68.0,54.8
+32,Herndon High,Fairfax County,High,2021-2022,70.0,79.0,75.0,62.0,77.0,72.6
+32,Herndon High,Fairfax County,High,2022-2023,,76.0,77.0,54.0,64.0,67.8
+32,Herndon High,Fairfax County,High,2023-2024,17.0,77.0,78.0,63.0,,58.8
+32,Herndon High,Fairfax County,High,2024-2025,,73.0,76.0,62.0,,70.3
+33,Herndon Middle,Fairfax County,Middle,2020-2021,,39.0,57.0,47.0,,47.7
+33,Herndon Middle,Fairfax County,Middle,2021-2022,,55.0,60.0,50.0,,55.0
+33,Herndon Middle,Fairfax County,Middle,2022-2023,,56.0,61.0,54.0,,57.0
+33,Herndon Middle,Fairfax County,Middle,2023-2024,,61.0,62.0,57.0,,60.0
+33,Herndon Middle,Fairfax County,Middle,2024-2025,,64.0,60.0,58.0,,60.7
+70,Forest Edge Elementary,Fairfax County,Elem,2020-2021,,53.0,60.0,58.0,,57.0
+70,Forest Edge Elementary,Fairfax County,Elem,2021-2022,,74.0,73.0,66.0,,71.0
+70,Forest Edge Elementary,Fairfax County,Elem,2022-2023,,75.0,71.0,78.0,,74.7
+70,Forest Edge Elementary,Fairfax County,Elem,2023-2024,,71.0,73.0,68.0,,70.7
+70,Forest Edge Elementary,Fairfax County,Elem,2024-2025,,72.0,72.0,66.0,,70.0
+80,Sherman Elementary,Fairfax County,Elem,2020-2021,,82.0,90.0,78.0,,83.3
+80,Sherman Elementary,Fairfax County,Elem,2021-2022,,90.0,89.0,73.0,,84.0
+80,Sherman Elementary,Fairfax County,Elem,2022-2023,,91.0,85.0,80.0,,85.3
+80,Sherman Elementary,Fairfax County,Elem,2023-2024,,87.0,83.0,88.0,,86.0
+80,Sherman Elementary,Fairfax County,Elem,2024-2025,,89.0,87.0,74.0,,83.3
+90,Lake Braddock Secondary,Fairfax County,Combined,2020-2021,100.0,80.0,88.0,79.0,85.0,86.4
+90,Lake Braddock Secondary,Fairfax County,Combined,2021-2022,,86.0,90.0,82.0,,86.0
+90,Lake Braddock Secondary,Fairfax County,Combined,2022-2023,,86.0,89.0,80.0,,85.0
+90,Lake Braddock Secondary,Fairfax County,High,2021-2022,,86.0,90.0,82.0,,86.0
+90,Lake Braddock Secondary,Fairfax County,High,2022-2023,,86.0,89.0,80.0,,85.0
+90,Lake Braddock Secondary,Fairfax County,High,2023-2024,,86.0,91.0,81.0,,86.0
+90,Lake Braddock Secondary,Fairfax County,High,2024-2025,,87.0,90.0,83.0,,86.7
+100,Chesterbrook Elementary,Fairfax County,Elem,2020-2021,,88.0,92.0,84.0,,88.0
+100,Chesterbrook Elementary,Fairfax County,Elem,2021-2022,,93.0,94.0,92.0,,93.0
+100,Chesterbrook Elementary,Fairfax County,Elem,2022-2023,,94.0,93.0,93.0,,93.3
+100,Chesterbrook Elementary,Fairfax County,Elem,2023-2024,,93.0,93.0,85.0,,90.3
+100,Chesterbrook Elementary,Fairfax County,Elem,2024-2025,,93.0,93.0,84.0,,90.0
+110,Archer Elementary,Fairfax County,Elem,2020-2021,,86.0,93.0,81.0,,86.7
+110,Archer Elementary,Fairfax County,Elem,2021-2022,,90.0,94.0,88.0,,90.7
+110,Archer Elementary,Fairfax County,Elem,2022-2023,,89.0,93.0,90.0,,90.7
+110,Archer Elementary,Fairfax County,Elem,2023-2024,,87.0,89.0,81.0,,85.7
+110,Archer Elementary,Fairfax County,Elem,2024-2025,,91.0,91.0,82.0,,88.0
+120,Vienna Elementary,Fairfax County,Elem,2020-2021,,73.0,86.0,55.0,,71.3
+120,Vienna Elementary,Fairfax County,Elem,2021-2022,,85.0,89.0,81.0,,85.0
+120,Vienna Elementary,Fairfax County,Elem,2022-2023,,90.0,88.0,86.0,,88.0
+120,Vienna Elementary,Fairfax County,Elem,2023-2024,,91.0,90.0,95.0,,92.0
+120,Vienna Elementary,Fairfax County,Elem,2024-2025,,91.0,92.0,68.0,,83.7
+131,Chantilly High,Fairfax County,High,2020-2021,,66.0,69.0,83.0,86.0,76.0
+131,Chantilly High,Fairfax County,High,2021-2022,30.0,87.0,95.0,87.0,66.0,73.0
+131,Chantilly High,Fairfax County,High,2022-2023,44.0,84.0,92.0,86.0,28.0,66.8
+131,Chantilly High,Fairfax County,High,2023-2024,45.0,85.0,91.0,86.0,14.0,64.2
+131,Chantilly High,Fairfax County,High,2024-2025,59.0,90.0,95.0,83.0,28.0,71.0
+140,Oakton Elementary,Fairfax County,Elem,2020-2021,,78.0,84.0,74.0,,78.7
+140,Oakton Elementary,Fairfax County,Elem,2021-2022,,87.0,87.0,78.0,,84.0
+140,Oakton Elementary,Fairfax County,Elem,2022-2023,,87.0,89.0,82.0,,86.0
+140,Oakton Elementary,Fairfax County,Elem,2023-2024,,88.0,88.0,84.0,,86.7
+140,Oakton Elementary,Fairfax County,Elem,2024-2025,,89.0,90.0,83.0,,87.3
+150,Orange Hunt Elementary,Fairfax County,Elem,2020-2021,,63.0,82.0,58.0,,67.7
+150,Orange Hunt Elementary,Fairfax County,Elem,2021-2022,,79.0,87.0,73.0,,79.7
+150,Orange Hunt Elementary,Fairfax County,Elem,2022-2023,,78.0,87.0,77.0,,80.7
+150,Orange Hunt Elementary,Fairfax County,Elem,2023-2024,,83.0,87.0,81.0,,83.7
+150,Orange Hunt Elementary,Fairfax County,Elem,2024-2025,,87.0,89.0,76.0,,84.0
+170,Terra Centre Elementary,Fairfax County,Elem,2020-2021,,68.0,84.0,69.0,,73.7
+170,Terra Centre Elementary,Fairfax County,Elem,2021-2022,,87.0,92.0,81.0,,86.7
+170,Terra Centre Elementary,Fairfax County,Elem,2022-2023,,86.0,88.0,79.0,,84.3
+170,Terra Centre Elementary,Fairfax County,Elem,2023-2024,,85.0,86.0,87.0,,86.0
+170,Terra Centre Elementary,Fairfax County,Elem,2024-2025,,88.0,89.0,81.0,,86.0
+190,Fairfax County Adult High,Fairfax County,High,2020-2021,17.0,8.0,21.0,5.0,10.0,12.2
+190,Fairfax County Adult High,Fairfax County,High,2021-2022,0.0,33.0,2.0,23.0,,14.5
+190,Fairfax County Adult High,Fairfax County,High,2022-2023,3.0,59.0,6.0,31.0,,24.8
+190,Fairfax County Adult High,Fairfax County,High,2023-2024,33.0,69.0,25.0,53.0,,45.0
+190,Fairfax County Adult High,Fairfax County,High,2024-2025,23.0,68.0,27.0,53.0,,42.8
+200,Centreville High,Fairfax County,High,2020-2021,,77.0,90.0,76.0,81.0,81.0
+200,Centreville High,Fairfax County,High,2021-2022,48.0,79.0,90.0,77.0,87.0,76.2
+200,Centreville High,Fairfax County,High,2022-2023,,77.0,93.0,75.0,50.0,73.8
+200,Centreville High,Fairfax County,High,2023-2024,,81.0,88.0,73.0,,80.7
+200,Centreville High,Fairfax County,High,2024-2025,,86.0,88.0,77.0,,83.7
+220,Dogwood Elementary,Fairfax County,Elem,2020-2021,,23.0,35.0,25.0,,27.7
+220,Dogwood Elementary,Fairfax County,Elem,2021-2022,,49.0,50.0,45.0,,48.0
+220,Dogwood Elementary,Fairfax County,Elem,2022-2023,,49.0,42.0,55.0,,48.7
+220,Dogwood Elementary,Fairfax County,Elem,2023-2024,,44.0,40.0,40.0,,41.3
+220,Dogwood Elementary,Fairfax County,Elem,2024-2025,,47.0,39.0,39.0,,41.7
+250,Terraset Elementary,Fairfax County,Elem,2020-2021,,69.0,83.0,42.0,,64.7
+250,Terraset Elementary,Fairfax County,Elem,2021-2022,,72.0,78.0,62.0,,70.7
+250,Terraset Elementary,Fairfax County,Elem,2022-2023,,75.0,77.0,69.0,,73.7
+250,Terraset Elementary,Fairfax County,Elem,2023-2024,,70.0,74.0,74.0,,72.7
+250,Terraset Elementary,Fairfax County,Elem,2024-2025,,76.0,77.0,73.0,,75.3
+260,Clearview Elementary,Fairfax County,Elem,2020-2021,,53.0,62.0,55.0,,56.7
+260,Clearview Elementary,Fairfax County,Elem,2021-2022,,61.0,66.0,48.0,,58.3
+260,Clearview Elementary,Fairfax County,Elem,2022-2023,,62.0,61.0,62.0,,61.7
+260,Clearview Elementary,Fairfax County,Elem,2023-2024,,70.0,68.0,70.0,,69.3
+260,Clearview Elementary,Fairfax County,Elem,2024-2025,,68.0,65.0,73.0,,68.7
+280,Sunrise Valley Elementary,Fairfax County,Elem,2020-2021,,77.0,86.0,81.0,,81.3
+280,Sunrise Valley Elementary,Fairfax County,Elem,2021-2022,,84.0,87.0,78.0,,83.0
+280,Sunrise Valley Elementary,Fairfax County,Elem,2022-2023,,84.0,86.0,84.0,,84.7
+280,Sunrise Valley Elementary,Fairfax County,Elem,2023-2024,,83.0,87.0,69.0,,79.7
+280,Sunrise Valley Elementary,Fairfax County,Elem,2024-2025,,89.0,90.0,79.0,,86.0
+290,Fairview Elementary,Fairfax County,Elem,2020-2021,,69.0,85.0,60.0,,71.3
+290,Fairview Elementary,Fairfax County,Elem,2021-2022,,81.0,87.0,70.0,,79.3
+290,Fairview Elementary,Fairfax County,Elem,2022-2023,,82.0,85.0,85.0,,84.0
+290,Fairview Elementary,Fairfax County,Elem,2023-2024,,84.0,88.0,84.0,,85.3
+290,Fairview Elementary,Fairfax County,Elem,2024-2025,,88.0,89.0,82.0,,86.3
+300,Rocky Run Middle,Fairfax County,Middle,2020-2021,,85.0,92.0,87.0,,88.0
+300,Rocky Run Middle,Fairfax County,Middle,2021-2022,,92.0,93.0,89.0,,91.3
+300,Rocky Run Middle,Fairfax County,Middle,2022-2023,,91.0,92.0,89.0,,90.7
+300,Rocky Run Middle,Fairfax County,Middle,2023-2024,,92.0,90.0,89.0,,90.3
+300,Rocky Run Middle,Fairfax County,Middle,2024-2025,,93.0,93.0,90.0,,92.0
+320,Franconia Elementary,Fairfax County,Elem,2020-2021,,36.0,64.0,37.0,,45.7
+320,Franconia Elementary,Fairfax County,Elem,2021-2022,,60.0,70.0,36.0,,55.3
+320,Franconia Elementary,Fairfax County,Elem,2022-2023,,66.0,68.0,65.0,,66.3
+320,Franconia Elementary,Fairfax County,Elem,2023-2024,,73.0,70.0,66.0,,69.7
+320,Franconia Elementary,Fairfax County,Elem,2024-2025,,75.0,72.0,70.0,,72.3
+330,Groveton Elementary,Fairfax County,Elem,2020-2021,,23.0,41.0,24.0,,29.3
+330,Groveton Elementary,Fairfax County,Elem,2021-2022,,40.0,53.0,46.0,,46.3
+330,Groveton Elementary,Fairfax County,Elem,2022-2023,,45.0,52.0,48.0,,48.3
+330,Groveton Elementary,Fairfax County,Elem,2023-2024,,47.0,55.0,39.0,,47.0
+330,Groveton Elementary,Fairfax County,Elem,2024-2025,,52.0,53.0,51.0,,52.0
+350,Hughes Middle,Fairfax County,Middle,2020-2021,,56.0,75.0,59.0,,63.3
+350,Hughes Middle,Fairfax County,Middle,2021-2022,,68.0,77.0,68.0,,71.0
+350,Hughes Middle,Fairfax County,Middle,2022-2023,,73.0,78.0,66.0,,72.3
+350,Hughes Middle,Fairfax County,Middle,2023-2024,,72.0,77.0,69.0,,72.7
+350,Hughes Middle,Fairfax County,Middle,2024-2025,,74.0,80.0,73.0,,75.7
+370,Forestville Elementary,Fairfax County,Elem,2020-2021,,80.0,89.0,74.0,,81.0
+370,Forestville Elementary,Fairfax County,Elem,2021-2022,,92.0,93.0,84.0,,89.7
+370,Forestville Elementary,Fairfax County,Elem,2022-2023,,92.0,93.0,85.0,,90.0
+370,Forestville Elementary,Fairfax County,Elem,2023-2024,,94.0,94.0,92.0,,93.3
+370,Forestville Elementary,Fairfax County,Elem,2024-2025,,96.0,95.0,93.0,,94.7
+380,Woodlawn Elementary,Fairfax County,Elem,2020-2021,,17.0,44.0,8.0,,23.0
+380,Woodlawn Elementary,Fairfax County,Elem,2021-2022,,42.0,52.0,46.0,,46.7
+380,Woodlawn Elementary,Fairfax County,Elem,2022-2023,,41.0,51.0,46.0,,46.0
+380,Woodlawn Elementary,Fairfax County,Elem,2023-2024,,42.0,54.0,57.0,,51.0
+380,Woodlawn Elementary,Fairfax County,Elem,2024-2025,,49.0,50.0,47.0,,48.7
+390,Fox Mill Elementary,Fairfax County,Elem,2020-2021,,74.0,85.0,78.0,,79.0
+390,Fox Mill Elementary,Fairfax County,Elem,2021-2022,,86.0,87.0,72.0,,81.7
+390,Fox Mill Elementary,Fairfax County,Elem,2022-2023,,88.0,87.0,73.0,,82.7
+390,Fox Mill Elementary,Fairfax County,Elem,2023-2024,,91.0,88.0,76.0,,85.0
+390,Fox Mill Elementary,Fairfax County,Elem,2024-2025,,94.0,91.0,86.0,,90.3
+400,White Oaks Elementary,Fairfax County,Elem,2020-2021,,68.0,78.0,56.0,,67.3
+400,White Oaks Elementary,Fairfax County,Elem,2021-2022,,84.0,85.0,80.0,,83.0
+400,White Oaks Elementary,Fairfax County,Elem,2022-2023,,86.0,86.0,80.0,,84.0
+400,White Oaks Elementary,Fairfax County,Elem,2023-2024,,85.0,87.0,81.0,,84.3
+400,White Oaks Elementary,Fairfax County,Elem,2024-2025,,85.0,87.0,81.0,,84.3
+420,Mount Vernon High,Fairfax County,High,2020-2021,57.0,40.0,58.0,47.0,63.0,53.0
+420,Mount Vernon High,Fairfax County,High,2021-2022,55.0,67.0,72.0,56.0,22.0,54.4
+420,Mount Vernon High,Fairfax County,High,2022-2023,28.0,75.0,77.0,57.0,33.0,54.0
+420,Mount Vernon High,Fairfax County,High,2023-2024,25.0,71.0,76.0,61.0,17.0,50.0
+420,Mount Vernon High,Fairfax County,High,2024-2025,14.0,66.0,78.0,63.0,0.0,44.2
+430,Oak Hill Elementary,Fairfax County,Elem,2020-2021,,88.0,90.0,82.0,,86.7
+430,Oak Hill Elementary,Fairfax County,Elem,2021-2022,,92.0,93.0,88.0,,91.0
+430,Oak Hill Elementary,Fairfax County,Elem,2022-2023,,88.0,92.0,88.0,,89.3
+430,Oak Hill Elementary,Fairfax County,Elem,2023-2024,,89.0,91.0,88.0,,89.3
+430,Oak Hill Elementary,Fairfax County,Elem,2024-2025,,91.0,90.0,83.0,,88.0
+440,Franklin Middle,Fairfax County,Middle,2020-2021,,76.0,85.0,74.0,,78.3
+440,Franklin Middle,Fairfax County,Middle,2021-2022,,84.0,87.0,79.0,,83.3
+440,Franklin Middle,Fairfax County,Middle,2022-2023,,83.0,82.0,76.0,,80.3
+440,Franklin Middle,Fairfax County,Middle,2023-2024,,83.0,84.0,76.0,,81.0
+440,Franklin Middle,Fairfax County,Middle,2024-2025,,82.0,86.0,85.0,,84.3
+470,Newington Forest Elementary,Fairfax County,Elem,2020-2021,,50.0,68.0,40.0,,52.7
+470,Newington Forest Elementary,Fairfax County,Elem,2021-2022,,78.0,79.0,74.0,,77.0
+470,Newington Forest Elementary,Fairfax County,Elem,2022-2023,,78.0,80.0,62.0,,73.3
+470,Newington Forest Elementary,Fairfax County,Elem,2023-2024,,80.0,80.0,74.0,,78.0
+470,Newington Forest Elementary,Fairfax County,Elem,2024-2025,,84.0,82.0,72.0,,79.3
+480,Cherry Run Elementary,Fairfax County,Elem,2020-2021,,80.0,90.0,83.0,,84.3
+480,Cherry Run Elementary,Fairfax County,Elem,2021-2022,,86.0,88.0,81.0,,85.0
+480,Cherry Run Elementary,Fairfax County,Elem,2022-2023,,84.0,89.0,84.0,,85.7
+480,Cherry Run Elementary,Fairfax County,Elem,2023-2024,,86.0,93.0,86.0,,88.3
+480,Cherry Run Elementary,Fairfax County,Elem,2024-2025,,88.0,89.0,82.0,,86.3
+490,Freedom Hill Elementary,Fairfax County,Elem,2020-2021,,58.0,65.0,43.0,,55.3
+490,Freedom Hill Elementary,Fairfax County,Elem,2021-2022,,60.0,68.0,57.0,,61.7
+490,Freedom Hill Elementary,Fairfax County,Elem,2022-2023,,60.0,66.0,47.0,,57.7
+490,Freedom Hill Elementary,Fairfax County,Elem,2023-2024,,60.0,66.0,65.0,,63.7
+490,Freedom Hill Elementary,Fairfax County,Elem,2024-2025,,69.0,71.0,66.0,,68.7
+510,Mount Eagle Elementary,Fairfax County,Elem,2020-2021,,11.0,31.0,9.0,,17.0
+510,Mount Eagle Elementary,Fairfax County,Elem,2021-2022,,32.0,45.0,33.0,,36.7
+510,Mount Eagle Elementary,Fairfax County,Elem,2022-2023,,42.0,38.0,54.0,,44.7
+510,Mount Eagle Elementary,Fairfax County,Elem,2023-2024,,31.0,34.0,32.0,,32.3
+510,Mount Eagle Elementary,Fairfax County,Elem,2024-2025,,53.0,45.0,54.0,,50.7
+520,Weyanoke Elementary,Fairfax County,Elem,2020-2021,,12.0,30.0,20.0,,20.7
+520,Weyanoke Elementary,Fairfax County,Elem,2021-2022,,36.0,45.0,28.0,,36.3
+520,Weyanoke Elementary,Fairfax County,Elem,2022-2023,,37.0,44.0,52.0,,44.3
+520,Weyanoke Elementary,Fairfax County,Elem,2023-2024,,40.0,39.0,43.0,,40.7
+520,Weyanoke Elementary,Fairfax County,Elem,2024-2025,,49.0,48.0,40.0,,45.7
+530,Graham Road Elementary,Fairfax County,Elem,2020-2021,,18.0,31.0,18.0,,22.3
+530,Graham Road Elementary,Fairfax County,Elem,2021-2022,,46.0,52.0,72.0,,56.7
+530,Graham Road Elementary,Fairfax County,Elem,2022-2023,,47.0,51.0,51.0,,49.7
+530,Graham Road Elementary,Fairfax County,Elem,2023-2024,,44.0,34.0,32.0,,36.7
+530,Graham Road Elementary,Fairfax County,Elem,2024-2025,,56.0,39.0,38.0,,44.3
+560,Belle View Elementary,Fairfax County,Elem,2020-2021,,38.0,58.0,33.0,,43.0
+560,Belle View Elementary,Fairfax County,Elem,2021-2022,,62.0,67.0,54.0,,61.0
+560,Belle View Elementary,Fairfax County,Elem,2022-2023,,67.0,70.0,55.0,,64.0
+560,Belle View Elementary,Fairfax County,Elem,2023-2024,,70.0,69.0,52.0,,63.7
+560,Belle View Elementary,Fairfax County,Elem,2024-2025,,77.0,70.0,71.0,,72.7
+570,Great Falls Elementary,Fairfax County,Elem,2020-2021,,81.0,89.0,76.0,,82.0
+570,Great Falls Elementary,Fairfax County,Elem,2021-2022,,91.0,94.0,92.0,,92.3
+570,Great Falls Elementary,Fairfax County,Elem,2022-2023,,93.0,96.0,92.0,,93.7
+570,Great Falls Elementary,Fairfax County,Elem,2023-2024,,91.0,92.0,83.0,,88.7
+570,Great Falls Elementary,Fairfax County,Elem,2024-2025,,94.0,94.0,99.0,,95.7
+580,Westlawn Elementary,Fairfax County,Elem,2020-2021,,29.0,38.0,19.0,,28.7
+580,Westlawn Elementary,Fairfax County,Elem,2021-2022,,52.0,49.0,45.0,,48.7
+580,Westlawn Elementary,Fairfax County,Elem,2022-2023,,52.0,49.0,47.0,,49.3
+580,Westlawn Elementary,Fairfax County,Elem,2023-2024,,46.0,42.0,33.0,,40.3
+580,Westlawn Elementary,Fairfax County,Elem,2024-2025,,54.0,47.0,42.0,,47.7
+590,Woodley Hills Elementary,Fairfax County,Elem,2020-2021,100.0,20.0,37.0,27.0,,46.0
+590,Woodley Hills Elementary,Fairfax County,Elem,2021-2022,,34.0,45.0,40.0,,39.7
+590,Woodley Hills Elementary,Fairfax County,Elem,2022-2023,,37.0,45.0,40.0,,40.7
+590,Woodley Hills Elementary,Fairfax County,Elem,2023-2024,,43.0,47.0,61.0,,50.3
+590,Woodley Hills Elementary,Fairfax County,Elem,2024-2025,,51.0,59.0,57.0,,55.7
+620,Cameron Elementary,Fairfax County,Elem,2020-2021,,24.0,48.0,28.0,,33.3
+620,Cameron Elementary,Fairfax County,Elem,2021-2022,,48.0,65.0,55.0,,56.0
+620,Cameron Elementary,Fairfax County,Elem,2022-2023,,50.0,50.0,43.0,,47.7
+620,Cameron Elementary,Fairfax County,Elem,2023-2024,,48.0,54.0,59.0,,53.7
+620,Cameron Elementary,Fairfax County,Elem,2024-2025,,62.0,61.0,60.0,,61.0
+630,Garfield Elementary,Fairfax County,Elem,2020-2021,,28.0,42.0,32.0,,34.0
+630,Garfield Elementary,Fairfax County,Elem,2021-2022,,56.0,60.0,34.0,,50.0
+630,Garfield Elementary,Fairfax County,Elem,2022-2023,,60.0,61.0,72.0,,64.3
+630,Garfield Elementary,Fairfax County,Elem,2023-2024,,60.0,63.0,71.0,,64.7
+630,Garfield Elementary,Fairfax County,Elem,2024-2025,,65.0,61.0,57.0,,61.0
+650,Woodburn Elementary,Fairfax County,Elem,2020-2021,,30.0,43.0,24.0,,32.3
+650,Woodburn Elementary,Fairfax County,Elem,2021-2022,,54.0,53.0,39.0,,48.7
+650,Woodburn Elementary,Fairfax County,Elem,2022-2023,,51.0,52.0,44.0,,49.0
+650,Woodburn Elementary,Fairfax County,Elem,2023-2024,,48.0,49.0,39.0,,45.3
+650,Woodburn Elementary,Fairfax County,Elem,2024-2025,,51.0,47.0,59.0,,52.3
+660,Annandale High,Fairfax County,High,2020-2021,100.0,57.0,73.0,49.0,74.0,70.6
+660,Annandale High,Fairfax County,High,2021-2022,,80.0,74.0,58.0,55.0,66.8
+660,Annandale High,Fairfax County,High,2022-2023,22.0,79.0,79.0,56.0,,59.0
+660,Annandale High,Fairfax County,High,2023-2024,0.0,85.0,76.0,67.0,,57.0
+660,Annandale High,Fairfax County,High,2024-2025,80.0,85.0,83.0,71.0,,79.8
+673,Jackson Middle,Fairfax County,Middle,2020-2021,,54.0,69.0,52.0,,58.3
+673,Jackson Middle,Fairfax County,Middle,2021-2022,,65.0,69.0,64.0,,66.0
+673,Jackson Middle,Fairfax County,Middle,2022-2023,,62.0,66.0,59.0,,62.3
+673,Jackson Middle,Fairfax County,Middle,2023-2024,,61.0,67.0,59.0,,62.3
+673,Jackson Middle,Fairfax County,Middle,2024-2025,,65.0,68.0,61.0,,64.7
+680,Bush Hill Elementary,Fairfax County,Elem,2020-2021,,69.0,75.0,61.0,,68.3
+680,Bush Hill Elementary,Fairfax County,Elem,2021-2022,,82.0,86.0,80.0,,82.7
+680,Bush Hill Elementary,Fairfax County,Elem,2022-2023,,76.0,82.0,66.0,,74.7
+680,Bush Hill Elementary,Fairfax County,Elem,2023-2024,,80.0,85.0,75.0,,80.0
+680,Bush Hill Elementary,Fairfax County,Elem,2024-2025,,81.0,84.0,77.0,,80.7
+690,Gunston Elementary,Fairfax County,Elem,2020-2021,,52.0,72.0,53.0,,59.0
+690,Gunston Elementary,Fairfax County,Elem,2021-2022,,81.0,79.0,70.0,,76.7
+690,Gunston Elementary,Fairfax County,Elem,2022-2023,,84.0,79.0,84.0,,82.3
+690,Gunston Elementary,Fairfax County,Elem,2023-2024,,87.0,78.0,72.0,,79.0
+690,Gunston Elementary,Fairfax County,Elem,2024-2025,,84.0,76.0,71.0,,77.0
+700,Bucknell Elementary,Fairfax County,Elem,2020-2021,,14.0,38.0,14.0,,22.0
+700,Bucknell Elementary,Fairfax County,Elem,2021-2022,,45.0,55.0,24.0,,41.3
+700,Bucknell Elementary,Fairfax County,Elem,2022-2023,,47.0,46.0,52.0,,48.3
+700,Bucknell Elementary,Fairfax County,Elem,2023-2024,,50.0,55.0,50.0,,51.7
+700,Bucknell Elementary,Fairfax County,Elem,2024-2025,,61.0,58.0,38.0,,52.3
+710,Sleepy Hollow Elementary,Fairfax County,Elem,2020-2021,,45.0,55.0,39.0,,46.3
+710,Sleepy Hollow Elementary,Fairfax County,Elem,2021-2022,,60.0,58.0,64.0,,60.7
+710,Sleepy Hollow Elementary,Fairfax County,Elem,2022-2023,,61.0,55.0,47.0,,54.3
+710,Sleepy Hollow Elementary,Fairfax County,Elem,2023-2024,,43.0,46.0,38.0,,42.3
+710,Sleepy Hollow Elementary,Fairfax County,Elem,2024-2025,,57.0,52.0,53.0,,54.0
+720,Belvedere Elementary,Fairfax County,Elem,2020-2021,,61.0,71.0,62.0,,64.7
+720,Belvedere Elementary,Fairfax County,Elem,2021-2022,,73.0,82.0,74.0,,76.3
+720,Belvedere Elementary,Fairfax County,Elem,2022-2023,,76.0,79.0,64.0,,73.0
+720,Belvedere Elementary,Fairfax County,Elem,2023-2024,,80.0,82.0,72.0,,78.0
+720,Belvedere Elementary,Fairfax County,Elem,2024-2025,,83.0,79.0,76.0,,79.3
+730,Flint Hill Elementary,Fairfax County,Elem,2020-2021,,79.0,85.0,83.0,,82.3
+730,Flint Hill Elementary,Fairfax County,Elem,2021-2022,,89.0,90.0,82.0,,87.0
+730,Flint Hill Elementary,Fairfax County,Elem,2022-2023,,92.0,93.0,88.0,,91.0
+730,Flint Hill Elementary,Fairfax County,Elem,2023-2024,,91.0,91.0,86.0,,89.3
+730,Flint Hill Elementary,Fairfax County,Elem,2024-2025,,93.0,92.0,89.0,,91.3
+740,Floris Elementary,Fairfax County,Elem,2020-2021,,83.0,87.0,76.0,,82.0
+740,Floris Elementary,Fairfax County,Elem,2021-2022,,85.0,89.0,84.0,,86.0
+740,Floris Elementary,Fairfax County,Elem,2022-2023,,88.0,88.0,84.0,,86.7
+740,Floris Elementary,Fairfax County,Elem,2023-2024,,81.0,83.0,90.0,,84.7
+740,Floris Elementary,Fairfax County,Elem,2024-2025,,84.0,82.0,90.0,,85.3
+750,Haycock Elementary,Fairfax County,Elem,2020-2021,,91.0,95.0,82.0,,89.3
+750,Haycock Elementary,Fairfax County,Elem,2021-2022,,96.0,96.0,94.0,,95.3
+750,Haycock Elementary,Fairfax County,Elem,2022-2023,,97.0,98.0,98.0,,97.7
+750,Haycock Elementary,Fairfax County,Elem,2023-2024,,97.0,97.0,99.0,,97.7
+750,Haycock Elementary,Fairfax County,Elem,2024-2025,,98.0,99.0,98.0,,98.3
+770,Lemon Road Elementary,Fairfax County,Elem,2020-2021,,77.0,83.0,68.0,,76.0
+770,Lemon Road Elementary,Fairfax County,Elem,2021-2022,,86.0,89.0,77.0,,84.0
+770,Lemon Road Elementary,Fairfax County,Elem,2022-2023,,91.0,91.0,89.0,,90.3
+770,Lemon Road Elementary,Fairfax County,Elem,2023-2024,,88.0,89.0,82.0,,86.3
+770,Lemon Road Elementary,Fairfax County,Elem,2024-2025,,88.0,87.0,87.0,,87.3
+790,McLean High,Fairfax County,High,2020-2021,,78.0,80.0,88.0,90.0,84.0
+790,McLean High,Fairfax County,High,2021-2022,92.0,91.0,95.0,88.0,,91.5
+790,McLean High,Fairfax County,High,2022-2023,69.0,87.0,96.0,87.0,,84.8
+790,McLean High,Fairfax County,High,2023-2024,,92.0,95.0,87.0,,91.3
+790,McLean High,Fairfax County,High,2024-2025,,93.0,96.0,87.0,,92.0
+800,Navy Elementary,Fairfax County,Elem,2020-2021,,88.0,92.0,79.0,,86.3
+800,Navy Elementary,Fairfax County,Elem,2021-2022,,95.0,94.0,92.0,,93.7
+800,Navy Elementary,Fairfax County,Elem,2022-2023,,95.0,93.0,95.0,,94.3
+800,Navy Elementary,Fairfax County,Elem,2023-2024,,94.0,92.0,97.0,,94.3
+800,Navy Elementary,Fairfax County,Elem,2024-2025,,95.0,96.0,95.0,,95.3
+820,Pine Spring Elementary,Fairfax County,Elem,2020-2021,,33.0,45.0,25.0,,34.3
+820,Pine Spring Elementary,Fairfax County,Elem,2021-2022,,58.0,60.0,56.0,,58.0
+820,Pine Spring Elementary,Fairfax County,Elem,2022-2023,,57.0,57.0,56.0,,56.7
+820,Pine Spring Elementary,Fairfax County,Elem,2023-2024,,63.0,60.0,56.0,,59.7
+820,Pine Spring Elementary,Fairfax County,Elem,2024-2025,,67.0,58.0,70.0,,65.0
+830,Timber Lane Elementary,Fairfax County,Elem,2020-2021,,49.0,59.0,48.0,,52.0
+830,Timber Lane Elementary,Fairfax County,Elem,2021-2022,,56.0,61.0,46.0,,54.3
+830,Timber Lane Elementary,Fairfax County,Elem,2022-2023,,67.0,58.0,60.0,,61.7
+830,Timber Lane Elementary,Fairfax County,Elem,2023-2024,,64.0,58.0,49.0,,57.0
+830,Timber Lane Elementary,Fairfax County,Elem,2024-2025,,69.0,58.0,55.0,,60.7
+850,Wakefield Forest Elementary,Fairfax County,Elem,2020-2021,,77.0,88.0,83.0,,82.7
+850,Wakefield Forest Elementary,Fairfax County,Elem,2021-2022,,89.0,92.0,87.0,,89.3
+850,Wakefield Forest Elementary,Fairfax County,Elem,2022-2023,,90.0,93.0,91.0,,91.3
+850,Wakefield Forest Elementary,Fairfax County,Elem,2023-2024,,92.0,94.0,90.0,,92.0
+850,Wakefield Forest Elementary,Fairfax County,Elem,2024-2025,,93.0,94.0,86.0,,91.0
+870,Crestwood Elementary,Fairfax County,Elem,2020-2021,,33.0,44.0,24.0,,33.7
+870,Crestwood Elementary,Fairfax County,Elem,2021-2022,,49.0,51.0,52.0,,50.7
+870,Crestwood Elementary,Fairfax County,Elem,2022-2023,,45.0,50.0,41.0,,45.3
+870,Crestwood Elementary,Fairfax County,Elem,2023-2024,,44.0,49.0,53.0,,48.7
+870,Crestwood Elementary,Fairfax County,Elem,2024-2025,,53.0,46.0,34.0,,44.3
+890,Lynbrook Elementary,Fairfax County,Elem,2020-2021,,15.0,31.0,9.0,,18.3
+890,Lynbrook Elementary,Fairfax County,Elem,2021-2022,,32.0,41.0,48.0,,40.3
+890,Lynbrook Elementary,Fairfax County,Elem,2022-2023,,40.0,37.0,49.0,,42.0
+890,Lynbrook Elementary,Fairfax County,Elem,2023-2024,,35.0,33.0,38.0,,35.3
+890,Lynbrook Elementary,Fairfax County,Elem,2024-2025,,37.0,39.0,42.0,,39.3
+900,West Potomac High,Fairfax County,High,2020-2021,57.0,54.0,71.0,62.0,69.0,62.6
+900,West Potomac High,Fairfax County,High,2021-2022,19.0,72.0,81.0,57.0,20.0,49.8
+900,West Potomac High,Fairfax County,High,2022-2023,17.0,77.0,83.0,55.0,0.0,46.4
+900,West Potomac High,Fairfax County,High,2023-2024,25.0,80.0,84.0,56.0,15.0,52.0
+900,West Potomac High,Fairfax County,High,2024-2025,19.0,70.0,76.0,64.0,13.0,48.4
+930,North Springfield Elementary,Fairfax County,Elem,2020-2021,,47.0,65.0,41.0,,51.0
+930,North Springfield Elementary,Fairfax County,Elem,2021-2022,,60.0,59.0,59.0,,59.3
+930,North Springfield Elementary,Fairfax County,Elem,2022-2023,,58.0,62.0,60.0,,60.0
+930,North Springfield Elementary,Fairfax County,Elem,2023-2024,,58.0,60.0,39.0,,52.3
+930,North Springfield Elementary,Fairfax County,Elem,2024-2025,,72.0,67.0,63.0,,67.3
+940,Bren Mar Park Elementary,Fairfax County,Elem,2020-2021,,43.0,56.0,38.0,,45.7
+940,Bren Mar Park Elementary,Fairfax County,Elem,2021-2022,,64.0,69.0,65.0,,66.0
+940,Bren Mar Park Elementary,Fairfax County,Elem,2022-2023,,60.0,57.0,69.0,,62.0
+940,Bren Mar Park Elementary,Fairfax County,Elem,2023-2024,,60.0,57.0,58.0,,58.3
+940,Bren Mar Park Elementary,Fairfax County,Elem,2024-2025,,66.0,63.0,68.0,,65.7
+950,Rose Hill Elementary,Fairfax County,Elem,2020-2021,,38.0,55.0,33.0,,42.0
+950,Rose Hill Elementary,Fairfax County,Elem,2021-2022,,57.0,65.0,62.0,,61.3
+950,Rose Hill Elementary,Fairfax County,Elem,2022-2023,,53.0,60.0,42.0,,51.7
+950,Rose Hill Elementary,Fairfax County,Elem,2023-2024,,57.0,58.0,60.0,,58.3
+950,Rose Hill Elementary,Fairfax County,Elem,2024-2025,,73.0,68.0,63.0,,68.0
+960,Springfield Estates Elementary,Fairfax County,Elem,2020-2021,,78.0,87.0,73.0,,79.3
+960,Springfield Estates Elementary,Fairfax County,Elem,2021-2022,,83.0,86.0,76.0,,81.7
+960,Springfield Estates Elementary,Fairfax County,Elem,2022-2023,,86.0,84.0,74.0,,81.3
+960,Springfield Estates Elementary,Fairfax County,Elem,2023-2024,,84.0,85.0,85.0,,84.7
+960,Springfield Estates Elementary,Fairfax County,Elem,2024-2025,,88.0,87.0,82.0,,85.7
+970,Glen Forest Elementary,Fairfax County,Elem,2020-2021,,27.0,37.0,20.0,,28.0
+970,Glen Forest Elementary,Fairfax County,Elem,2021-2022,,53.0,47.0,34.0,,44.7
+970,Glen Forest Elementary,Fairfax County,Elem,2022-2023,,45.0,43.0,46.0,,44.7
+970,Glen Forest Elementary,Fairfax County,Elem,2023-2024,,44.0,46.0,33.0,,41.0
+970,Glen Forest Elementary,Fairfax County,Elem,2024-2025,,54.0,51.0,41.0,,48.7
+980,Kent Gardens Elementary,Fairfax County,Elem,2020-2021,,90.0,94.0,83.0,,89.0
+980,Kent Gardens Elementary,Fairfax County,Elem,2021-2022,,95.0,93.0,89.0,,92.3
+980,Kent Gardens Elementary,Fairfax County,Elem,2022-2023,,95.0,94.0,90.0,,93.0
+980,Kent Gardens Elementary,Fairfax County,Elem,2023-2024,,94.0,93.0,91.0,,92.7
+980,Kent Gardens Elementary,Fairfax County,Elem,2024-2025,,98.0,96.0,95.0,,96.3
+1020,Lewis High,Fairfax County,High,2020-2021,64.0,48.0,53.0,48.0,74.0,57.4
+1020,Lewis High,Fairfax County,High,2021-2022,52.0,78.0,75.0,57.0,23.0,57.0
+1020,Lewis High,Fairfax County,High,2022-2023,28.0,67.0,79.0,49.0,,55.8
+1020,Lewis High,Fairfax County,High,2023-2024,33.0,71.0,78.0,56.0,,59.5
+1020,Lewis High,Fairfax County,High,2024-2025,33.0,73.0,78.0,67.0,,62.8
+1030,Parklawn Elementary,Fairfax County,Elem,2020-2021,,28.0,42.0,35.0,,35.0
+1030,Parklawn Elementary,Fairfax County,Elem,2021-2022,,41.0,52.0,44.0,,45.7
+1030,Parklawn Elementary,Fairfax County,Elem,2022-2023,,47.0,52.0,42.0,,47.0
+1030,Parklawn Elementary,Fairfax County,Elem,2023-2024,,55.0,49.0,42.0,,48.7
+1030,Parklawn Elementary,Fairfax County,Elem,2024-2025,,52.0,53.0,39.0,,48.0
+1050,Churchill Road Elementary,Fairfax County,Elem,2020-2021,,85.0,91.0,79.0,,85.0
+1050,Churchill Road Elementary,Fairfax County,Elem,2021-2022,,93.0,95.0,86.0,,91.3
+1050,Churchill Road Elementary,Fairfax County,Elem,2022-2023,,95.0,96.0,92.0,,94.3
+1050,Churchill Road Elementary,Fairfax County,Elem,2023-2024,,96.0,94.0,91.0,,93.7
+1050,Churchill Road Elementary,Fairfax County,Elem,2024-2025,,97.0,94.0,92.0,,94.3
+1060,Madison High,Fairfax County,High,2020-2021,,77.0,71.0,85.0,91.0,81.0
+1060,Madison High,Fairfax County,High,2021-2022,61.0,95.0,94.0,87.0,,84.2
+1060,Madison High,Fairfax County,High,2022-2023,,92.0,94.0,85.0,,90.3
+1060,Madison High,Fairfax County,High,2023-2024,,91.0,88.0,85.0,,88.0
+1060,Madison High,Fairfax County,High,2024-2025,,95.0,96.0,89.0,,93.3
+1070,Justice High,Fairfax County,High,2020-2021,80.0,63.0,68.0,48.0,74.0,66.6
+1070,Justice High,Fairfax County,High,2021-2022,11.0,78.0,64.0,53.0,74.0,56.0
+1070,Justice High,Fairfax County,High,2022-2023,21.0,79.0,73.0,54.0,,56.8
+1070,Justice High,Fairfax County,High,2023-2024,65.0,85.0,72.0,55.0,,69.2
+1070,Justice High,Fairfax County,High,2024-2025,73.0,84.0,78.0,60.0,,73.8
+1080,Waynewood Elementary,Fairfax County,Elem,2020-2021,,77.0,90.0,65.0,,77.3
+1080,Waynewood Elementary,Fairfax County,Elem,2021-2022,,88.0,90.0,78.0,,85.3
+1080,Waynewood Elementary,Fairfax County,Elem,2022-2023,,91.0,92.0,81.0,,88.0
+1080,Waynewood Elementary,Fairfax County,Elem,2023-2024,,92.0,92.0,89.0,,91.0
+1080,Waynewood Elementary,Fairfax County,Elem,2024-2025,,92.0,93.0,94.0,,93.0
+1090,Braddock Elementary,Fairfax County,Elem,2020-2021,,23.0,34.0,16.0,,24.3
+1090,Braddock Elementary,Fairfax County,Elem,2021-2022,,44.0,42.0,43.0,,43.0
+1090,Braddock Elementary,Fairfax County,Elem,2022-2023,,42.0,39.0,43.0,,41.3
+1090,Braddock Elementary,Fairfax County,Elem,2023-2024,,44.0,38.0,38.0,,40.0
+1090,Braddock Elementary,Fairfax County,Elem,2024-2025,,51.0,42.0,48.0,,47.0
+1100,Falls Church High,Fairfax County,High,2020-2021,,51.0,46.0,63.0,87.0,61.8
+1100,Falls Church High,Fairfax County,High,2021-2022,,70.0,75.0,60.0,25.0,57.5
+1100,Falls Church High,Fairfax County,High,2022-2023,,73.0,77.0,64.0,62.0,69.0
+1100,Falls Church High,Fairfax County,High,2023-2024,14.0,74.0,77.0,58.0,,55.8
+1100,Falls Church High,Fairfax County,High,2024-2025,,73.0,81.0,66.0,8.0,57.0
+1110,Johnson Middle,Fairfax County,Middle,2020-2021,,68.0,79.0,69.0,,72.0
+1110,Johnson Middle,Fairfax County,Middle,2021-2022,,79.0,81.0,67.0,,75.7
+1110,Johnson Middle,Fairfax County,Middle,2022-2023,,77.0,78.0,67.0,,74.0
+1110,Johnson Middle,Fairfax County,Middle,2023-2024,,75.0,77.0,69.0,,73.7
+1110,Johnson Middle,Fairfax County,Middle,2024-2025,,76.0,77.0,70.0,,74.3
+1120,Irving Middle,Fairfax County,Middle,2020-2021,,71.0,87.0,75.0,,77.7
+1120,Irving Middle,Fairfax County,Middle,2021-2022,,78.0,85.0,75.0,,79.3
+1120,Irving Middle,Fairfax County,Middle,2022-2023,,79.0,84.0,74.0,,79.0
+1120,Irving Middle,Fairfax County,Middle,2023-2024,,82.0,85.0,82.0,,83.0
+1120,Irving Middle,Fairfax County,Middle,2024-2025,,84.0,87.0,81.0,,84.0
+1130,Poe Middle,Fairfax County,Middle,2020-2021,,25.0,49.0,41.0,,38.3
+1130,Poe Middle,Fairfax County,Middle,2021-2022,,39.0,54.0,49.0,,47.3
+1130,Poe Middle,Fairfax County,Middle,2022-2023,,42.0,51.0,49.0,,47.3
+1130,Poe Middle,Fairfax County,Middle,2023-2024,,42.0,51.0,51.0,,48.0
+1130,Poe Middle,Fairfax County,Middle,2024-2025,,48.0,51.0,48.0,,49.0
+1140,Thoreau Middle,Fairfax County,Middle,2020-2021,,75.0,90.0,81.0,,82.0
+1140,Thoreau Middle,Fairfax County,Middle,2021-2022,,80.0,87.0,79.0,,82.0
+1140,Thoreau Middle,Fairfax County,Middle,2022-2023,,84.0,86.0,80.0,,83.3
+1140,Thoreau Middle,Fairfax County,Middle,2023-2024,,86.0,88.0,83.0,,85.7
+1140,Thoreau Middle,Fairfax County,Middle,2024-2025,,84.0,87.0,85.0,,85.3
+1150,Longfellow Middle,Fairfax County,Middle,2020-2021,,87.0,93.0,89.0,,89.7
+1150,Longfellow Middle,Fairfax County,Middle,2021-2022,,87.0,91.0,88.0,,88.7
+1150,Longfellow Middle,Fairfax County,Middle,2022-2023,,87.0,90.0,86.0,,87.7
+1150,Longfellow Middle,Fairfax County,Middle,2023-2024,,91.0,91.0,86.0,,89.3
+1150,Longfellow Middle,Fairfax County,Middle,2024-2025,,93.0,94.0,90.0,,92.3
+1160,Twain Middle,Fairfax County,Middle,2020-2021,,56.0,78.0,62.0,,65.3
+1160,Twain Middle,Fairfax County,Middle,2021-2022,,68.0,78.0,73.0,,73.0
+1160,Twain Middle,Fairfax County,Middle,2022-2023,,67.0,77.0,66.0,,70.0
+1160,Twain Middle,Fairfax County,Middle,2023-2024,,71.0,79.0,72.0,,74.0
+1160,Twain Middle,Fairfax County,Middle,2024-2025,,74.0,79.0,73.0,,75.3
+1170,Glasgow Middle,Fairfax County,Middle,2020-2021,,39.0,56.0,54.0,,49.7
+1170,Glasgow Middle,Fairfax County,Middle,2021-2022,,53.0,61.0,49.0,,54.3
+1170,Glasgow Middle,Fairfax County,Middle,2022-2023,,55.0,56.0,50.0,,53.7
+1170,Glasgow Middle,Fairfax County,Middle,2023-2024,,50.0,55.0,52.0,,52.3
+1170,Glasgow Middle,Fairfax County,Middle,2024-2025,,56.0,55.0,50.0,,53.7
+1190,Cooper Middle,Fairfax County,Middle,2020-2021,,84.0,95.0,87.0,,88.7
+1190,Cooper Middle,Fairfax County,Middle,2021-2022,,87.0,93.0,88.0,,89.3
+1190,Cooper Middle,Fairfax County,Middle,2022-2023,,89.0,93.0,86.0,,89.3
+1190,Cooper Middle,Fairfax County,Middle,2023-2024,,93.0,94.0,89.0,,92.0
+1190,Cooper Middle,Fairfax County,Middle,2024-2025,,96.0,96.0,92.0,,94.7
+1200,Marshall Road Elementary,Fairfax County,Elem,2020-2021,,59.0,75.0,52.0,,62.0
+1200,Marshall Road Elementary,Fairfax County,Elem,2021-2022,,63.0,72.0,51.0,,62.0
+1200,Marshall Road Elementary,Fairfax County,Elem,2022-2023,,64.0,67.0,51.0,,60.7
+1200,Marshall Road Elementary,Fairfax County,Elem,2023-2024,,61.0,65.0,55.0,,60.3
+1200,Marshall Road Elementary,Fairfax County,Elem,2024-2025,,69.0,68.0,62.0,,66.3
+1210,Mantua Elementary,Fairfax County,Elem,2020-2021,,76.0,82.0,69.0,,75.7
+1210,Mantua Elementary,Fairfax County,Elem,2021-2022,,87.0,91.0,87.0,,88.3
+1210,Mantua Elementary,Fairfax County,Elem,2022-2023,,87.0,89.0,83.0,,86.3
+1210,Mantua Elementary,Fairfax County,Elem,2023-2024,,87.0,89.0,85.0,,87.0
+1210,Mantua Elementary,Fairfax County,Elem,2024-2025,,91.0,89.0,94.0,,91.3
+1240,Keene Mill Elementary,Fairfax County,Elem,2020-2021,,87.0,90.0,85.0,,87.3
+1240,Keene Mill Elementary,Fairfax County,Elem,2021-2022,,90.0,92.0,89.0,,90.3
+1240,Keene Mill Elementary,Fairfax County,Elem,2022-2023,,90.0,92.0,90.0,,90.7
+1240,Keene Mill Elementary,Fairfax County,Elem,2023-2024,,89.0,91.0,86.0,,88.7
+1240,Keene Mill Elementary,Fairfax County,Elem,2024-2025,,90.0,91.0,87.0,,89.3
+1250,Herndon Elementary,Fairfax County,Elem,2020-2021,,30.0,40.0,28.0,,32.7
+1250,Herndon Elementary,Fairfax County,Elem,2021-2022,,41.0,45.0,35.0,,40.3
+1250,Herndon Elementary,Fairfax County,Elem,2022-2023,,43.0,39.0,28.0,,36.7
+1250,Herndon Elementary,Fairfax County,Elem,2023-2024,,44.0,40.0,37.0,,40.3
+1250,Herndon Elementary,Fairfax County,Elem,2024-2025,,39.0,44.0,45.0,,42.7
+1260,Woodson High,Fairfax County,High,2020-2021,,65.0,74.0,85.0,89.0,78.2
+1260,Woodson High,Fairfax County,High,2021-2022,69.0,81.0,95.0,90.0,95.0,86.0
+1260,Woodson High,Fairfax County,High,2022-2023,69.0,93.0,96.0,91.0,82.0,86.2
+1260,Woodson High,Fairfax County,High,2023-2024,87.0,94.0,95.0,89.0,75.0,88.0
+1260,Woodson High,Fairfax County,High,2024-2025,60.0,95.0,95.0,89.0,,84.8
+1270,Edison High,Fairfax County,High,2020-2021,,62.0,77.0,57.0,79.0,68.8
+1270,Edison High,Fairfax County,High,2021-2022,33.0,79.0,84.0,72.0,39.0,61.4
+1270,Edison High,Fairfax County,High,2022-2023,50.0,78.0,91.0,68.0,,71.8
+1270,Edison High,Fairfax County,High,2023-2024,33.0,79.0,86.0,65.0,42.0,61.0
+1270,Edison High,Fairfax County,High,2024-2025,,74.0,87.0,71.0,8.0,60.0
+1290,Marshall High,Fairfax County,High,2020-2021,67.0,61.0,73.0,83.0,93.0,75.4
+1290,Marshall High,Fairfax County,High,2021-2022,80.0,91.0,94.0,89.0,,88.5
+1290,Marshall High,Fairfax County,High,2022-2023,67.0,89.0,95.0,85.0,,84.0
+1290,Marshall High,Fairfax County,High,2023-2024,48.0,90.0,90.0,87.0,,78.8
+1290,Marshall High,Fairfax County,High,2024-2025,69.0,85.0,92.0,86.0,,83.0
+1300,Sandburg Middle,Fairfax County,Middle,2020-2021,50.0,52.0,75.0,62.0,,59.8
+1300,Sandburg Middle,Fairfax County,Middle,2021-2022,,58.0,72.0,60.0,,63.3
+1300,Sandburg Middle,Fairfax County,Middle,2022-2023,,52.0,69.0,59.0,,60.0
+1300,Sandburg Middle,Fairfax County,Middle,2023-2024,,55.0,66.0,61.0,,60.7
+1300,Sandburg Middle,Fairfax County,Middle,2024-2025,,65.0,72.0,66.0,,67.7
+1310,Ravensworth Elementary,Fairfax County,Elem,2020-2021,,65.0,77.0,56.0,,66.0
+1310,Ravensworth Elementary,Fairfax County,Elem,2021-2022,,78.0,83.0,71.0,,77.3
+1310,Ravensworth Elementary,Fairfax County,Elem,2022-2023,,73.0,78.0,62.0,,71.0
+1310,Ravensworth Elementary,Fairfax County,Elem,2023-2024,,76.0,77.0,74.0,,75.7
+1310,Ravensworth Elementary,Fairfax County,Elem,2024-2025,,85.0,85.0,89.0,,86.3
+1320,Washington Mill Elementary,Fairfax County,Elem,2020-2021,,33.0,53.0,30.0,,38.7
+1320,Washington Mill Elementary,Fairfax County,Elem,2021-2022,,46.0,58.0,36.0,,46.7
+1320,Washington Mill Elementary,Fairfax County,Elem,2022-2023,,49.0,62.0,67.0,,59.3
+1320,Washington Mill Elementary,Fairfax County,Elem,2023-2024,,57.0,61.0,56.0,,58.0
+1320,Washington Mill Elementary,Fairfax County,Elem,2024-2025,,65.0,63.0,67.0,,65.0
+1330,Hollin Meadows Elementary,Fairfax County,Elem,2020-2021,,30.0,53.0,51.0,,44.7
+1330,Hollin Meadows Elementary,Fairfax County,Elem,2021-2022,,43.0,58.0,47.0,,49.3
+1330,Hollin Meadows Elementary,Fairfax County,Elem,2022-2023,,40.0,52.0,64.0,,52.0
+1330,Hollin Meadows Elementary,Fairfax County,Elem,2023-2024,,51.0,58.0,58.0,,55.7
+1330,Hollin Meadows Elementary,Fairfax County,Elem,2024-2025,,57.0,57.0,48.0,,54.0
+1350,Stratford Landing Elementary,Fairfax County,Elem,2020-2021,,68.0,82.0,64.0,,71.3
+1350,Stratford Landing Elementary,Fairfax County,Elem,2021-2022,,76.0,83.0,66.0,,75.0
+1350,Stratford Landing Elementary,Fairfax County,Elem,2022-2023,,77.0,84.0,76.0,,79.0
+1350,Stratford Landing Elementary,Fairfax County,Elem,2023-2024,,78.0,86.0,84.0,,82.7
+1350,Stratford Landing Elementary,Fairfax County,Elem,2024-2025,,87.0,92.0,81.0,,86.7
+1360,Annandale Terrace Elementary,Fairfax County,Elem,2020-2021,,16.0,37.0,31.0,,28.0
+1360,Annandale Terrace Elementary,Fairfax County,Elem,2021-2022,,41.0,48.0,38.0,,42.3
+1360,Annandale Terrace Elementary,Fairfax County,Elem,2022-2023,,52.0,50.0,40.0,,47.3
+1360,Annandale Terrace Elementary,Fairfax County,Elem,2023-2024,,48.0,53.0,53.0,,51.3
+1360,Annandale Terrace Elementary,Fairfax County,Elem,2024-2025,,55.0,52.0,55.0,,54.0
+1371,Thomas Jefferson High for Science and Technology,Fairfax County,High,2020-2021,,100.0,100.0,100.0,100.0,100.0
+1371,Thomas Jefferson High for Science and Technology,Fairfax County,High,2021-2022,100.0,100.0,100.0,99.0,,99.8
+1371,Thomas Jefferson High for Science and Technology,Fairfax County,High,2022-2023,99.0,99.0,98.0,100.0,,99.0
+1371,Thomas Jefferson High for Science and Technology,Fairfax County,High,2023-2024,,100.0,100.0,100.0,,100.0
+1371,Thomas Jefferson High for Science and Technology,Fairfax County,High,2024-2025,,100.0,100.0,100.0,,100.0
+1380,Stenwood Elementary,Fairfax County,Elem,2020-2021,,74.0,87.0,66.0,,75.7
+1380,Stenwood Elementary,Fairfax County,Elem,2021-2022,,87.0,90.0,81.0,,86.0
+1380,Stenwood Elementary,Fairfax County,Elem,2022-2023,,90.0,91.0,86.0,,89.0
+1380,Stenwood Elementary,Fairfax County,Elem,2023-2024,,88.0,91.0,86.0,,88.3
+1380,Stenwood Elementary,Fairfax County,Elem,2024-2025,,90.0,90.0,84.0,,88.0
+1390,Mosaic Elementary,Fairfax County,Elem,2020-2021,,83.0,89.0,71.0,,81.0
+1390,Mosaic Elementary,Fairfax County,Elem,2021-2022,,89.0,89.0,74.0,,84.0
+1390,Mosaic Elementary,Fairfax County,Elem,2022-2023,,88.0,86.0,76.0,,83.3
+1390,Mosaic Elementary,Fairfax County,Elem,2023-2024,,89.0,87.0,77.0,,84.3
+1390,Mosaic Elementary,Fairfax County,Elem,2024-2025,,92.0,87.0,81.0,,86.7
+1400,Little Run Elementary,Fairfax County,Elem,2020-2021,,70.0,86.0,44.0,,66.7
+1400,Little Run Elementary,Fairfax County,Elem,2021-2022,,78.0,76.0,75.0,,76.3
+1400,Little Run Elementary,Fairfax County,Elem,2022-2023,,79.0,79.0,65.0,,74.3
+1400,Little Run Elementary,Fairfax County,Elem,2023-2024,,76.0,74.0,67.0,,72.3
+1400,Little Run Elementary,Fairfax County,Elem,2024-2025,,78.0,73.0,68.0,,73.0
+1410,Frost Middle,Fairfax County,Middle,2020-2021,,79.0,91.0,88.0,,86.0
+1410,Frost Middle,Fairfax County,Middle,2021-2022,,86.0,90.0,87.0,,87.7
+1410,Frost Middle,Fairfax County,Middle,2022-2023,,85.0,89.0,82.0,,85.3
+1410,Frost Middle,Fairfax County,Middle,2023-2024,,88.0,90.0,87.0,,88.3
+1410,Frost Middle,Fairfax County,Middle,2024-2025,,86.0,89.0,86.0,,87.0
+1420,Hybla Valley Elementary,Fairfax County,Elem,2020-2021,,15.0,26.0,12.0,,17.7
+1420,Hybla Valley Elementary,Fairfax County,Elem,2021-2022,,38.0,44.0,32.0,,38.0
+1420,Hybla Valley Elementary,Fairfax County,Elem,2022-2023,,39.0,39.0,47.0,,41.7
+1420,Hybla Valley Elementary,Fairfax County,Elem,2023-2024,,44.0,41.0,63.0,,49.3
+1420,Hybla Valley Elementary,Fairfax County,Elem,2024-2025,,49.0,45.0,49.0,,47.7
+1430,West Springfield Elementary,Fairfax County,Elem,2020-2021,,74.0,88.0,78.0,,80.0
+1430,West Springfield Elementary,Fairfax County,Elem,2021-2022,,84.0,84.0,72.0,,80.0
+1430,West Springfield Elementary,Fairfax County,Elem,2022-2023,,88.0,88.0,86.0,,87.3
+1430,West Springfield Elementary,Fairfax County,Elem,2023-2024,,87.0,86.0,85.0,,86.0
+1430,West Springfield Elementary,Fairfax County,Elem,2024-2025,,91.0,89.0,88.0,,89.3
+1440,Kings Park Elementary,Fairfax County,Elem,2020-2021,,56.0,64.0,,,60.0
+1440,Kings Park Elementary,Fairfax County,Elem,2021-2022,,83.0,74.0,,,78.5
+1440,Kings Park Elementary,Fairfax County,Elem,2022-2023,,78.0,77.0,,,77.5
+1440,Kings Park Elementary,Fairfax County,Elem,2023-2024,,78.0,77.0,,,77.5
+1440,Kings Park Elementary,Fairfax County,Elem,2024-2025,,82.0,79.0,,,80.5
+1450,Forestdale Elementary,Fairfax County,Elem,2020-2021,,24.0,38.0,30.0,,30.7
+1450,Forestdale Elementary,Fairfax County,Elem,2021-2022,,43.0,50.0,36.0,,43.0
+1450,Forestdale Elementary,Fairfax County,Elem,2022-2023,,44.0,48.0,47.0,,46.3
+1450,Forestdale Elementary,Fairfax County,Elem,2023-2024,,47.0,47.0,42.0,,45.3
+1450,Forestdale Elementary,Fairfax County,Elem,2024-2025,,51.0,45.0,58.0,,51.3
+1460,Langley High,Fairfax County,High,2020-2021,,70.0,71.0,89.0,94.0,81.0
+1460,Langley High,Fairfax County,High,2021-2022,83.0,94.0,98.0,96.0,,92.8
+1460,Langley High,Fairfax County,High,2022-2023,91.0,93.0,99.0,95.0,,94.5
+1460,Langley High,Fairfax County,High,2023-2024,94.0,94.0,99.0,93.0,,95.0
+1460,Langley High,Fairfax County,High,2024-2025,64.0,95.0,98.0,93.0,,87.5
+1480,Fairfax Villa Elementary,Fairfax County,Elem,2020-2021,,70.0,84.0,81.0,,78.3
+1480,Fairfax Villa Elementary,Fairfax County,Elem,2021-2022,,78.0,81.0,76.0,,78.3
+1480,Fairfax Villa Elementary,Fairfax County,Elem,2022-2023,,82.0,82.0,74.0,,79.3
+1480,Fairfax Villa Elementary,Fairfax County,Elem,2023-2024,,82.0,84.0,86.0,,84.0
+1480,Fairfax Villa Elementary,Fairfax County,Elem,2024-2025,,84.0,85.0,75.0,,81.3
+1500,Greenbriar West Elementary,Fairfax County,Elem,2020-2021,,84.0,88.0,77.0,,83.0
+1500,Greenbriar West Elementary,Fairfax County,Elem,2021-2022,,86.0,87.0,85.0,,86.0
+1500,Greenbriar West Elementary,Fairfax County,Elem,2022-2023,,84.0,84.0,83.0,,83.7
+1500,Greenbriar West Elementary,Fairfax County,Elem,2023-2024,,85.0,86.0,89.0,,86.7
+1500,Greenbriar West Elementary,Fairfax County,Elem,2024-2025,,89.0,90.0,86.0,,88.3
+1510,Columbia Elementary,Fairfax County,Elem,2020-2021,,53.0,63.0,42.0,,52.7
+1510,Columbia Elementary,Fairfax County,Elem,2021-2022,,82.0,84.0,67.0,,77.7
+1510,Columbia Elementary,Fairfax County,Elem,2022-2023,,80.0,80.0,82.0,,80.7
+1510,Columbia Elementary,Fairfax County,Elem,2023-2024,,79.0,75.0,67.0,,73.7
+1510,Columbia Elementary,Fairfax County,Elem,2024-2025,,80.0,72.0,76.0,,76.0
+1521,Holmes Middle,Fairfax County,Middle,2020-2021,17.0,33.0,59.0,49.0,17.0,35.0
+1521,Holmes Middle,Fairfax County,Middle,2021-2022,,47.0,62.0,55.0,,54.7
+1521,Holmes Middle,Fairfax County,Middle,2022-2023,,49.0,57.0,58.0,,54.7
+1521,Holmes Middle,Fairfax County,Middle,2023-2024,,54.0,53.0,53.0,,53.3
+1521,Holmes Middle,Fairfax County,Middle,2024-2025,,59.0,59.0,59.0,,59.0
+1530,Armstrong Elementary,Fairfax County,Elem,2020-2021,,66.0,82.0,56.0,,68.0
+1530,Armstrong Elementary,Fairfax County,Elem,2021-2022,,79.0,81.0,70.0,,76.7
+1530,Armstrong Elementary,Fairfax County,Elem,2022-2023,,76.0,74.0,62.0,,70.7
+1530,Armstrong Elementary,Fairfax County,Elem,2023-2024,,76.0,75.0,74.0,,75.0
+1530,Armstrong Elementary,Fairfax County,Elem,2024-2025,,74.0,77.0,65.0,,72.0
+1540,Union Mill Elementary,Fairfax County,Elem,2020-2021,,68.0,76.0,73.0,,72.3
+1540,Union Mill Elementary,Fairfax County,Elem,2021-2022,,88.0,85.0,89.0,,87.3
+1540,Union Mill Elementary,Fairfax County,Elem,2022-2023,,84.0,83.0,80.0,,82.3
+1540,Union Mill Elementary,Fairfax County,Elem,2023-2024,,85.0,83.0,82.0,,83.3
+1540,Union Mill Elementary,Fairfax County,Elem,2024-2025,,87.0,80.0,75.0,,80.7
+1550,Whitman Middle,Fairfax County,Middle,2020-2021,,25.0,57.0,45.0,,42.3
+1550,Whitman Middle,Fairfax County,Middle,2021-2022,,45.0,57.0,48.0,,50.0
+1550,Whitman Middle,Fairfax County,Middle,2022-2023,,49.0,55.0,60.0,,54.7
+1550,Whitman Middle,Fairfax County,Middle,2023-2024,,54.0,59.0,53.0,,55.3
+1550,Whitman Middle,Fairfax County,Middle,2024-2025,,62.0,63.0,59.0,,61.3
+1570,Lake Anne Elementary,Fairfax County,Elem,2020-2021,,38.0,63.0,43.0,,48.0
+1570,Lake Anne Elementary,Fairfax County,Elem,2021-2022,,65.0,70.0,72.0,,69.0
+1570,Lake Anne Elementary,Fairfax County,Elem,2022-2023,,61.0,66.0,56.0,,61.0
+1570,Lake Anne Elementary,Fairfax County,Elem,2023-2024,,58.0,60.0,47.0,,55.0
+1570,Lake Anne Elementary,Fairfax County,Elem,2024-2025,,62.0,60.0,49.0,,57.0
+1580,Westbriar Elementary,Fairfax County,Elem,2020-2021,,89.0,93.0,75.0,,85.7
+1580,Westbriar Elementary,Fairfax County,Elem,2021-2022,,95.0,96.0,89.0,,93.3
+1580,Westbriar Elementary,Fairfax County,Elem,2022-2023,,93.0,93.0,88.0,,91.3
+1580,Westbriar Elementary,Fairfax County,Elem,2023-2024,,92.0,91.0,90.0,,91.0
+1580,Westbriar Elementary,Fairfax County,Elem,2024-2025,,95.0,91.0,88.0,,91.3
+1590,Canterbury Woods Elementary,Fairfax County,Elem,2020-2021,,82.0,91.0,73.0,,82.0
+1590,Canterbury Woods Elementary,Fairfax County,Elem,2021-2022,,90.0,90.0,87.0,,89.0
+1590,Canterbury Woods Elementary,Fairfax County,Elem,2022-2023,,90.0,89.0,85.0,,88.0
+1590,Canterbury Woods Elementary,Fairfax County,Elem,2023-2024,,90.0,91.0,87.0,,89.3
+1590,Canterbury Woods Elementary,Fairfax County,Elem,2024-2025,,93.0,91.0,86.0,,90.0
+1600,Cub Run Elementary,Fairfax County,Elem,2020-2021,,57.0,70.0,59.0,,62.0
+1600,Cub Run Elementary,Fairfax County,Elem,2021-2022,,79.0,80.0,73.0,,77.3
+1600,Cub Run Elementary,Fairfax County,Elem,2022-2023,,78.0,82.0,75.0,,78.3
+1600,Cub Run Elementary,Fairfax County,Elem,2023-2024,,70.0,75.0,70.0,,71.7
+1600,Cub Run Elementary,Fairfax County,Elem,2024-2025,,76.0,75.0,81.0,,77.3
+1610,West Springfield High,Fairfax County,High,2020-2021,,74.0,74.0,82.0,90.0,80.0
+1610,West Springfield High,Fairfax County,High,2021-2022,,91.0,93.0,89.0,94.0,91.8
+1610,West Springfield High,Fairfax County,High,2022-2023,52.0,92.0,96.0,91.0,,82.8
+1610,West Springfield High,Fairfax County,High,2023-2024,33.0,94.0,94.0,90.0,,77.8
+1610,West Springfield High,Fairfax County,High,2024-2025,56.0,94.0,95.0,92.0,,84.2
+1620,Spring Hill Elementary,Fairfax County,Elem,2020-2021,,86.0,92.0,82.0,,86.7
+1620,Spring Hill Elementary,Fairfax County,Elem,2021-2022,,95.0,95.0,87.0,,92.3
+1620,Spring Hill Elementary,Fairfax County,Elem,2022-2023,,97.0,95.0,93.0,,95.0
+1620,Spring Hill Elementary,Fairfax County,Elem,2023-2024,,94.0,93.0,91.0,,92.7
+1620,Spring Hill Elementary,Fairfax County,Elem,2024-2025,,92.0,90.0,88.0,,90.0
+1630,Fairhill Elementary,Fairfax County,Elem,2020-2021,,69.0,76.0,36.0,,60.3
+1630,Fairhill Elementary,Fairfax County,Elem,2021-2022,,83.0,84.0,54.0,,73.7
+1630,Fairhill Elementary,Fairfax County,Elem,2022-2023,,82.0,82.0,77.0,,80.3
+1630,Fairhill Elementary,Fairfax County,Elem,2023-2024,,81.0,79.0,83.0,,81.0
+1630,Fairhill Elementary,Fairfax County,Elem,2024-2025,,80.0,79.0,77.0,,78.7
+1640,Mount Vernon Woods Elementary,Fairfax County,Elem,2020-2021,,18.0,45.0,17.0,,26.7
+1640,Mount Vernon Woods Elementary,Fairfax County,Elem,2021-2022,,51.0,57.0,55.0,,54.3
+1640,Mount Vernon Woods Elementary,Fairfax County,Elem,2022-2023,,42.0,53.0,47.0,,47.3
+1640,Mount Vernon Woods Elementary,Fairfax County,Elem,2023-2024,,41.0,50.0,47.0,,46.0
+1640,Mount Vernon Woods Elementary,Fairfax County,Elem,2024-2025,,49.0,54.0,49.0,,50.7
+1650,Olde Creek Elementary,Fairfax County,Elem,2020-2021,,58.0,73.0,54.0,,61.7
+1650,Olde Creek Elementary,Fairfax County,Elem,2021-2022,,68.0,74.0,62.0,,68.0
+1650,Olde Creek Elementary,Fairfax County,Elem,2022-2023,,76.0,75.0,64.0,,71.7
+1650,Olde Creek Elementary,Fairfax County,Elem,2023-2024,,76.0,79.0,65.0,,73.3
+1650,Olde Creek Elementary,Fairfax County,Elem,2024-2025,,86.0,82.0,84.0,,84.0
+1660,Shrevewood Elementary,Fairfax County,Elem,2020-2021,,81.0,84.0,60.0,,75.0
+1660,Shrevewood Elementary,Fairfax County,Elem,2021-2022,,74.0,75.0,59.0,,69.3
+1660,Shrevewood Elementary,Fairfax County,Elem,2022-2023,,67.0,72.0,67.0,,68.7
+1660,Shrevewood Elementary,Fairfax County,Elem,2023-2024,,70.0,71.0,59.0,,66.7
+1660,Shrevewood Elementary,Fairfax County,Elem,2024-2025,,67.0,67.0,65.0,,66.3
+1670,Westgate Elementary,Fairfax County,Elem,2020-2021,,59.0,64.0,65.0,,62.7
+1670,Westgate Elementary,Fairfax County,Elem,2021-2022,,75.0,77.0,75.0,,75.7
+1670,Westgate Elementary,Fairfax County,Elem,2022-2023,,77.0,79.0,71.0,,75.7
+1670,Westgate Elementary,Fairfax County,Elem,2023-2024,,73.0,77.0,73.0,,74.3
+1670,Westgate Elementary,Fairfax County,Elem,2024-2025,,73.0,72.0,61.0,,68.7
+1680,Silverbrook Elementary,Fairfax County,Elem,2020-2021,,83.0,89.0,76.0,,82.7
+1680,Silverbrook Elementary,Fairfax County,Elem,2021-2022,,91.0,93.0,89.0,,91.0
+1680,Silverbrook Elementary,Fairfax County,Elem,2022-2023,,95.0,91.0,90.0,,92.0
+1680,Silverbrook Elementary,Fairfax County,Elem,2023-2024,,93.0,89.0,85.0,,89.0
+1680,Silverbrook Elementary,Fairfax County,Elem,2024-2025,,93.0,92.0,81.0,,88.7
+1690,Cardinal Forest Elementary,Fairfax County,Elem,2020-2021,,59.0,76.0,57.0,,64.0
+1690,Cardinal Forest Elementary,Fairfax County,Elem,2021-2022,,81.0,83.0,65.0,,76.3
+1690,Cardinal Forest Elementary,Fairfax County,Elem,2022-2023,,80.0,83.0,63.0,,75.3
+1690,Cardinal Forest Elementary,Fairfax County,Elem,2023-2024,,80.0,77.0,70.0,,75.7
+1690,Cardinal Forest Elementary,Fairfax County,Elem,2024-2025,,80.0,79.0,71.0,,76.7
+1700,Cunningham Park Elementary,Fairfax County,Elem,2020-2021,,59.0,73.0,40.0,,57.3
+1700,Cunningham Park Elementary,Fairfax County,Elem,2021-2022,,71.0,69.0,60.0,,66.7
+1700,Cunningham Park Elementary,Fairfax County,Elem,2022-2023,,68.0,69.0,57.0,,64.7
+1700,Cunningham Park Elementary,Fairfax County,Elem,2023-2024,,66.0,71.0,62.0,,66.3
+1700,Cunningham Park Elementary,Fairfax County,Elem,2024-2025,,74.0,74.0,70.0,,72.7
+1710,Oakton High,Fairfax County,High,2020-2021,80.0,76.0,83.0,83.0,90.0,82.4
+1710,Oakton High,Fairfax County,High,2021-2022,,94.0,94.0,91.0,20.0,74.8
+1710,Oakton High,Fairfax County,High,2022-2023,,90.0,94.0,90.0,,91.3
+1710,Oakton High,Fairfax County,High,2023-2024,,93.0,94.0,87.0,,91.3
+1710,Oakton High,Fairfax County,High,2024-2025,,95.0,95.0,87.0,,92.3
+1730,Beech Tree Elementary,Fairfax County,Elem,2020-2021,,47.0,62.0,62.0,,57.0
+1730,Beech Tree Elementary,Fairfax County,Elem,2021-2022,,77.0,75.0,73.0,,75.0
+1730,Beech Tree Elementary,Fairfax County,Elem,2022-2023,,67.0,66.0,55.0,,62.7
+1730,Beech Tree Elementary,Fairfax County,Elem,2023-2024,,60.0,63.0,49.0,,57.3
+1730,Beech Tree Elementary,Fairfax County,Elem,2024-2025,,66.0,63.0,44.0,,57.7
+1740,Hayfield Elementary,Fairfax County,Elem,2020-2021,,52.0,76.0,56.0,,61.3
+1740,Hayfield Elementary,Fairfax County,Elem,2021-2022,,76.0,80.0,75.0,,77.0
+1740,Hayfield Elementary,Fairfax County,Elem,2022-2023,,78.0,75.0,69.0,,74.0
+1740,Hayfield Elementary,Fairfax County,Elem,2023-2024,,81.0,80.0,77.0,,79.3
+1740,Hayfield Elementary,Fairfax County,Elem,2024-2025,,81.0,83.0,80.0,,81.3
+1760,Kilmer Middle,Fairfax County,Middle,2020-2021,,71.0,84.0,74.0,,76.3
+1760,Kilmer Middle,Fairfax County,Middle,2021-2022,,80.0,84.0,77.0,,80.3
+1760,Kilmer Middle,Fairfax County,Middle,2022-2023,,82.0,86.0,80.0,,82.7
+1760,Kilmer Middle,Fairfax County,Middle,2023-2024,,81.0,85.0,81.0,,82.3
+1760,Kilmer Middle,Fairfax County,Middle,2024-2025,,84.0,86.0,83.0,,84.3
+1761,Kilmer Center,Fairfax County,Combined,2020-2021,,91.0,91.0,80.0,,87.3
+1761,Kilmer Center,Fairfax County,Combined,2021-2022,,6.0,18.0,18.0,,14.0
+1761,Kilmer Center,Fairfax County,Combined,2022-2023,,59.0,59.0,38.0,,52.0
+1761,Kilmer Center,Fairfax County,Other,2021-2022,,6.0,18.0,18.0,,14.0
+1761,Kilmer Center,Fairfax County,Other,2022-2023,,59.0,59.0,38.0,,52.0
+1761,Kilmer Center,Fairfax County,Other,2023-2024,,54.0,75.0,33.0,,54.0
+1761,Kilmer Center,Fairfax County,Other,2024-2025,,71.0,84.0,25.0,,60.0
+1770,Rolling Valley Elementary,Fairfax County,Elem,2020-2021,,61.0,76.0,56.0,,64.3
+1770,Rolling Valley Elementary,Fairfax County,Elem,2021-2022,,76.0,76.0,60.0,,70.7
+1770,Rolling Valley Elementary,Fairfax County,Elem,2022-2023,,73.0,73.0,78.0,,74.7
+1770,Rolling Valley Elementary,Fairfax County,Elem,2023-2024,,73.0,78.0,73.0,,74.7
+1770,Rolling Valley Elementary,Fairfax County,Elem,2024-2025,,79.0,80.0,66.0,,75.0
+1790,Brookfield Elementary,Fairfax County,Elem,2020-2021,,35.0,51.0,29.0,,38.3
+1790,Brookfield Elementary,Fairfax County,Elem,2021-2022,,55.0,56.0,54.0,,55.0
+1790,Brookfield Elementary,Fairfax County,Elem,2022-2023,,57.0,57.0,51.0,,55.0
+1790,Brookfield Elementary,Fairfax County,Elem,2023-2024,,55.0,54.0,47.0,,52.0
+1790,Brookfield Elementary,Fairfax County,Elem,2024-2025,,56.0,47.0,34.0,,45.7
+1800,Hayfield Secondary,Fairfax County,Combined,2020-2021,13.0,49.0,77.0,63.0,84.0,57.2
+1800,Hayfield Secondary,Fairfax County,Combined,2021-2022,47.0,65.0,79.0,67.0,68.0,65.2
+1800,Hayfield Secondary,Fairfax County,Combined,2022-2023,62.0,62.0,79.0,66.0,,67.2
+1800,Hayfield Secondary,Fairfax County,High,2021-2022,47.0,65.0,79.0,67.0,68.0,65.2
+1800,Hayfield Secondary,Fairfax County,High,2022-2023,62.0,62.0,79.0,66.0,,67.2
+1800,Hayfield Secondary,Fairfax County,High,2023-2024,27.0,71.0,82.0,71.0,25.0,55.2
+1800,Hayfield Secondary,Fairfax County,High,2024-2025,50.0,73.0,84.0,70.0,0.0,55.4
+1810,Wolftrap Elementary,Fairfax County,Elem,2020-2021,,90.0,96.0,81.0,,89.0
+1810,Wolftrap Elementary,Fairfax County,Elem,2021-2022,,93.0,94.0,86.0,,91.0
+1810,Wolftrap Elementary,Fairfax County,Elem,2022-2023,,95.0,95.0,87.0,,92.3
+1810,Wolftrap Elementary,Fairfax County,Elem,2023-2024,,97.0,96.0,96.0,,96.3
+1810,Wolftrap Elementary,Fairfax County,Elem,2024-2025,,96.0,97.0,96.0,,96.3
+1820,Riverside Elementary,Fairfax County,Elem,2020-2021,,31.0,54.0,24.0,,36.3
+1820,Riverside Elementary,Fairfax County,Elem,2021-2022,,39.0,60.0,48.0,,49.0
+1820,Riverside Elementary,Fairfax County,Elem,2022-2023,,59.0,65.0,71.0,,65.0
+1820,Riverside Elementary,Fairfax County,Elem,2023-2024,,70.0,66.0,71.0,,69.0
+1820,Riverside Elementary,Fairfax County,Elem,2024-2025,,75.0,68.0,81.0,,74.7
+1830,London Towne Elementary,Fairfax County,Elem,2020-2021,,37.0,53.0,33.0,,41.0
+1830,London Towne Elementary,Fairfax County,Elem,2021-2022,,62.0,65.0,53.0,,60.0
+1830,London Towne Elementary,Fairfax County,Elem,2022-2023,,56.0,59.0,51.0,,55.3
+1830,London Towne Elementary,Fairfax County,Elem,2023-2024,,56.0,62.0,58.0,,58.7
+1830,London Towne Elementary,Fairfax County,Elem,2024-2025,,58.0,63.0,64.0,,61.7
+1840,Greenbriar East Elementary,Fairfax County,Elem,2020-2021,,48.0,65.0,26.0,,46.3
+1840,Greenbriar East Elementary,Fairfax County,Elem,2021-2022,,68.0,77.0,54.0,,66.3
+1840,Greenbriar East Elementary,Fairfax County,Elem,2022-2023,,73.0,75.0,68.0,,72.0
+1840,Greenbriar East Elementary,Fairfax County,Elem,2023-2024,,67.0,69.0,62.0,,66.0
+1840,Greenbriar East Elementary,Fairfax County,Elem,2024-2025,,68.0,71.0,64.0,,67.7
+1850,Lees Corner Elementary,Fairfax County,Elem,2020-2021,,77.0,87.0,72.0,,78.7
+1850,Lees Corner Elementary,Fairfax County,Elem,2021-2022,,86.0,86.0,72.0,,81.3
+1850,Lees Corner Elementary,Fairfax County,Elem,2022-2023,,83.0,83.0,85.0,,83.7
+1850,Lees Corner Elementary,Fairfax County,Elem,2023-2024,,85.0,85.0,85.0,,85.0
+1850,Lees Corner Elementary,Fairfax County,Elem,2024-2025,,87.0,86.0,84.0,,85.7
+1860,Oak View Elementary,Fairfax County,Elem,2020-2021,,78.0,87.0,78.0,,81.0
+1860,Oak View Elementary,Fairfax County,Elem,2021-2022,,88.0,88.0,83.0,,86.3
+1860,Oak View Elementary,Fairfax County,Elem,2022-2023,,90.0,88.0,83.0,,87.0
+1860,Oak View Elementary,Fairfax County,Elem,2023-2024,,84.0,86.0,80.0,,83.3
+1860,Oak View Elementary,Fairfax County,Elem,2024-2025,,87.0,86.0,84.0,,85.7
+1870,Clermont Elementary,Fairfax County,Elem,2020-2021,,81.0,93.0,82.0,,85.3
+1870,Clermont Elementary,Fairfax County,Elem,2021-2022,,85.0,89.0,77.0,,83.7
+1870,Clermont Elementary,Fairfax County,Elem,2022-2023,,87.0,85.0,82.0,,84.7
+1870,Clermont Elementary,Fairfax County,Elem,2023-2024,,86.0,87.0,92.0,,88.3
+1870,Clermont Elementary,Fairfax County,Elem,2024-2025,,89.0,89.0,75.0,,84.3
+1880,Hunt Valley Elementary,Fairfax County,Elem,2020-2021,,75.0,84.0,63.0,,74.0
+1880,Hunt Valley Elementary,Fairfax County,Elem,2021-2022,,89.0,91.0,84.0,,88.0
+1880,Hunt Valley Elementary,Fairfax County,Elem,2022-2023,,89.0,89.0,88.0,,88.7
+1880,Hunt Valley Elementary,Fairfax County,Elem,2023-2024,,89.0,91.0,80.0,,86.7
+1880,Hunt Valley Elementary,Fairfax County,Elem,2024-2025,,90.0,89.0,82.0,,87.0
+1890,Kings Glen Elementary,Fairfax County,Elem,2020-2021,,66.0,78.0,52.0,,65.3
+1890,Kings Glen Elementary,Fairfax County,Elem,2021-2022,,85.0,83.0,76.0,,81.3
+1890,Kings Glen Elementary,Fairfax County,Elem,2022-2023,,88.0,85.0,71.0,,81.3
+1890,Kings Glen Elementary,Fairfax County,Middle,2021-2022,,85.0,83.0,76.0,,81.3
+1890,Kings Glen Elementary,Fairfax County,Middle,2022-2023,,88.0,85.0,71.0,,81.3
+1890,Kings Glen Elementary,Fairfax County,Middle,2023-2024,,85.0,82.0,67.0,,78.0
+1890,Kings Glen Elementary,Fairfax County,Middle,2024-2025,,85.0,82.0,72.0,,79.7
+1900,Key Middle,Fairfax County,Middle,2020-2021,100.0,38.0,53.0,43.0,100.0,66.8
+1900,Key Middle,Fairfax County,Middle,2021-2022,,49.0,55.0,43.0,,49.0
+1900,Key Middle,Fairfax County,Middle,2022-2023,,53.0,56.0,43.0,,50.7
+1900,Key Middle,Fairfax County,Middle,2023-2024,,51.0,56.0,48.0,,51.7
+1900,Key Middle,Fairfax County,Middle,2024-2025,,56.0,57.0,53.0,,55.3
+1901,Key Center,Fairfax County,Combined,2020-2021,,80.0,100.0,,,90.0
+1901,Key Center,Fairfax County,Combined,2021-2022,,16.0,36.0,7.0,,19.7
+1901,Key Center,Fairfax County,Combined,2022-2023,,28.0,33.0,33.0,,31.3
+1901,Key Center,Fairfax County,Other,2021-2022,,16.0,36.0,7.0,,19.7
+1901,Key Center,Fairfax County,Other,2022-2023,,28.0,33.0,33.0,,31.3
+1901,Key Center,Fairfax County,Other,2023-2024,,44.0,50.0,50.0,,48.0
+1901,Key Center,Fairfax County,Other,2024-2025,,73.0,73.0,,,73.0
+1920,Fort Hunt Elementary,Fairfax County,Elem,2020-2021,,55.0,73.0,48.0,,58.7
+1920,Fort Hunt Elementary,Fairfax County,Elem,2021-2022,,71.0,81.0,61.0,,71.0
+1920,Fort Hunt Elementary,Fairfax County,Elem,2022-2023,,75.0,74.0,68.0,,72.3
+1920,Fort Hunt Elementary,Fairfax County,Elem,2023-2024,,76.0,72.0,62.0,,70.0
+1920,Fort Hunt Elementary,Fairfax County,Elem,2024-2025,,77.0,78.0,65.0,,73.3
+1940,Camelot Elementary,Fairfax County,Elem,2020-2021,,55.0,65.0,51.0,,57.0
+1940,Camelot Elementary,Fairfax County,Elem,2021-2022,,73.0,74.0,65.0,,70.7
+1940,Camelot Elementary,Fairfax County,Elem,2022-2023,,70.0,69.0,68.0,,69.0
+1940,Camelot Elementary,Fairfax County,Elem,2023-2024,,77.0,67.0,63.0,,69.0
+1940,Camelot Elementary,Fairfax County,Elem,2024-2025,,79.0,70.0,74.0,,74.3
+1950,Hunters Woods Elementary School for the Arts and Sciences,Fairfax County,Elem,2020-2021,,73.0,79.0,68.0,,73.3
+1950,Hunters Woods Elementary School for the Arts and Sciences,Fairfax County,Elem,2021-2022,,79.0,84.0,80.0,,81.0
+1950,Hunters Woods Elementary School for the Arts and Sciences,Fairfax County,Elem,2022-2023,,80.0,84.0,74.0,,79.3
+1950,Hunters Woods Elementary School for the Arts and Sciences,Fairfax County,Elem,2023-2024,,85.0,88.0,81.0,,84.7
+1950,Hunters Woods Elementary School for the Arts and Sciences,Fairfax County,Elem,2024-2025,,87.0,85.0,81.0,,84.3
+1960,Robinson Secondary,Fairfax County,Combined,2020-2021,100.0,66.0,87.0,75.0,93.0,84.2
+1960,Robinson Secondary,Fairfax County,Combined,2021-2022,,85.0,93.0,85.0,95.0,89.5
+1960,Robinson Secondary,Fairfax County,Combined,2022-2023,75.0,86.0,90.0,84.0,50.0,77.0
+1960,Robinson Secondary,Fairfax County,High,2021-2022,,85.0,93.0,85.0,95.0,89.5
+1960,Robinson Secondary,Fairfax County,High,2022-2023,75.0,86.0,90.0,84.0,50.0,77.0
+1960,Robinson Secondary,Fairfax County,High,2023-2024,48.0,84.0,88.0,86.0,18.0,64.8
+1960,Robinson Secondary,Fairfax County,High,2024-2025,58.0,84.0,91.0,84.0,,79.2
+1970,Laurel Ridge Elementary,Fairfax County,Elem,2020-2021,,63.0,81.0,54.0,,66.0
+1970,Laurel Ridge Elementary,Fairfax County,Elem,2021-2022,,81.0,86.0,58.0,,75.0
+1970,Laurel Ridge Elementary,Fairfax County,Elem,2022-2023,,83.0,86.0,78.0,,82.3
+1970,Laurel Ridge Elementary,Fairfax County,Elem,2023-2024,,82.0,85.0,68.0,,78.3
+1970,Laurel Ridge Elementary,Fairfax County,Elem,2024-2025,,88.0,89.0,81.0,,86.0
+1980,Hutchison Elementary,Fairfax County,Elem,2020-2021,,19.0,33.0,12.0,,21.3
+1980,Hutchison Elementary,Fairfax County,Elem,2021-2022,,41.0,41.0,39.0,,40.3
+1980,Hutchison Elementary,Fairfax County,Elem,2022-2023,,41.0,43.0,39.0,,41.0
+1980,Hutchison Elementary,Fairfax County,Elem,2023-2024,,44.0,38.0,27.0,,36.3
+1980,Hutchison Elementary,Fairfax County,Elem,2024-2025,,44.0,37.0,41.0,,40.7
+1990,South Lakes High,Fairfax County,High,2020-2021,60.0,49.0,62.0,73.0,73.0,63.4
+1990,South Lakes High,Fairfax County,High,2021-2022,49.0,75.0,84.0,74.0,55.0,67.4
+1990,South Lakes High,Fairfax County,High,2022-2023,53.0,84.0,91.0,73.0,,75.2
+1990,South Lakes High,Fairfax County,High,2023-2024,83.0,81.0,85.0,71.0,,80.0
+1990,South Lakes High,Fairfax County,High,2024-2025,52.0,79.0,88.0,74.0,19.0,62.4
+2000,Bonnie Brae Elementary,Fairfax County,Elem,2020-2021,,61.0,79.0,67.0,,69.0
+2000,Bonnie Brae Elementary,Fairfax County,Elem,2021-2022,,77.0,82.0,54.0,,71.0
+2000,Bonnie Brae Elementary,Fairfax County,Elem,2022-2023,,73.0,80.0,71.0,,74.7
+2000,Bonnie Brae Elementary,Fairfax County,Elem,2023-2024,,78.0,80.0,73.0,,77.0
+2000,Bonnie Brae Elementary,Fairfax County,Elem,2024-2025,,80.0,82.0,70.0,,77.3
+2010,Dranesville Elementary,Fairfax County,Elem,2020-2021,,30.0,52.0,35.0,,39.0
+2010,Dranesville Elementary,Fairfax County,Elem,2021-2022,,57.0,65.0,51.0,,57.7
+2010,Dranesville Elementary,Fairfax County,Elem,2022-2023,,63.0,66.0,73.0,,67.3
+2010,Dranesville Elementary,Fairfax County,Elem,2023-2024,,67.0,67.0,67.0,,67.0
+2010,Dranesville Elementary,Fairfax County,Elem,2024-2025,,66.0,71.0,58.0,,65.0
+2020,Crossfield Elementary,Fairfax County,Elem,2020-2021,,77.0,87.0,65.0,,76.3
+2020,Crossfield Elementary,Fairfax County,Elem,2021-2022,,85.0,87.0,79.0,,83.7
+2020,Crossfield Elementary,Fairfax County,Elem,2022-2023,,84.0,87.0,79.0,,83.3
+2020,Crossfield Elementary,Fairfax County,Elem,2023-2024,,85.0,86.0,86.0,,85.7
+2020,Crossfield Elementary,Fairfax County,Elem,2024-2025,,87.0,87.0,81.0,,85.0
+2030,Sangster Elementary,Fairfax County,Elem,2020-2021,,89.0,94.0,90.0,,91.0
+2030,Sangster Elementary,Fairfax County,Elem,2021-2022,,98.0,98.0,99.0,,98.3
+2030,Sangster Elementary,Fairfax County,Elem,2022-2023,,98.0,97.0,93.0,,96.0
+2030,Sangster Elementary,Fairfax County,Elem,2023-2024,,98.0,97.0,97.0,,97.3
+2030,Sangster Elementary,Fairfax County,Elem,2024-2025,,99.0,98.0,96.0,,97.7
+2040,Saratoga Elementary,Fairfax County,Elem,2020-2021,,52.0,66.0,52.0,,56.7
+2040,Saratoga Elementary,Fairfax County,Elem,2021-2022,,67.0,71.0,58.0,,65.3
+2040,Saratoga Elementary,Fairfax County,Elem,2022-2023,,75.0,74.0,74.0,,74.3
+2040,Saratoga Elementary,Fairfax County,Elem,2023-2024,,75.0,70.0,69.0,,71.3
+2040,Saratoga Elementary,Fairfax County,Elem,2024-2025,,77.0,71.0,63.0,,70.3
+2050,Virginia Run Elementary,Fairfax County,Elem,2020-2021,,46.0,57.0,37.0,,46.7
+2050,Virginia Run Elementary,Fairfax County,Elem,2021-2022,,66.0,67.0,62.0,,65.0
+2050,Virginia Run Elementary,Fairfax County,Elem,2022-2023,,70.0,69.0,65.0,,68.0
+2050,Virginia Run Elementary,Fairfax County,Elem,2023-2024,,70.0,67.0,65.0,,67.3
+2050,Virginia Run Elementary,Fairfax County,Elem,2024-2025,,73.0,68.0,72.0,,71.0
+2060,Willow Springs Elementary,Fairfax County,Elem,2020-2021,,81.0,89.0,72.0,,80.7
+2060,Willow Springs Elementary,Fairfax County,Elem,2021-2022,,89.0,89.0,85.0,,87.7
+2060,Willow Springs Elementary,Fairfax County,Elem,2022-2023,,89.0,91.0,83.0,,87.7
+2060,Willow Springs Elementary,Fairfax County,Elem,2023-2024,,91.0,89.0,86.0,,88.7
+2060,Willow Springs Elementary,Fairfax County,Elem,2024-2025,,90.0,91.0,87.0,,89.3
+2070,Stone Middle,Fairfax County,Middle,2020-2021,,52.0,75.0,59.0,,62.0
+2070,Stone Middle,Fairfax County,Middle,2021-2022,,75.0,75.0,62.0,,70.7
+2070,Stone Middle,Fairfax County,Middle,2022-2023,,76.0,77.0,67.0,,73.3
+2070,Stone Middle,Fairfax County,Middle,2023-2024,,78.0,76.0,70.0,,74.7
+2070,Stone Middle,Fairfax County,Middle,2024-2025,,75.0,76.0,65.0,,72.0
+2080,Poplar Tree Elementary,Fairfax County,Elem,2020-2021,,92.0,95.0,90.0,,92.3
+2080,Poplar Tree Elementary,Fairfax County,Elem,2021-2022,,96.0,95.0,90.0,,93.7
+2080,Poplar Tree Elementary,Fairfax County,Elem,2022-2023,,93.0,94.0,95.0,,94.0
+2080,Poplar Tree Elementary,Fairfax County,Elem,2023-2024,,93.0,91.0,88.0,,90.7
+2080,Poplar Tree Elementary,Fairfax County,Elem,2024-2025,,94.0,90.0,90.0,,91.3
+2090,Centre Ridge Elementary,Fairfax County,Elem,2020-2021,,43.0,57.0,44.0,,48.0
+2090,Centre Ridge Elementary,Fairfax County,Elem,2021-2022,,63.0,61.0,51.0,,58.3
+2090,Centre Ridge Elementary,Fairfax County,Elem,2022-2023,,62.0,58.0,56.0,,58.7
+2090,Centre Ridge Elementary,Fairfax County,Elem,2023-2024,,65.0,60.0,62.0,,62.3
+2090,Centre Ridge Elementary,Fairfax County,Elem,2024-2025,,67.0,65.0,65.0,,65.7
+2100,Waples Mill Elementary,Fairfax County,Elem,2020-2021,,66.0,81.0,45.0,,64.0
+2100,Waples Mill Elementary,Fairfax County,Elem,2021-2022,,80.0,87.0,75.0,,80.7
+2100,Waples Mill Elementary,Fairfax County,Elem,2022-2023,,80.0,81.0,65.0,,75.3
+2100,Waples Mill Elementary,Fairfax County,Elem,2023-2024,,85.0,86.0,86.0,,85.7
+2100,Waples Mill Elementary,Fairfax County,Elem,2024-2025,,90.0,91.0,85.0,,88.7
+2200,McNair Upper Elementary,Fairfax County,Elem,2020-2021,,71.0,80.0,64.0,,71.7
+2200,McNair Upper Elementary,Fairfax County,Elem,2021-2022,,79.0,81.0,69.0,,76.3
+2200,McNair Upper Elementary,Fairfax County,Elem,2022-2023,,83.0,79.0,73.0,,78.3
+2200,McNair Upper Elementary,Fairfax County,Elem,2023-2024,,76.0,75.0,67.0,,72.7
+2200,McNair Upper Elementary,Fairfax County,Elem,2024-2025,,76.0,74.0,68.0,,72.7
+2201,Bryant High,Fairfax County,High,2020-2021,19.0,24.0,36.0,27.0,0.0,21.2
+2201,Bryant High,Fairfax County,High,2021-2022,42.0,71.0,36.0,18.0,18.0,37.0
+2201,Bryant High,Fairfax County,High,2022-2023,33.0,78.0,53.0,22.0,,46.5
+2201,Bryant High,Fairfax County,High,2023-2024,17.0,75.0,22.0,29.0,,35.8
+2201,Bryant High,Fairfax County,High,2024-2025,13.0,79.0,43.0,26.0,,40.2
+2203,Aldrin Elementary,Fairfax County,Elem,2020-2021,,70.0,84.0,61.0,,71.7
+2203,Aldrin Elementary,Fairfax County,Elem,2021-2022,,78.0,87.0,81.0,,82.0
+2203,Aldrin Elementary,Fairfax County,Elem,2022-2023,,79.0,83.0,66.0,,76.0
+2203,Aldrin Elementary,Fairfax County,Elem,2023-2024,,80.0,85.0,77.0,,80.7
+2203,Aldrin Elementary,Fairfax County,Elem,2024-2025,,84.0,85.0,67.0,,78.7
+2204,Deer Park Elementary,Fairfax County,Elem,2020-2021,,39.0,62.0,37.0,,46.0
+2204,Deer Park Elementary,Fairfax County,Elem,2021-2022,,62.0,69.0,59.0,,63.3
+2204,Deer Park Elementary,Fairfax County,Elem,2022-2023,,64.0,69.0,73.0,,68.7
+2204,Deer Park Elementary,Fairfax County,Elem,2023-2024,,73.0,66.0,76.0,,71.7
+2204,Deer Park Elementary,Fairfax County,Elem,2024-2025,,72.0,69.0,71.0,,70.7
+2205,Centreville Elementary,Fairfax County,Elem,2020-2021,,43.0,63.0,48.0,,51.3
+2205,Centreville Elementary,Fairfax County,Elem,2021-2022,,70.0,77.0,52.0,,66.3
+2205,Centreville Elementary,Fairfax County,Elem,2022-2023,,72.0,75.0,76.0,,74.3
+2205,Centreville Elementary,Fairfax County,Elem,2023-2024,,79.0,82.0,84.0,,81.7
+2205,Centreville Elementary,Fairfax County,Elem,2024-2025,,84.0,82.0,74.0,,80.0
+2209,Lane Elementary,Fairfax County,Elem,2020-2021,80.0,57.0,69.0,34.0,,60.0
+2209,Lane Elementary,Fairfax County,Elem,2021-2022,,71.0,78.0,49.0,,66.0
+2209,Lane Elementary,Fairfax County,Elem,2022-2023,,70.0,77.0,65.0,,70.7
+2209,Lane Elementary,Fairfax County,Elem,2023-2024,,68.0,73.0,68.0,,69.7
+2209,Lane Elementary,Fairfax County,Elem,2024-2025,,71.0,74.0,64.0,,69.7
+2210,Halley Elementary,Fairfax County,Elem,2020-2021,,51.0,64.0,42.0,,52.3
+2210,Halley Elementary,Fairfax County,Elem,2021-2022,,63.0,72.0,58.0,,64.3
+2210,Halley Elementary,Fairfax County,Elem,2022-2023,,65.0,71.0,57.0,,64.3
+2210,Halley Elementary,Fairfax County,Elem,2023-2024,,68.0,74.0,68.0,,70.0
+2210,Halley Elementary,Fairfax County,Elem,2024-2025,,71.0,72.0,65.0,,69.3
+2211,Mountain View High,Fairfax County,High,2020-2021,,30.0,28.0,15.0,17.0,22.5
+2211,Mountain View High,Fairfax County,High,2021-2022,,71.0,26.0,30.0,5.0,33.0
+2211,Mountain View High,Fairfax County,High,2022-2023,,64.0,31.0,28.0,,41.0
+2211,Mountain View High,Fairfax County,High,2023-2024,,76.0,29.0,37.0,,47.3
+2211,Mountain View High,Fairfax County,High,2024-2025,,79.0,31.0,47.0,,52.3
+2222,Carson Middle,Fairfax County,Middle,2020-2021,,85.0,92.0,88.0,,88.3
+2222,Carson Middle,Fairfax County,Middle,2021-2022,,87.0,89.0,85.0,,87.0
+2222,Carson Middle,Fairfax County,Middle,2022-2023,,88.0,89.0,82.0,,86.3
+2222,Carson Middle,Fairfax County,Middle,2023-2024,,88.0,88.0,84.0,,86.7
+2222,Carson Middle,Fairfax County,Middle,2024-2025,,86.0,88.0,83.0,,85.7
+2225,Bull Run Elementary,Fairfax County,Elem,2020-2021,,58.0,79.0,74.0,,70.3
+2225,Bull Run Elementary,Fairfax County,Elem,2021-2022,,61.0,74.0,59.0,,64.7
+2225,Bull Run Elementary,Fairfax County,Elem,2022-2023,,61.0,68.0,66.0,,65.0
+2225,Bull Run Elementary,Fairfax County,Elem,2023-2024,,66.0,69.0,65.0,,66.7
+2225,Bull Run Elementary,Fairfax County,Elem,2024-2025,,70.0,71.0,66.0,,69.0
+2228,Westfield High,Fairfax County,High,2020-2021,92.0,48.0,65.0,72.0,73.0,70.0
+2228,Westfield High,Fairfax County,High,2021-2022,67.0,78.0,86.0,76.0,86.0,78.6
+2228,Westfield High,Fairfax County,High,2022-2023,41.0,71.0,85.0,72.0,,67.2
+2228,Westfield High,Fairfax County,High,2023-2024,33.0,79.0,88.0,70.0,,67.5
+2228,Westfield High,Fairfax County,High,2024-2025,46.0,74.0,83.0,77.0,,70.0
+2229,Daniels Run Elementary,Fairfax County,Elem,2020-2021,,56.0,64.0,42.0,,54.0
+2229,Daniels Run Elementary,Fairfax County,Elem,2021-2022,,70.0,72.0,55.0,,65.7
+2229,Daniels Run Elementary,Fairfax County,Elem,2022-2023,,69.0,67.0,58.0,,64.7
+2229,Daniels Run Elementary,Fairfax County,Elem,2023-2024,,69.0,68.0,63.0,,66.7
+2229,Daniels Run Elementary,Fairfax County,Elem,2024-2025,,75.0,70.0,63.0,,69.3
+2230,Providence Elementary,Fairfax County,Elem,2020-2021,,50.0,60.0,49.0,,53.0
+2230,Providence Elementary,Fairfax County,Elem,2021-2022,,73.0,70.0,63.0,,68.7
+2230,Providence Elementary,Fairfax County,Elem,2022-2023,,79.0,72.0,58.0,,69.7
+2230,Providence Elementary,Fairfax County,Elem,2023-2024,,77.0,68.0,62.0,,69.0
+2230,Providence Elementary,Fairfax County,Elem,2024-2025,,77.0,69.0,59.0,,68.3
+2233,Liberty Middle,Fairfax County,Middle,2020-2021,100.0,65.0,74.0,56.0,100.0,79.0
+2233,Liberty Middle,Fairfax County,Middle,2021-2022,,76.0,76.0,64.0,,72.0
+2233,Liberty Middle,Fairfax County,Middle,2022-2023,,77.0,78.0,68.0,,74.3
+2233,Liberty Middle,Fairfax County,Middle,2023-2024,,78.0,78.0,71.0,,75.7
+2233,Liberty Middle,Fairfax County,Middle,2024-2025,,80.0,78.0,73.0,,77.0
+2234,Colvin Run Elementary,Fairfax County,Elem,2020-2021,,89.0,94.0,86.0,,89.7
+2234,Colvin Run Elementary,Fairfax County,Elem,2021-2022,,94.0,94.0,92.0,,93.3
+2234,Colvin Run Elementary,Fairfax County,Elem,2022-2023,,95.0,96.0,97.0,,96.0
+2234,Colvin Run Elementary,Fairfax County,Elem,2023-2024,,95.0,96.0,98.0,,96.3
+2234,Colvin Run Elementary,Fairfax County,Elem,2024-2025,,96.0,97.0,94.0,,95.7
+2235,Island Creek Elementary,Fairfax County,Elem,2020-2021,,66.0,80.0,72.0,,72.7
+2235,Island Creek Elementary,Fairfax County,Elem,2021-2022,,84.0,88.0,88.0,,86.7
+2235,Island Creek Elementary,Fairfax County,Elem,2022-2023,,82.0,87.0,82.0,,83.7
+2235,Island Creek Elementary,Fairfax County,Elem,2023-2024,,80.0,87.0,80.0,,82.3
+2235,Island Creek Elementary,Fairfax County,Elem,2024-2025,,83.0,85.0,73.0,,80.3
+2236,Lorton Station Elementary,Fairfax County,Elem,2020-2021,,49.0,69.0,44.0,,54.0
+2236,Lorton Station Elementary,Fairfax County,Elem,2021-2022,,54.0,64.0,46.0,,54.7
+2236,Lorton Station Elementary,Fairfax County,Elem,2022-2023,,60.0,65.0,69.0,,64.7
+2236,Lorton Station Elementary,Fairfax County,Elem,2023-2024,,56.0,63.0,56.0,,58.3
+2236,Lorton Station Elementary,Fairfax County,Elem,2024-2025,,66.0,65.0,55.0,,62.0
+2237,Powell Elementary,Fairfax County,Elem,2020-2021,,72.0,79.0,59.0,,70.0
+2237,Powell Elementary,Fairfax County,Elem,2021-2022,,87.0,88.0,74.0,,83.0
+2237,Powell Elementary,Fairfax County,Elem,2022-2023,,87.0,83.0,85.0,,85.0
+2237,Powell Elementary,Fairfax County,Elem,2023-2024,,88.0,84.0,82.0,,84.7
+2237,Powell Elementary,Fairfax County,Elem,2024-2025,,87.0,84.0,78.0,,83.0
+2241,South County High,Fairfax County,High,2020-2021,83.0,70.0,68.0,69.0,86.0,75.2
+2241,South County High,Fairfax County,High,2021-2022,79.0,80.0,91.0,68.0,70.0,77.6
+2241,South County High,Fairfax County,High,2022-2023,23.0,81.0,92.0,70.0,,66.5
+2241,South County High,Fairfax County,High,2023-2024,56.0,82.0,90.0,71.0,,74.8
+2241,South County High,Fairfax County,High,2024-2025,18.0,84.0,93.0,77.0,,68.0
+2243,Eagle View Elementary,Fairfax County,Elem,2020-2021,,45.0,70.0,46.0,,53.7
+2243,Eagle View Elementary,Fairfax County,Elem,2021-2022,,63.0,75.0,61.0,,66.3
+2243,Eagle View Elementary,Fairfax County,Elem,2022-2023,,65.0,74.0,61.0,,66.7
+2243,Eagle View Elementary,Fairfax County,Elem,2023-2024,,63.0,69.0,58.0,,63.3
+2243,Eagle View Elementary,Fairfax County,Elem,2024-2025,,72.0,71.0,66.0,,69.7
+2347,Coates Elementary,Fairfax County,Elem,2020-2021,,48.0,56.0,40.0,,48.0
+2347,Coates Elementary,Fairfax County,Elem,2021-2022,,68.0,66.0,51.0,,61.7
+2347,Coates Elementary,Fairfax County,Elem,2022-2023,,67.0,63.0,55.0,,61.7
+2347,Coates Elementary,Fairfax County,Elem,2023-2024,,48.0,55.0,42.0,,48.3
+2347,Coates Elementary,Fairfax County,Elem,2024-2025,,59.0,51.0,50.0,,53.3
+2348,Laurel Hill Elementary,Fairfax County,Elem,2020-2021,,71.0,79.0,64.0,,71.3
+2348,Laurel Hill Elementary,Fairfax County,Elem,2021-2022,,84.0,85.0,69.0,,79.3
+2348,Laurel Hill Elementary,Fairfax County,Elem,2022-2023,,87.0,85.0,83.0,,85.0
+2348,Laurel Hill Elementary,Fairfax County,Elem,2023-2024,,86.0,85.0,85.0,,85.3
+2348,Laurel Hill Elementary,Fairfax County,Elem,2024-2025,,85.0,86.0,79.0,,83.3
+2410,Mason Crest Elementary,Fairfax County,Elem,2020-2021,,42.0,52.0,45.0,,46.3
+2410,Mason Crest Elementary,Fairfax County,Elem,2021-2022,,65.0,60.0,64.0,,63.0
+2410,Mason Crest Elementary,Fairfax County,Elem,2022-2023,,66.0,60.0,65.0,,63.7
+2410,Mason Crest Elementary,Fairfax County,Elem,2023-2024,,63.0,62.0,56.0,,60.3
+2410,Mason Crest Elementary,Fairfax County,Elem,2024-2025,,71.0,62.0,53.0,,62.0
+2420,South County Middle,Fairfax County,Middle,2020-2021,,66.0,84.0,70.0,,73.3
+2420,South County Middle,Fairfax County,Middle,2021-2022,,84.0,85.0,75.0,,81.3
+2420,South County Middle,Fairfax County,Middle,2022-2023,,80.0,81.0,70.0,,77.0
+2420,South County Middle,Fairfax County,Middle,2023-2024,,86.0,86.0,76.0,,82.7
+2420,South County Middle,Fairfax County,Middle,2024-2025,,88.0,85.0,80.0,,84.3
+2458,Fort Belvoir Upper Elementary,Fairfax County,Elem,2020-2021,,51.0,74.0,47.0,,57.3
+2458,Fort Belvoir Upper Elementary,Fairfax County,Elem,2021-2022,,66.0,77.0,63.0,,68.7
+2458,Fort Belvoir Upper Elementary,Fairfax County,Elem,2022-2023,,64.0,70.0,71.0,,68.3
+2458,Fort Belvoir Upper Elementary,Fairfax County,Elem,2023-2024,,65.0,69.0,69.0,,67.7
+2458,Fort Belvoir Upper Elementary,Fairfax County,Elem,2024-2025,,72.0,74.0,71.0,,72.3
+2459,Bailey's Upper Elementary School for the Arts and Sciences,Fairfax County,Elem,2020-2021,,20.0,33.0,26.0,,26.3
+2459,Bailey's Upper Elementary School for the Arts and Sciences,Fairfax County,Elem,2021-2022,,40.0,41.0,37.0,,39.3
+2459,Bailey's Upper Elementary School for the Arts and Sciences,Fairfax County,Elem,2022-2023,,43.0,36.0,42.0,,40.3
+2459,Bailey's Upper Elementary School for the Arts and Sciences,Fairfax County,Elem,2023-2024,,47.0,40.0,50.0,,45.7
+2459,Bailey's Upper Elementary School for the Arts and Sciences,Fairfax County,Elem,2024-2025,,54.0,46.0,43.0,,47.7

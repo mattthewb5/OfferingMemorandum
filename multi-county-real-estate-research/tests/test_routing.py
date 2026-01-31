@@ -59,6 +59,61 @@ class TestCountyDetection:
         assert 'fairfax' in supported
         assert len(supported) == 2
 
+    def test_county_detection_herndon_is_fairfax(self, county_detector):
+        """
+        Regression test: Herndon, VA must detect as Fairfax County.
+
+        Bug: Herndon (38.9696, -77.3861) was incorrectly detected as Loudoun
+        due to overlapping bounding boxes in the longitude range -77.54 to -77.32.
+
+        Fix: Tightened Loudoun's eastern boundary to -77.50.
+        """
+        detect = county_detector['detect_county']
+
+        # Herndon, VA coordinates
+        lat, lon = 38.9696, -77.3861
+
+        result = detect(lat, lon)
+
+        assert result == 'fairfax', \
+            f"Herndon (38.9696, -77.3861) should be 'fairfax', got '{result}'"
+
+    def test_county_detection_boundary_leesburg_still_loudoun(self, county_detector):
+        """Verify Leesburg still detects as Loudoun after boundary fix."""
+        detect = county_detector['detect_county']
+
+        # Leesburg, VA coordinates
+        lat, lon = 39.1157, -77.5636
+
+        result = detect(lat, lon)
+
+        assert result == 'loudoun', \
+            f"Leesburg (39.1157, -77.5636) should be 'loudoun', got '{result}'"
+
+    def test_county_detection_boundary_vienna_still_fairfax(self, county_detector):
+        """Verify Vienna still detects as Fairfax after boundary fix."""
+        detect = county_detector['detect_county']
+
+        # Vienna, VA coordinates
+        lat, lon = 38.9012, -77.2653
+
+        result = detect(lat, lon)
+
+        assert result == 'fairfax', \
+            f"Vienna (38.9012, -77.2653) should be 'fairfax', got '{result}'"
+
+    def test_county_bounds_no_overlap(self, county_detector):
+        """Verify county bounding boxes do not overlap."""
+        from utils.county_detector import COUNTY_BOUNDS
+
+        loudoun = COUNTY_BOUNDS['loudoun']
+        fairfax = COUNTY_BOUNDS['fairfax']
+
+        # Loudoun's eastern edge should not extend past Fairfax's western edge
+        # (Loudoun is west of Fairfax, so Loudoun max_lon <= Fairfax min_lon)
+        assert loudoun['max_lon'] <= fairfax['min_lon'], \
+            f"Overlap detected: Loudoun max_lon ({loudoun['max_lon']}) > Fairfax min_lon ({fairfax['min_lon']})"
+
 
 class TestGeocoding:
     """Test geocoding functionality."""

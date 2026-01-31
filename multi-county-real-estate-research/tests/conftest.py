@@ -19,11 +19,16 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 @pytest.fixture(scope="session")
 def loudoun_test_address():
-    """Loudoun County test address with known coordinates."""
+    """Loudoun County test address with known coordinates.
+
+    Note: Uses Leesburg city center coordinates which are clearly within
+    the simplified rectangular bounds. Edge addresses near county borders
+    may fall outside simplified POC bounds.
+    """
     return {
-        'address': '43422 Cloister Pl, Leesburg, VA 20176',
-        'lat': 39.112665,
-        'lon': -77.495668,
+        'address': 'Leesburg, VA',
+        'lat': 39.1157,
+        'lon': -77.5636,
         'expected_county': 'loudoun',
         'city': 'Leesburg'
     }

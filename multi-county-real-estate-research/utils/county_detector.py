@@ -13,17 +13,23 @@ from typing import Optional
 
 # County bounding boxes (simplified rectangular approximations)
 # Production would use actual county boundary polygons
+#
+# NOTE: Bounds are carefully set to avoid overlap. Loudoun is west of Fairfax.
+# Dividing line is approximately -77.50 longitude.
+# - Loudoun: western county, max_lon = -77.50
+# - Fairfax: eastern county, min_lon = -77.50
+# Small gaps may exist; addresses in gaps return 'unknown'.
 COUNTY_BOUNDS = {
     'loudoun': {
         'min_lat': 38.84,
         'max_lat': 39.32,
         'min_lon': -77.98,
-        'max_lon': -77.32
+        'max_lon': -77.50  # Tightened from -77.32 to eliminate Fairfax overlap
     },
     'fairfax': {
         'min_lat': 38.58,
         'max_lat': 39.04,
-        'min_lon': -77.54,
+        'min_lon': -77.50,  # Adjusted from -77.54 to meet Loudoun boundary
         'max_lon': -77.04
     }
 }

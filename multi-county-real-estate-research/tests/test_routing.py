@@ -63,10 +63,10 @@ class TestCountyDetection:
         """
         Regression test: Herndon, VA must detect as Fairfax County.
 
-        Bug: Herndon (38.9696, -77.3861) was incorrectly detected as Loudoun
-        due to overlapping bounding boxes in the longitude range -77.54 to -77.32.
+        Historical bug: Herndon was incorrectly detected as Loudoun with
+        rectangular bounding boxes due to overlap.
 
-        Fix: Tightened Loudoun's eastern boundary to -77.50.
+        Fix: GIS polygon detection using dissolved zoning boundaries.
         """
         detect = county_detector['detect_county']
 
@@ -78,8 +78,27 @@ class TestCountyDetection:
         assert result == 'fairfax', \
             f"Herndon (38.9696, -77.3861) should be 'fairfax', got '{result}'"
 
-    def test_county_detection_boundary_leesburg_still_loudoun(self, county_detector):
-        """Verify Leesburg still detects as Loudoun after boundary fix."""
+    def test_county_detection_ashburn_is_loudoun(self, county_detector):
+        """
+        Regression test: Ashburn, VA must detect as Loudoun County.
+
+        Historical bug: Ashburn (39.0437, -77.4875) fell in gap between
+        rectangular bounding boxes and returned 'unknown'.
+
+        Fix: GIS polygon detection using dissolved zoning boundaries.
+        """
+        detect = county_detector['detect_county']
+
+        # Ashburn, VA coordinates (42831 Falling Leaf Ct)
+        lat, lon = 39.0437, -77.4875
+
+        result = detect(lat, lon)
+
+        assert result == 'loudoun', \
+            f"Ashburn (39.0437, -77.4875) should be 'loudoun', got '{result}'"
+
+    def test_county_detection_leesburg_loudoun(self, county_detector):
+        """Verify Leesburg detects as Loudoun."""
         detect = county_detector['detect_county']
 
         # Leesburg, VA coordinates
@@ -90,8 +109,8 @@ class TestCountyDetection:
         assert result == 'loudoun', \
             f"Leesburg (39.1157, -77.5636) should be 'loudoun', got '{result}'"
 
-    def test_county_detection_boundary_vienna_still_fairfax(self, county_detector):
-        """Verify Vienna still detects as Fairfax after boundary fix."""
+    def test_county_detection_vienna_fairfax(self, county_detector):
+        """Verify Vienna detects as Fairfax."""
         detect = county_detector['detect_county']
 
         # Vienna, VA coordinates
@@ -102,17 +121,62 @@ class TestCountyDetection:
         assert result == 'fairfax', \
             f"Vienna (38.9012, -77.2653) should be 'fairfax', got '{result}'"
 
-    def test_county_bounds_no_overlap(self, county_detector):
-        """Verify county bounding boxes do not overlap."""
-        from utils.county_detector import COUNTY_BOUNDS
 
-        loudoun = COUNTY_BOUNDS['loudoun']
-        fairfax = COUNTY_BOUNDS['fairfax']
+class TestGISPolygonDetection:
+    """Test GIS polygon-based county detection specifics."""
 
-        # Loudoun's eastern edge should not extend past Fairfax's western edge
-        # (Loudoun is west of Fairfax, so Loudoun max_lon <= Fairfax min_lon)
-        assert loudoun['max_lon'] <= fairfax['min_lon'], \
-            f"Overlap detected: Loudoun max_lon ({loudoun['max_lon']}) > Fairfax min_lon ({fairfax['min_lon']})"
+    def test_boundary_caching(self):
+        """Verify county boundaries are cached for performance."""
+        from utils.county_detector import _get_county_boundary, clear_boundary_cache
+
+        # Clear cache first
+        clear_boundary_cache()
+
+        # First call loads boundary
+        loudoun1 = _get_county_boundary('loudoun')
+        assert loudoun1 is not None
+
+        # Second call should return same object (cached)
+        loudoun2 = _get_county_boundary('loudoun')
+        assert loudoun1 is loudoun2, "Boundaries should be cached (same object)"
+
+    def test_get_county_bounds_loudoun(self):
+        """Verify get_county_bounds returns valid bounds for Loudoun."""
+        from utils.county_detector import get_county_bounds
+
+        bounds = get_county_bounds('loudoun')
+
+        assert bounds is not None
+        assert 'min_lat' in bounds
+        assert 'max_lat' in bounds
+        assert 'min_lon' in bounds
+        assert 'max_lon' in bounds
+
+        # Loudoun should be roughly in this area
+        assert 38.8 < bounds['min_lat'] < 39.0
+        assert 39.2 < bounds['max_lat'] < 39.4
+        assert -78.0 < bounds['min_lon'] < -77.5
+        assert -77.5 < bounds['max_lon'] < -77.2
+
+    def test_get_county_bounds_fairfax(self):
+        """Verify get_county_bounds returns valid bounds for Fairfax."""
+        from utils.county_detector import get_county_bounds
+
+        bounds = get_county_bounds('fairfax')
+
+        assert bounds is not None
+        # Fairfax should be roughly in this area
+        assert 38.5 < bounds['min_lat'] < 38.7
+        assert 39.0 < bounds['max_lat'] < 39.1
+        assert -77.6 < bounds['min_lon'] < -77.4
+        assert -77.1 < bounds['max_lon'] < -77.0
+
+    def test_invalid_county_bounds(self):
+        """Verify get_county_bounds returns None for invalid county."""
+        from utils.county_detector import get_county_bounds
+
+        bounds = get_county_bounds('nonexistent')
+        assert bounds is None
 
 
 class TestGeocoding:

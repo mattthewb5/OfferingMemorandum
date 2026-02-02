@@ -42,6 +42,11 @@
 - Backwards compatibility alias: `analyze_property = render_report`
 - Router integration notes at end of file
 
+### Fixed (Path Resolution)
+- `DATA_DIR` used `os.path.dirname(__file__)` which resolved to `reports/` not repo root
+- Changed to `os.path.dirname(os.path.dirname(os.path.abspath(__file__)))` (go up one level)
+- All derived paths (SCHOOLS_DIR, PERMITS_DIR, etc.) now resolve correctly
+
 ## All 13 Sections (Original App)
 
 | Section | Lines | Features |

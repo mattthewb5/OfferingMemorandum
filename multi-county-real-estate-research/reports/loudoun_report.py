@@ -500,7 +500,9 @@ else:
 # =============================================================================
 # DATA PATHS
 # =============================================================================
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'data', 'loudoun')
+# Get repository root (one level up from reports/ directory)
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(REPO_ROOT, 'data', 'loudoun')
 SCHOOLS_DIR = os.path.join(DATA_DIR, 'schools')
 PERMITS_DIR = os.path.join(DATA_DIR, 'building_permits')
 GIS_DIR = os.path.join(DATA_DIR, 'gis')

@@ -4,6 +4,15 @@ Fairfax County Report Generator
 Generates property analysis reports for Fairfax County using standardized
 class-based modules and shared presentation components.
 
+Features (7 Sections):
+1. School Performance - Assigned schools and nearby facilities
+2. Crime & Safety - 6-month incident analysis with safety score
+3. Zoning & Development - Land use and overlay districts
+4. Parks & Recreation - Park access score and nearby parks
+5. Healthcare Access - Hospitals and urgent care proximity
+6. Flood Risk Analysis - FEMA flood zone assessment
+7. Transit & Metro Access - 32 WMATA stations, bus service (NEW)
+
 This module demonstrates the router architecture where:
 - Data fetching uses county-specific modules (Fairfax classes)
 - Presentation uses shared components (consistent UX)
@@ -306,6 +315,100 @@ def render_report(address: str, lat: float, lon: float) -> None:
         render_error_section("Flood Analysis", f"Data files not found: {e}")
     except Exception as e:
         render_error_section("Flood Analysis", str(e))
+
+    st.divider()
+
+    # ========== TRANSIT & METRO ACCESS ==========
+    render_section_header("🚇", "Metro & Transit Access", "WMATA Metro stations and bus service")
+
+    try:
+        from core.fairfax_transit_analysis import FairfaxTransitAnalysis
+        transit = FairfaxTransitAnalysis()
+
+        # Calculate transit score
+        transit_score = transit.calculate_transit_score(lat, lon)
+        score_data = _convert_to_score_format(transit_score, "Transit")
+        render_score_card("Transit Accessibility Score", score_data)
+
+        # Get nearest Metro station
+        nearest_metro = transit.get_nearest_metro_station(lat, lon)
+
+        if nearest_metro and nearest_metro.get('station_name'):
+            st.markdown("### 🚇 Nearest Metro Station")
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric(
+                    "Station",
+                    nearest_metro.get('station_name', 'Unknown')
+                )
+
+            with col2:
+                distance = nearest_metro.get('distance_miles', 0)
+                st.metric(
+                    "Distance",
+                    f"{distance:.1f} mi" if distance else "N/A"
+                )
+
+            with col3:
+                walk_time = nearest_metro.get('walk_time_minutes')
+                if walk_time:
+                    st.metric("Walk Time", f"{walk_time} min")
+                else:
+                    bike_time = nearest_metro.get('bike_time_minutes')
+                    if bike_time:
+                        st.metric("Bike Time", f"{bike_time} min")
+                    else:
+                        st.metric("Year Opened", nearest_metro.get('year_opened', 'N/A'))
+
+            # Walk/bike time info
+            if nearest_metro.get('walk_time_minutes'):
+                if nearest_metro['walk_time_minutes'] <= 15:
+                    st.success(f"🚶 **Walk to Metro:** {nearest_metro['walk_time_minutes']} minutes - Excellent walkability!")
+                elif nearest_metro['walk_time_minutes'] <= 30:
+                    st.info(f"🚶 **Walk to Metro:** {nearest_metro['walk_time_minutes']} minutes")
+                else:
+                    st.info(f"🚴 **Bike to Metro:** {nearest_metro.get('bike_time_minutes', 'N/A')} minutes")
+
+        # Get commute options summary
+        commute = transit.get_commute_options(lat, lon)
+
+        if commute:
+            accessibility = commute.get('overall_accessibility', 'unknown')
+
+            # Display bus routes info
+            bus_info = commute.get('bus', {})
+            if bus_info and bus_info.get('routes_within_quarter_mi', 0) > 0:
+                with st.expander(f"🚌 Bus Service ({bus_info.get('routes_within_quarter_mi', 0)} routes nearby)"):
+                    st.markdown(f"**Routes within 0.25 mi:** {bus_info.get('routes_within_quarter_mi', 0)}")
+                    route_names = bus_info.get('route_names', [])
+                    if route_names:
+                        st.markdown(f"**Routes:** {', '.join(route_names[:10])}")
+
+            # Transit-Oriented Development context
+            score = transit_score.get('score', 0)
+            if score >= 70:
+                st.success(
+                    "✅ **Excellent Transit Access** - Properties near Metro stations "
+                    "typically command 10-20% premium and experience stronger appreciation. "
+                    "Fairfax County has 32 Metro stations across Orange, Blue, and Silver lines."
+                )
+            elif score >= 40:
+                st.info(
+                    "🟡 **Moderate Transit Access** - Within reasonable distance to Metro. "
+                    "Consider parking availability at stations for park-and-ride commutes."
+                )
+            else:
+                st.warning(
+                    "🟠 **Limited Transit Access** - Metro is not a primary transportation option. "
+                    "Property relies on road network. Check traffic patterns on major corridors."
+                )
+
+    except FileNotFoundError as e:
+        render_error_section("Transit Analysis", f"Data files not found: {e}")
+    except Exception as e:
+        render_error_section("Transit Analysis", str(e))
 
     # ========== REPORT FOOTER ==========
     st.divider()

@@ -4,7 +4,7 @@ Fairfax County Report Generator
 Generates property analysis reports for Fairfax County using standardized
 class-based modules and shared presentation components.
 
-Features (8 Sections):
+Features (11 Sections):
 1. School Performance - Assigned schools and nearby facilities
 2. Crime & Safety - 6-month incident analysis with safety score
 3. Zoning & Development - Land use and overlay districts
@@ -12,12 +12,17 @@ Features (8 Sections):
 5. Healthcare Access - Hospitals and urgent care proximity
 6. Flood Risk Analysis - FEMA flood zone assessment
 7. Transit & Metro Access - 32 WMATA stations, bus service
-8. Traffic & Road Network - VDOT traffic data, 148K road segments (NEW)
+8. Traffic & Road Network - VDOT traffic data, 148K road segments
+9. Cell Tower Coverage - FCC tower data, RF coverage analysis (NEW)
+10. Development Activity - Building permits and construction trends (NEW)
+11. School Performance Trends - SOL test scores and academic analysis (NEW)
 
 Data advantages vs Loudoun:
 - 148,594 road segments (5x more than Loudoun's 29,217)
 - 32 Metro stations (vs Loudoun's 4)
 - Real VDOT ADT counts, not estimates
+- Building permit history with development pressure scoring
+- FCC cell tower coverage analysis
 
 This module demonstrates the router architecture where:
 - Data fetching uses county-specific modules (Fairfax classes)
@@ -531,6 +536,265 @@ def render_report(address: str, lat: float, lon: float) -> None:
         render_error_section("Traffic Analysis", f"Data files not found: {e}")
     except Exception as e:
         render_error_section("Traffic Analysis", str(e))
+
+    st.divider()
+
+    # ========== CELL TOWERS & RF COVERAGE ==========
+    render_section_header("📡", "Cell Tower Coverage", "Cellular network infrastructure and signal strength")
+
+    try:
+        from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
+        cell_towers = FairfaxCellTowersAnalysis()
+
+        # Calculate coverage score
+        coverage_score = cell_towers.calculate_coverage_score(lat, lon)
+        score_data = _convert_to_score_format(coverage_score, "Coverage")
+        render_score_card("Cell Tower Coverage Score", score_data)
+
+        # Get nearest towers
+        nearest_towers = cell_towers.get_nearest_towers(lat, lon, n=5)
+
+        if nearest_towers is not None and len(nearest_towers) > 0:
+            st.markdown("### 📡 Nearest Cell Towers")
+
+            # Show closest tower metrics
+            nearest = nearest_towers.iloc[0]
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric(
+                    "Distance",
+                    f"{nearest.get('distance_miles', 0):.2f} mi"
+                )
+
+            with col2:
+                st.metric(
+                    "Structure Type",
+                    nearest.get('structure_type', 'Unknown')
+                )
+
+            with col3:
+                height = nearest.get('height_ft', nearest.get('overall_height_ft'))
+                st.metric(
+                    "Height",
+                    f"{height:.0f} ft" if height else "N/A"
+                )
+
+        # Get towers within 2 miles for detailed view
+        nearby_towers = cell_towers.get_towers_near_point(lat, lon, radius_miles=2.0)
+
+        if nearby_towers is not None and len(nearby_towers) > 0:
+            towers_2mi = coverage_score.get('towers_within_2mi', len(nearby_towers))
+
+            with st.expander(f"📡 {towers_2mi} towers within 2 miles"):
+                tower_data = []
+                for idx, tower in nearby_towers.head(10).iterrows():
+                    tower_data.append({
+                        'Structure': tower.get('structure_type', 'Unknown'),
+                        'Distance': f"{tower.get('distance_miles', 0):.2f} mi",
+                        'Height': f"{tower.get('height_ft', tower.get('overall_height_ft', 0)):.0f} ft",
+                        'City': tower.get('city', 'N/A')
+                    })
+                render_data_table(tower_data)
+
+        # Coverage assessment
+        score = coverage_score.get('score', 0)
+        if score >= 70:
+            st.success("✅ **Excellent Coverage** - Multiple towers nearby provide redundant cellular coverage.")
+        elif score >= 40:
+            st.info("🟡 **Good Coverage** - Adequate cell tower infrastructure for reliable service.")
+        else:
+            st.warning("🟠 **Limited Coverage** - May experience weak cellular signal in some areas.")
+
+        st.caption("📌 Cell tower data from FCC registration database.")
+
+    except FileNotFoundError as e:
+        render_error_section("Cell Tower Analysis", f"Data files not found: {e}")
+    except Exception as e:
+        render_error_section("Cell Tower Analysis", str(e))
+
+    st.divider()
+
+    # ========== BUILDING PERMITS & DEVELOPMENT ==========
+    render_section_header("📋", "Development Activity", "Building permits and construction trends")
+
+    try:
+        from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
+        permits = FairfaxPermitsAnalysis()
+
+        # Calculate development pressure score
+        dev_pressure = permits.calculate_development_pressure(lat, lon, radius_miles=0.5, months_back=24)
+        score_data = _convert_to_score_format(dev_pressure, "Development")
+        render_score_card("Development Pressure Score", score_data)
+
+        # Get recent permits
+        nearby_permits = permits.get_permits_near_point(lat, lon, radius_miles=0.5)
+
+        if nearby_permits is not None and len(nearby_permits) > 0:
+            st.markdown("### 🏗️ Recent Construction Activity")
+
+            # Summary metrics
+            total_permits = len(nearby_permits)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric(
+                    "Permits (0.5 mi)",
+                    f"{total_permits:,}"
+                )
+            with col2:
+                trend = dev_pressure.get('trend', 'stable')
+                trend_icon = "📈" if trend == "increasing" else "📉" if trend == "decreasing" else "➡️"
+                st.metric(
+                    "Trend",
+                    f"{trend_icon} {trend.title()}"
+                )
+
+            # Permit breakdown by type
+            breakdown = dev_pressure.get('breakdown', {})
+            if breakdown:
+                with st.expander("📊 Permit Type Breakdown"):
+                    for ptype, count in sorted(breakdown.items(), key=lambda x: x[1], reverse=True):
+                        if count > 0:
+                            st.write(f"- **{ptype}:** {count} permits")
+
+            # Detailed permit table
+            with st.expander(f"📋 View recent permits ({min(total_permits, 15)} shown)"):
+                permit_data = []
+                for idx, permit in nearby_permits.head(15).iterrows():
+                    permit_data.append({
+                        'Type': permit.get('permit_type', 'Unknown'),
+                        'Status': permit.get('status', 'N/A'),
+                        'Distance': f"{permit.get('distance_miles', 0):.2f} mi",
+                        'Year': str(permit.get('year', 'N/A'))
+                    })
+                render_data_table(permit_data)
+        else:
+            st.info("ℹ️ No building permits found within 0.5 miles.")
+
+        # Development context (inverted: high development = warning)
+        score = dev_pressure.get('score', 0)
+        if score >= 70:
+            st.warning(
+                "⚠️ **High Development Activity** - Significant construction nearby. "
+                "May experience temporary traffic and noise impacts."
+            )
+        elif score >= 40:
+            st.info(
+                "🟡 **Moderate Development** - Some construction activity in the area. "
+                "Neighborhood is evolving."
+            )
+        else:
+            st.success(
+                "✅ **Stable Area** - Low development pressure. "
+                "Established neighborhood with minimal construction disruption."
+            )
+
+        st.caption("📌 Building permit data from Fairfax County Department of Land Development Services.")
+
+    except FileNotFoundError as e:
+        render_error_section("Permits Analysis", f"Data files not found: {e}")
+    except Exception as e:
+        render_error_section("Permits Analysis", str(e))
+
+    st.divider()
+
+    # ========== SCHOOL PERFORMANCE ANALYSIS ==========
+    render_section_header("📊", "School Performance Trends", "SOL test scores and academic performance analysis")
+
+    try:
+        from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
+        school_perf = FairfaxSchoolPerformanceAnalysis()
+
+        # Get assigned schools from basic schools module
+        from core.fairfax_schools_analysis import FairfaxSchoolsAnalysis
+        schools_basic = FairfaxSchoolsAnalysis()
+        assigned = schools_basic.get_assigned_schools(lat, lon)
+
+        has_performance_data = False
+
+        if assigned:
+            # Try elementary school first (most important for families)
+            elementary = assigned.get('elementary')
+            if elementary:
+                school_name = elementary.get('school_name')
+                if school_name:
+                    # Get quality score
+                    quality_score = school_perf.calculate_school_quality_score(school_name)
+
+                    if quality_score.get('found', False):
+                        has_performance_data = True
+                        st.markdown(f"### 🏫 {school_name}")
+
+                        # Display quality score
+                        score_data = {
+                            'score': quality_score.get('score', 0),
+                            'max_score': 100,
+                            'rating': quality_score.get('rating', 'Unknown'),
+                            'details': 'Based on SOL test scores and performance trends'
+                        }
+                        render_score_card("School Quality Score", score_data)
+
+                        # Get detailed performance
+                        performance = school_perf.get_school_performance(school_name)
+
+                        if performance.get('found', False):
+                            # Pass rates
+                            col1, col2, col3 = st.columns(3)
+
+                            with col1:
+                                reading_rate = performance.get('recent_reading_pass_rate')
+                                if reading_rate is not None:
+                                    st.metric("Reading", f"{reading_rate:.1f}%")
+                                else:
+                                    st.metric("Reading", "N/A")
+
+                            with col2:
+                                math_rate = performance.get('recent_math_pass_rate')
+                                if math_rate is not None:
+                                    st.metric("Math", f"{math_rate:.1f}%")
+                                else:
+                                    st.metric("Math", "N/A")
+
+                            with col3:
+                                overall_rate = performance.get('recent_overall_pass_rate')
+                                if overall_rate is not None:
+                                    st.metric("Overall", f"{overall_rate:.1f}%")
+                                else:
+                                    st.metric("Overall", "N/A")
+
+                            # Trend analysis
+                            trend = quality_score.get('trend', 'stable')
+                            trend_icon = "📈" if trend == "improving" else "📉" if trend == "declining" else "➡️"
+                            st.info(f"{trend_icon} **5-Year Trend:** {trend.title()}")
+
+                            # Score interpretation
+                            score = quality_score.get('score', 0)
+                            if score >= 70:
+                                st.success(
+                                    "✅ **High-Performing School** - Strong academic results "
+                                    "and consistent performance."
+                                )
+                            elif score >= 50:
+                                st.info(
+                                    "🟡 **Average Performance** - Meeting standards with "
+                                    "room for improvement."
+                                )
+                            else:
+                                st.warning(
+                                    "⚠️ **Below Average** - School may be facing academic challenges. "
+                                    "Consider reviewing detailed performance data."
+                                )
+
+        if not has_performance_data:
+            st.info("ℹ️ School performance data not available for assigned schools at this location.")
+
+        st.caption("📌 School performance data from Virginia Department of Education (VDOE) SOL results.")
+
+    except FileNotFoundError as e:
+        render_error_section("School Performance Analysis", f"Data files not found: {e}")
+    except Exception as e:
+        render_error_section("School Performance Analysis", str(e))
 
     # ========== REPORT FOOTER ==========
     st.divider()

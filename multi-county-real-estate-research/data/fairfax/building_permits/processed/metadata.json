@@ -1,18 +1,18 @@
 {
-  "last_updated": "2026-01-26T20:40:20.243477",
-  "total_permits": 41504,
+  "last_updated": "2026-02-02T04:58:36.291773",
+  "total_permits": 41559,
   "date_range": {
     "min": "2022-01-03",
-    "max": "2026-01-23"
+    "max": "2026-01-31"
   },
   "by_major_category": {
-    "residential": 30213,
-    "commercial": 11291
+    "residential": 30253,
+    "commercial": 11306
   },
   "by_detailed_category": {
-    "residential_renovation": 24526,
-    "commercial_renovation": 9400,
-    "residential_new": 5687,
+    "residential_renovation": 24561,
+    "commercial_renovation": 9415,
+    "residential_new": 5692,
     "commercial_new": 1891
   },
   "by_year": {
@@ -20,11 +20,11 @@
     "2023": 10584,
     "2024": 9601,
     "2025": 9131,
-    "2026": 287
+    "2026": 342
   },
   "by_status": {
     "Closed": 31442,
-    "Issued": 9404,
+    "Issued": 9459,
     "Voided": 456,
     "Issued - Amendment Pending": 190,
     "Refund Request Pending": 9,
@@ -33,12 +33,12 @@
     "Inspection Phase": 1
   },
   "geometry": {
-    "has_polygon": 41504,
-    "has_centroid": 41504,
+    "has_polygon": 41559,
+    "has_centroid": 41559,
     "pct_geocoded": 100.0
   },
   "parcel_linkage": {
-    "has_parcel_id": 41504,
+    "has_parcel_id": 41559,
     "pct_linked": 100.0
   }
 }

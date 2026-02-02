@@ -1,34 +1,54 @@
 """
-Loudoun County Report Generator
+Loudoun County Report Generator - Production Version
 
-Generates property analysis reports for Loudoun County using existing
-function-based modules and shared presentation components.
+Generates comprehensive property analysis reports for Loudoun County using
+production-ready modules and shared presentation components.
 
-This module demonstrates the router architecture where:
-- Data fetching uses county-specific modules (Loudoun functions/classes)
-- Presentation uses shared components (consistent UX)
-- Data format translation happens in this layer
-- Error handling provides graceful degradation
+Phase 1B: Critical Modules Integration
+--------------------------------------
+1. Metro Analysis - Silver Line proximity, tiers, drive times
+2. Zoning Analysis - Place types, development probability, plain English
+3. School Percentiles - County/state rankings, trajectory
+4. Sales Data - Transaction history from Commissioner of Revenue
+5. Valuation Context - Estimate formatting (when orchestrator data available)
 
-Key Insight: User should NOT be able to tell which county uses which
-backend pattern just by looking at the report.
+Architecture:
+- Data fetching: County-specific modules (core/loudoun_*.py)
+- Presentation: Shared components (reports/shared_components.py)
+- Error handling: Graceful degradation per section
+- Caching: Module-level caching for performance
+
+Future Phases:
+- Phase 2: School charts, Community/HOA, Places/Amenities, AI Narrative
+- Phase 3: Traffic volume, Power line analysis
 """
 
 import streamlit as st
-from typing import Dict, Any, List
+from typing import Dict, Any, Optional, Tuple
+import os
 
 
-def _convert_metro_to_score(metro_data: Dict, tier_data: Dict) -> Dict[str, Any]:
+# =============================================================================
+# DATA CONVERSION HELPERS
+# =============================================================================
+
+def _convert_metro_to_score(metro_result: Dict) -> Dict[str, Any]:
     """
-    Convert Loudoun metro analysis output to shared component score format.
+    Convert Metro analysis output to shared component score format.
 
     Args:
-        metro_data: Output from calculate_metro_proximity()
-        tier_data: Output from get_accessibility_tier()
+        metro_result: Output from analyze_metro_access()
 
     Returns:
-        Dict in score_card format
+        Dict in score_card format for render_score_card()
     """
+    if not metro_result.get('available'):
+        return {
+            'score': 0,
+            'rating': 'Unavailable',
+            'details': {'Error': metro_result.get('error', 'Metro data unavailable')}
+        }
+
     # Map tier to numeric score
     tier_scores = {
         'Walk-to-Metro': 100,
@@ -47,328 +67,702 @@ def _convert_metro_to_score(metro_data: Dict, tier_data: Dict) -> Dict[str, Any]
         'Metro-Distant': 'Poor',
     }
 
+    proximity = metro_result.get('proximity', {})
+    tier_data = metro_result.get('tier', {})
+    drive_time = metro_result.get('drive_time', {})
+
     tier = tier_data.get('tier', 'Metro-Distant')
 
     return {
         'score': tier_scores.get(tier, 25),
         'rating': tier_ratings.get(tier, 'Unknown'),
         'details': {
-            'Nearest Station': metro_data.get('nearest_station', 'N/A'),
-            'Distance': f"{metro_data.get('distance_miles', 0):.1f} miles",
-            'Tier': tier,
-            'Description': tier_data.get('tier_description', ''),
+            'Nearest Station': proximity.get('nearest_station', 'N/A'),
+            'Distance': f"{proximity.get('distance_miles', 0):.1f} miles",
+            'Drive Time': drive_time.get('display', 'N/A'),
+            'Rush Hour': drive_time.get('rush_hour_note', ''),
+            'Tier': f"{tier_data.get('icon', '')} {tier}",
         }
     }
 
 
-def _convert_zoning_to_display(zoning_data: Dict) -> Dict[str, Any]:
+def _convert_school_to_score(school_context: Dict) -> Dict[str, Any]:
     """
-    Convert Loudoun zoning API output to display format.
+    Convert school percentile context to shared component score format.
 
     Args:
-        zoning_data: Output from get_place_type_loudoun() or get_zoning_loudoun()
-
-    Returns:
-        Formatted zoning information
-    """
-    return {
-        'place_type': zoning_data.get('place_type', 'Unknown'),
-        'place_type_code': zoning_data.get('place_type_code', 'N/A'),
-        'policy_area': zoning_data.get('policy_area', 'Unknown'),
-        'policy_area_code': zoning_data.get('policy_area_code', 'N/A'),
-        'success': zoning_data.get('success', False),
-        'error': zoning_data.get('error'),
-    }
-
-
-def _convert_school_to_score(school_data: Dict) -> Dict[str, Any]:
-    """
-    Convert Loudoun school performance data to shared component score format.
-
-    Args:
-        school_data: School performance information
+        school_context: Output from get_school_context()
 
     Returns:
         Dict in score_card format
     """
-    # Extract pass rate as score
-    overall_rate = school_data.get('Overall_Pass_Rate', 0)
+    if not school_context:
+        return {
+            'score': 0,
+            'rating': 'Unknown',
+            'details': {'Note': 'School data not available'}
+        }
 
-    # Map rate to rating
-    if overall_rate >= 90:
+    county = school_context.get('county', {})
+    state = school_context.get('state', {})
+    metrics = school_context.get('metrics', {})
+    trajectory = school_context.get('trajectory', {})
+
+    # Use county percentile as primary score
+    county_percentile = county.get('percentile', 0)
+
+    # Map percentile to rating
+    if county_percentile >= 90:
         rating = 'Excellent'
-    elif overall_rate >= 80:
+    elif county_percentile >= 75:
         rating = 'Good'
-    elif overall_rate >= 70:
+    elif county_percentile >= 50:
         rating = 'Fair'
     else:
-        rating = 'Needs Improvement'
+        rating = 'Below Average'
+
+    # Build trajectory display
+    direction = trajectory.get('direction', 'stable')
+    delta = trajectory.get('delta', 0)
+    if direction == 'improving':
+        trajectory_display = f"Improving (+{delta:.1f} pts)"
+    elif direction == 'declining':
+        trajectory_display = f"Declining ({delta:.1f} pts)"
+    else:
+        trajectory_display = "Stable"
 
     return {
-        'score': int(overall_rate) if overall_rate else 0,
+        'score': county_percentile,
         'rating': rating,
         'details': {
-            'Math Pass Rate': f"{school_data.get('Math_Pass_Rate', 0):.1f}%",
-            'Reading Pass Rate': f"{school_data.get('Reading_Pass_Rate', 0):.1f}%",
-            'Science Pass Rate': f"{school_data.get('Science_Pass_Rate', 0):.1f}%",
+            'County Rank': f"{county.get('rank', 'N/A')} of {county.get('total', 'N/A')}",
+            'County Percentile': f"{county_percentile}th",
+            'State Percentile': f"{state.get('percentile', 'N/A')}th",
+            'Overall Pass Rate': f"{metrics.get('overall_pass_rate', 'N/A')}%",
+            'Math Pass Rate': f"{metrics.get('math_pass_rate', 'N/A')}%",
+            'Reading Pass Rate': f"{metrics.get('reading_pass_rate', 'N/A')}%",
+            'Trajectory': trajectory_display,
         }
     }
 
 
-def _stations_to_items(stations: List[Dict]) -> List[Dict]:
-    """Convert metro stations list to nearby items format."""
-    items = []
-    for station in stations:
-        items.append({
-            'name': f"{station.get('name', 'Unknown')} Metro",
-            'distance_miles': station.get('distance_miles', 0),
-            'latitude': station.get('lat'),
-            'longitude': station.get('lon'),
-        })
-    return items
+def _format_sale_price(price: Optional[int]) -> str:
+    """Format sale price for display."""
+    if price is None:
+        return "N/A"
+    return f"${price:,}"
 
 
-def render_report(address: str, lat: float, lon: float) -> None:
-    """
-    Generate Loudoun County property analysis report.
+def _format_sale_date(date_str: Optional[str]) -> str:
+    """Format sale date for display."""
+    if not date_str:
+        return "N/A"
+    # Already in YYYY-MM-DD format from module
+    return date_str
 
-    Uses existing Loudoun modules (function-based, older pattern) and
-    shared presentation components. Translates Loudoun data formats
-    to shared component expectations.
 
-    Args:
-        address: The property address being analyzed
-        lat: Property latitude
-        lon: Property longitude
-    """
+# =============================================================================
+# SECTION RENDERERS
+# =============================================================================
+
+def _render_metro_section(lat: float, lon: float) -> None:
+    """Render Metro Access Analysis section."""
     from reports.shared_components import (
-        render_report_header,
-        render_score_card,
-        render_nearby_items,
         render_section_header,
-        render_statistics_summary,
+        render_score_card,
         render_error_section,
     )
 
-    # ========== HEADER ==========
-    render_report_header("Loudoun County", address, lat, lon)
-
-    # ========== METRO ACCESS ANALYSIS ==========
-    # Loudoun-specific feature: Silver Line Metro proximity
-    render_section_header("🚇", "Metro Access Analysis", "Silver Line proximity (Loudoun exclusive)")
+    render_section_header(
+        "🚇",
+        "Metro Access Analysis",
+        "Silver Line proximity and commute options"
+    )
 
     try:
-        from core.loudoun_metro_analysis import (
-            calculate_metro_proximity,
-            get_accessibility_tier,
-        )
+        from core.loudoun_metro_analysis import analyze_metro_access
 
-        # Calculate metro proximity
-        metro_data = calculate_metro_proximity((lat, lon))
-        tier_data = get_accessibility_tier(metro_data.get('distance_miles', 999))
+        metro_result = analyze_metro_access((lat, lon))
 
-        # Convert to score format and display
-        metro_score = _convert_metro_to_score(metro_data, tier_data)
-        render_score_card("Metro Accessibility", metro_score)
+        if metro_result.get('available'):
+            # Display score card
+            metro_score = _convert_metro_to_score(metro_result)
+            render_score_card("Metro Accessibility", metro_score)
 
-        # Show nearby stations
-        all_stations = metro_data.get('all_stations', [])
-        station_items = _stations_to_items(all_stations)
-        render_nearby_items("Metro Stations", station_items, "station")
+            # Show all stations with distances
+            proximity = metro_result.get('proximity', {})
+            all_stations = proximity.get('all_stations', [])
 
-        # Display tier badge
-        tier_icon = tier_data.get('icon', '⚪')
-        tier_name = tier_data.get('tier', 'Unknown')
-        st.markdown(f"**Accessibility Tier:** {tier_icon} {tier_name}")
+            if all_stations:
+                st.markdown("**All Silver Line Stations:**")
+                for station in all_stations:
+                    st.markdown(
+                        f"- **{station['name']}** - {station['distance_miles']:.1f} miles "
+                        f"({station.get('location', '')})"
+                    )
+
+            # Show narrative if available
+            narrative = metro_result.get('narrative')
+            if narrative:
+                with st.expander("Detailed Analysis"):
+                    st.markdown(narrative)
+        else:
+            st.warning(f"Metro analysis unavailable: {metro_result.get('error', 'Unknown error')}")
 
     except ImportError as e:
         render_error_section("Metro Analysis", f"Module not available: {e}")
     except Exception as e:
         render_error_section("Metro Analysis", str(e))
 
-    st.divider()
 
-    # ========== ZONING & PLACE TYPES ==========
-    render_section_header("🏗️", "Zoning & Place Types", "2019 Comprehensive Plan classification")
+def _render_zoning_section(lat: float, lon: float) -> None:
+    """Render Zoning & Development Probability section."""
+    from reports.shared_components import (
+        render_section_header,
+        render_statistics_summary,
+        render_error_section,
+    )
+
+    render_section_header(
+        "🏗️",
+        "Zoning & Development Probability",
+        "2019 Comprehensive Plan classification and change risk"
+    )
 
     try:
-        from core.loudoun_zoning_analysis import get_place_type_loudoun
+        from core.loudoun_zoning_analysis import (
+            analyze_property_zoning_loudoun,
+            get_plain_english_placetype,
+            get_plain_english_zoning,
+            calculate_development_probability_detailed,
+        )
 
-        # Get place type info
-        zoning_data = get_place_type_loudoun(lat, lon)
-        display_data = _convert_zoning_to_display(zoning_data)
+        # Get complete zoning analysis
+        zoning_result = analyze_property_zoning_loudoun(lat, lon)
 
-        if display_data['success']:
+        # Check if we got valid data (structure is nested)
+        place_type_data = zoning_result.get('place_type', {})
+        current_zoning_data = zoning_result.get('current_zoning', {})
+
+        has_place_type = isinstance(place_type_data, dict) and place_type_data.get('success')
+        has_zoning = isinstance(current_zoning_data, dict) and current_zoning_data.get('success')
+
+        if has_place_type or has_zoning:
+            # Display Place Type and Policy Area
             col1, col2 = st.columns(2)
 
             with col1:
-                st.markdown(f"**Place Type:** {display_data['place_type']}")
-                st.markdown(f"**Code:** `{display_data['place_type_code']}`")
+                place_type = place_type_data.get('place_type', 'Unknown') if has_place_type else 'Unknown'
+                place_type_code = place_type_data.get('place_type_code', 'N/A') if has_place_type else 'N/A'
+                st.markdown(f"**Place Type:** {place_type}")
+                st.markdown(f"**Code:** `{place_type_code}`")
+
+                # Get plain English translation
+                if place_type_code and place_type_code != 'N/A':
+                    plain_english = get_plain_english_placetype(place_type_code)
+                    if plain_english.get('found'):
+                        with st.expander("What this means"):
+                            st.markdown(f"**Character:** {plain_english.get('character', 'N/A')}")
+                            st.markdown(f"**Allows:** {plain_english.get('allows', 'N/A')}")
+                            st.markdown(f"**Intensity:** {plain_english.get('intensity', 'N/A')}")
 
             with col2:
-                st.markdown(f"**Policy Area:** {display_data['policy_area']}")
-                st.markdown(f"**Code:** `{display_data['policy_area_code']}`")
+                policy_area = place_type_data.get('policy_area', 'Unknown') if has_place_type else 'Unknown'
+                policy_code = place_type_data.get('policy_area_code', 'N/A') if has_place_type else 'N/A'
+                st.markdown(f"**Policy Area:** {policy_area}")
+                st.markdown(f"**Code:** `{policy_code}`")
+
+                jurisdiction = zoning_result.get('jurisdiction', 'LOUDOUN')
+                if jurisdiction != 'LOUDOUN':
+                    st.markdown(f"**Jurisdiction:** Town of {jurisdiction.title()}")
+
+            st.divider()
+
+            # Current Zoning
+            if has_zoning:
+                zone_code = current_zoning_data.get('zoning', 'Unknown')
+                zone_name = current_zoning_data.get('zoning_description', 'Unknown')
+
+                st.markdown(f"**Current Zoning:** {zone_name} (`{zone_code}`)")
+
+                # Plain English zoning translation
+                if zone_code and zone_code != 'Unknown':
+                    zoning_plain = get_plain_english_zoning(zone_code)
+                    if zoning_plain.get('found'):
+                        with st.expander("Zoning Details"):
+                            st.markdown(f"**Category:** {zoning_plain.get('category', 'N/A')}")
+                            st.markdown(f"**Description:** {zoning_plain.get('description', 'N/A')}")
+                            st.markdown(f"**Typical Uses:** {zoning_plain.get('typical_uses', 'N/A')}")
+
+            st.divider()
+
+            # Development Probability Score
+            st.markdown("### Development Risk Assessment")
+
+            dev_prob = zoning_result.get('development_probability', {})
+            if dev_prob:
+                score = dev_prob.get('score', 0)
+                risk_level = dev_prob.get('risk_level', 'Unknown')
+
+                # Color-coded risk display
+                if risk_level == 'Low':
+                    risk_color = 'green'
+                    risk_icon = '🟢'
+                elif risk_level == 'Medium':
+                    risk_color = 'orange'
+                    risk_icon = '🟡'
+                elif risk_level == 'High':
+                    risk_color = 'red'
+                    risk_icon = '🔴'
+                else:
+                    risk_color = 'gray'
+                    risk_icon = '⚪'
+
+                col1, col2 = st.columns([1, 2])
+
+                with col1:
+                    st.metric("Development Probability", f"{score}/100", risk_level)
+
+                with col2:
+                    st.markdown(f"**Risk Level:** {risk_icon} {risk_level}")
+
+                    # Show component breakdown if available
+                    components = dev_prob.get('component_scores', {})
+                    if components:
+                        st.markdown("**Score Components:**")
+                        st.markdown(f"- Mismatch: {components.get('mismatch', 0)} pts")
+                        st.markdown(f"- Restrictiveness: {components.get('restrictiveness', 0)} pts")
+                        st.markdown(f"- Pressure: {components.get('pressure', 0)} pts")
+
+                # Show component reasons if available
+                component_reasons = dev_prob.get('component_reasons', {})
+                if component_reasons:
+                    with st.expander("Analysis Details"):
+                        for component, reason in component_reasons.items():
+                            st.markdown(f"- **{component.title()}:** {reason}")
+            else:
+                st.info("Development probability data not available")
+
         else:
-            st.info(display_data.get('error', 'Zoning information unavailable'))
+            error_msg = zoning_result.get('error', 'Unable to retrieve zoning data')
+            st.warning(f"Zoning analysis unavailable: {error_msg}")
 
     except ImportError as e:
         render_error_section("Zoning Analysis", f"Module not available: {e}")
     except Exception as e:
         render_error_section("Zoning Analysis", str(e))
 
-    st.divider()
 
-    # ========== SCHOOLS ANALYSIS ==========
-    render_section_header("📚", "Schools Analysis", "Performance data and nearby schools")
+def _render_schools_section(
+    lat: float,
+    lon: float,
+    school_assignments: Optional[Dict[str, str]] = None
+) -> None:
+    """
+    Render School Performance section.
+
+    Args:
+        lat: Property latitude
+        lon: Property longitude
+        school_assignments: Optional dict with school assignments like
+            {"elementary": "School Name", "middle": "School Name", "high": "School Name"}
+    """
+    from reports.shared_components import (
+        render_section_header,
+        render_score_card,
+        render_error_section,
+    )
+
+    render_section_header(
+        "📚",
+        "School Performance",
+        "Assigned schools with county and state rankings"
+    )
 
     try:
-        from core.loudoun_school_performance import (
-            load_performance_data,
-            load_school_coordinates,
-            haversine,
+        from core.loudoun_school_percentiles import (
+            get_school_context,
+            get_school_comparison_narrative,
         )
 
-        # Load school data
-        performance_df = load_performance_data()
-        coords_df = load_school_coordinates()
+        # If school assignments provided, use them
+        # Otherwise, we'd need to look them up from school boundary data
+        if school_assignments:
+            schools_to_analyze = school_assignments
+        else:
+            # Placeholder - in production, would query school boundary GIS layers
+            st.info(
+                "School assignments not provided. "
+                "Enter school names manually or integrate school boundary lookup."
+            )
 
-        # Find nearby schools (within 3 miles)
-        nearby_schools = []
-        for _, school in coords_df.iterrows():
-            school_lat = school.get('Latitude')
-            school_lon = school.get('Longitude')
-            if school_lat and school_lon:
-                distance = haversine(lat, lon, school_lat, school_lon)
-                if distance <= 3.0:
-                    nearby_schools.append({
-                        'name': school.get('School_Name', 'Unknown'),
-                        'type': school.get('School_Type', 'Unknown'),
-                        'distance_miles': round(distance, 2),
-                        'latitude': school_lat,
-                        'longitude': school_lon,
+            # Allow manual input for testing
+            with st.expander("Enter School Names (for testing)"):
+                elem_school = st.text_input("Elementary School", "")
+                middle_school = st.text_input("Middle School", "")
+                high_school = st.text_input("High School", "")
+
+                if elem_school or middle_school or high_school:
+                    schools_to_analyze = {}
+                    if elem_school:
+                        schools_to_analyze['elementary'] = elem_school
+                    if middle_school:
+                        schools_to_analyze['middle'] = middle_school
+                    if high_school:
+                        schools_to_analyze['high'] = high_school
+                else:
+                    return
+
+        # Analyze each school level
+        for level, school_name in schools_to_analyze.items():
+            if not school_name:
+                continue
+
+            st.markdown(f"#### {level.title()} School")
+
+            # Get school context
+            school_type_map = {
+                'elementary': 'Elementary',
+                'middle': 'Middle',
+                'high': 'High'
+            }
+            school_type = school_type_map.get(level.lower())
+
+            context = get_school_context(school_name, school_type)
+
+            if context:
+                # Display as score card
+                school_score = _convert_school_to_score(context)
+                render_score_card(context.get('school_name', school_name), school_score)
+
+                # Show narrative summary
+                narrative = get_school_comparison_narrative(school_name, school_type)
+                if narrative:
+                    st.markdown(f"*{narrative}*")
+
+                # Loudoun context note
+                if context.get('narrative', {}).get('loudoun_context'):
+                    st.caption(
+                        "Note: Loudoun County schools generally outperform state averages. "
+                        "Mid-pack Loudoun often means top-tier statewide."
+                    )
+            else:
+                st.warning(f"Performance data not found for: {school_name}")
+
+            st.markdown("---")
+
+    except ImportError as e:
+        render_error_section("School Analysis", f"Module not available: {e}")
+    except Exception as e:
+        render_error_section("School Analysis", str(e))
+
+
+def _render_sales_section(apn: Optional[str] = None) -> None:
+    """
+    Render Sales History section.
+
+    Args:
+        apn: Property APN/PARID (e.g., "110-39-4004-000" or "110394004000")
+    """
+    from reports.shared_components import (
+        render_section_header,
+        render_data_table,
+        render_error_section,
+    )
+
+    render_section_header(
+        "💰",
+        "Sales History",
+        "Arms-length transactions from Commissioner of Revenue (2020-2025)"
+    )
+
+    if not apn:
+        st.info(
+            "Property APN/PARID required for sales history lookup. "
+            "This is typically obtained from the property assessment API."
+        )
+
+        # Allow manual input for testing
+        with st.expander("Enter APN (for testing)"):
+            manual_apn = st.text_input(
+                "APN/PARID",
+                placeholder="e.g., 110-39-4004-000",
+                help="Enter the property's Assessor Parcel Number"
+            )
+            if manual_apn:
+                apn = manual_apn
+            else:
+                return
+
+    try:
+        from core.loudoun_sales_data import get_cached_loudoun_sales_data
+
+        # Get cached sales data
+        sales_data = get_cached_loudoun_sales_data()
+
+        # Check if data loaded
+        stats = sales_data.get_stats()
+        if not stats.get('loaded'):
+            st.error(f"Sales data not available: {stats.get('error', 'Unknown error')}")
+            return
+
+        # Look up sales history
+        result = sales_data.get_sales_history(apn, max_records=5)
+
+        if result.get('found'):
+            # Display metadata
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"**PARID:** `{result.get('parid_lookup', 'N/A')}`")
+            with col2:
+                st.markdown(f"**Data Range:** {result.get('data_range', 'N/A')}")
+
+            st.markdown(f"**Transactions Found:** {result.get('sale_count', 0)}")
+
+            # Display sales table
+            sales = result.get('sales', [])
+            if sales:
+                # Format for display
+                display_data = []
+                for i, sale in enumerate(sales, 1):
+                    display_data.append({
+                        '#': i,
+                        'Date': _format_sale_date(sale.get('sale_date')),
+                        'Price': _format_sale_price(sale.get('sale_price')),
+                        'Type': sale.get('verification_code', 'N/A'),
+                        'From': (sale.get('old_owner', '')[:30] + '...') if len(sale.get('old_owner', '')) > 30 else sale.get('old_owner', 'N/A'),
+                        'To': (sale.get('new_owner', '')[:30] + '...') if len(sale.get('new_owner', '')) > 30 else sale.get('new_owner', 'N/A'),
                     })
 
-        # Sort by distance
-        nearby_schools.sort(key=lambda x: x['distance_miles'])
+                render_data_table(
+                    "Transaction History (Newest First)",
+                    display_data,
+                    columns=['#', 'Date', 'Price', 'Type']
+                )
 
-        if nearby_schools:
-            # Show nearest school performance
-            nearest = nearby_schools[0]
-            school_name = nearest['name']
-
-            # Try to find performance data for this school
-            perf_match = performance_df[
-                performance_df['School_Name'].str.contains(school_name.split()[0], case=False, na=False)
-            ]
-
-            if not perf_match.empty:
-                # Get most recent year
-                latest = perf_match.sort_values('Year', ascending=False).iloc[0]
-                school_score = _convert_school_to_score(latest.to_dict())
-                render_score_card(f"Nearest School ({school_name})", school_score)
-            else:
-                st.info(f"Performance data not available for {school_name}")
-
-            # Show nearby schools list
-            render_nearby_items("Nearby Schools", nearby_schools, "school")
+                # Show full details in expander
+                with st.expander("Full Transaction Details"):
+                    for i, sale in enumerate(sales, 1):
+                        st.markdown(f"**Sale #{i}**")
+                        st.markdown(f"- Date: {_format_sale_date(sale.get('sale_date'))}")
+                        st.markdown(f"- Price: {_format_sale_price(sale.get('sale_price'))}")
+                        st.markdown(f"- Type: {sale.get('verification_code', 'N/A')}")
+                        st.markdown(f"- From: {sale.get('old_owner', 'N/A')}")
+                        st.markdown(f"- To: {sale.get('new_owner', 'N/A')}")
+                        st.markdown(f"- Instrument: {sale.get('instrument_number', 'N/A')}")
+                        st.markdown("---")
         else:
-            st.info("No schools found within 3 miles")
+            st.info(
+                f"No arms-length sales found for PARID `{result.get('parid_lookup', apn)}` "
+                f"in the {result.get('data_range', '2020-2025')} range."
+            )
+            st.caption(
+                "This property may not have sold during this period, "
+                "or the sale was a non-arms-length transaction (family transfer, etc.)"
+            )
 
-    except FileNotFoundError as e:
-        render_error_section("Schools Analysis", f"Data files not found: {e}")
     except ImportError as e:
-        render_error_section("Schools Analysis", f"Module not available: {e}")
+        render_error_section("Sales History", f"Module not available: {e}")
     except Exception as e:
-        render_error_section("Schools Analysis", str(e))
+        render_error_section("Sales History", str(e))
 
-    st.divider()
 
-    # ========== UTILITIES ANALYSIS ==========
-    render_section_header("⚡", "Utilities & Infrastructure", "Power line proximity analysis")
+def _render_valuation_section(
+    valuation_result: Optional[Dict[str, Any]] = None,
+    sqft: Optional[int] = None
+) -> None:
+    """
+    Render Property Valuation section.
 
-    try:
-        from core.loudoun_utilities_analysis import PowerLineAnalyzer
+    Args:
+        valuation_result: Output from PropertyValuationOrchestrator (if available)
+        sqft: Property square footage (for context)
+    """
+    from reports.shared_components import (
+        render_section_header,
+        render_statistics_summary,
+        render_error_section,
+    )
 
-        # Create analyzer and get proximity info
-        analyzer = PowerLineAnalyzer()
-        proximity = analyzer.analyze_proximity(lat, lon)
+    render_section_header(
+        "💵",
+        "Property Valuation",
+        "Estimated value and market position"
+    )
 
-        if proximity:
-            nearest_distance = proximity.get('nearest_distance_miles', float('inf'))
-
-            # Visual impact assessment
-            if nearest_distance <= 0.1:
-                impact = "High - Directly adjacent"
-                impact_color = "🔴"
-            elif nearest_distance <= 0.25:
-                impact = "Moderate - Visible"
-                impact_color = "🟠"
-            elif nearest_distance <= 0.5:
-                impact = "Low - May be visible"
-                impact_color = "🟡"
-            else:
-                impact = "Minimal - Not visible"
-                impact_color = "🟢"
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.metric("Nearest Power Line", f"{nearest_distance:.2f} miles")
-
-            with col2:
-                st.markdown(f"**Visual Impact:** {impact_color} {impact}")
-
-            # Voltage info if available
-            nearest_line = proximity.get('nearest_line', {})
-            if nearest_line:
-                voltage = nearest_line.get('voltage', 'Unknown')
-                status = nearest_line.get('status', 'Unknown')
-                st.markdown(f"**Line Details:** {voltage} ({status})")
-        else:
-            st.success("✅ No major power lines detected nearby")
-
-    except FileNotFoundError as e:
-        render_error_section("Utilities Analysis", f"Data files not found: {e}")
-    except ImportError as e:
-        render_error_section("Utilities Analysis", f"Module not available: {e}")
-    except Exception as e:
-        render_error_section("Utilities Analysis", str(e))
-
-    st.divider()
-
-    # ========== NEIGHBORHOOD AMENITIES ==========
-    render_section_header("🏪", "Neighborhood Amenities", "Nearby dining, grocery, and shopping")
-
-    try:
-        # Note: This module requires API key, so we handle gracefully
-        from core.loudoun_places_analysis import PLACE_CATEGORIES
-
+    if not valuation_result:
         st.info(
-            "Amenities analysis requires Google Places API key. "
-            "Categories available: " + ", ".join(PLACE_CATEGORIES.keys())
+            "Valuation data requires PropertyValuationOrchestrator integration. "
+            "This section displays when orchestrator results are provided."
         )
 
-        # Show what would be analyzed
-        col1, col2 = st.columns(2)
+        # Show placeholder for what would be displayed
+        with st.expander("Valuation Data Format (for integration)"):
+            st.code("""
+# Expected input format from PropertyValuationOrchestrator:
+valuation_result = {
+    'current_value': {
+        'triangulated_estimate': 895000,
+        'confidence_score': 8.2
+    },
+    'price_per_sqft': {
+        'property': 285.00,
+        'neighborhood_avg': 273.08,
+        'position': 'At market'
+    },
+    'comparable_sales': [...],
+    'data_sources': ['ATTOM', 'RentCast', ...]
+}
+            """, language="python")
+        return
+
+    try:
+        from core.loudoun_valuation_context import (
+            get_valuation_narrative_context,
+            format_valuation_narrative_sentence,
+        )
+
+        # Extract narrative-ready context
+        context = get_valuation_narrative_context(valuation_result)
+
+        # Display main estimate
+        col1, col2, col3 = st.columns(3)
+
         with col1:
-            st.markdown("**Available Categories:**")
-            for cat, config in PLACE_CATEGORIES.items():
-                st.markdown(f"- {config['display_name']} ({config['radius_miles']} mi)")
+            st.metric(
+                "Estimated Value",
+                context.get('estimate_formatted', 'N/A'),
+                f"{context.get('confidence_level', 'N/A')} confidence"
+            )
 
         with col2:
-            st.markdown("**Note:**")
-            st.markdown("- Quality filtered (4.0+ rating)")
-            st.markdown("- Results cached for 7 days")
-            st.markdown("- Limited to top 10 per category")
+            psf = context.get('price_per_sqft', {})
+            st.metric(
+                "Price per Sqft",
+                f"${psf.get('property', 0):.0f}",
+                f"{psf.get('difference_pct', 0):+.1f}% vs area"
+            )
 
-    except ImportError:
-        st.info("Amenities module not available for this analysis")
+        with col3:
+            comps = context.get('comps_summary', {})
+            st.metric(
+                "Comparable Sales",
+                comps.get('count', 0),
+                f"Median: ${comps.get('median_price', 0):,}"
+            )
+
+        # Market position
+        position = context.get('price_per_sqft', {}).get('position', 'Unknown')
+        value_desc = context.get('narrative_helpers', {}).get('value_descriptor', '')
+
+        st.markdown(f"**Market Position:** {position}")
+        st.markdown(f"*{value_desc}*")
+
+        # Narrative sentence
+        narrative = format_valuation_narrative_sentence(context)
+        st.info(narrative)
+
+        # Sources
+        sources = context.get('sources_used', [])
+        if sources:
+            st.caption(f"Data Sources: {', '.join(sources)}")
+
+    except ImportError as e:
+        render_error_section("Valuation Analysis", f"Module not available: {e}")
     except Exception as e:
-        render_error_section("Amenities Analysis", str(e))
+        render_error_section("Valuation Analysis", str(e))
 
-    # ========== REPORT FOOTER ==========
+
+def _render_phase2_placeholder() -> None:
+    """Render placeholder for Phase 2 features."""
     st.divider()
-    st.caption("📍 Loudoun County Property Analysis Report")
+    st.markdown("### Coming in Phase 2")
+
+    with st.expander("Planned Features", expanded=False):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("""
+            **Phase 2: Important**
+            - 📊 School Performance Charts
+            - 🏘️ Community & HOA Info
+            - 🍽️ Neighborhood Amenities
+            - 🤖 AI Narrative Generation
+            """)
+
+        with col2:
+            st.markdown("""
+            **Phase 3: Enhancement**
+            - 🚗 VDOT Traffic Volume
+            - ⚡ Power Line Proximity
+            """)
+
+
+# =============================================================================
+# MAIN REPORT FUNCTION
+# =============================================================================
+
+def render_report(
+    address: str,
+    lat: float,
+    lon: float,
+    property_data: Optional[Dict[str, Any]] = None
+) -> None:
+    """
+    Generate Loudoun County property analysis report.
+
+    Integrates 5 Critical modules with shared presentation components.
+    Handles missing data gracefully with section-level error isolation.
+
+    Args:
+        address: The property address being analyzed
+        lat: Property latitude
+        lon: Property longitude
+        property_data: Optional dict with additional property context:
+            {
+                'apn': str,  # APN/PARID for sales lookup
+                'sqft': int,  # Square footage
+                'school_assignments': {'elementary': str, 'middle': str, 'high': str},
+                'valuation_result': dict,  # From PropertyValuationOrchestrator
+            }
+    """
+    from reports.shared_components import render_report_header
+
+    # Extract property data if provided
+    property_data = property_data or {}
+    apn = property_data.get('apn')
+    sqft = property_data.get('sqft')
+    school_assignments = property_data.get('school_assignments')
+    valuation_result = property_data.get('valuation_result')
+
+    # ========== HEADER ==========
+    render_report_header("Loudoun County", address, lat, lon)
+
+    # ========== SECTION 1: METRO ACCESS ==========
+    _render_metro_section(lat, lon)
+    st.divider()
+
+    # ========== SECTION 2: ZONING & DEVELOPMENT ==========
+    _render_zoning_section(lat, lon)
+    st.divider()
+
+    # ========== SECTION 3: SCHOOLS ==========
+    _render_schools_section(lat, lon, school_assignments)
+    st.divider()
+
+    # ========== SECTION 4: SALES HISTORY ==========
+    _render_sales_section(apn)
+    st.divider()
+
+    # ========== SECTION 5: VALUATION ==========
+    _render_valuation_section(valuation_result, sqft)
+
+    # ========== PHASE 2 PLACEHOLDER ==========
+    _render_phase2_placeholder()
+
+    # ========== FOOTER ==========
+    st.divider()
+    st.caption("📍 Loudoun County Property Analysis Report - Phase 1B (Critical Modules)")
     st.caption(f"Location: ({lat:.6f}, {lon:.6f})")
     st.success("✅ Report generation complete")
 

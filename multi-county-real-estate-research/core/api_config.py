@@ -1,19 +1,50 @@
 """
 API Configuration Module for NewCo
-Loads API keys from a secure config file.
+Loads API keys from environment variables, .env file, or config file.
+
+Priority order:
+1. Environment variables (ATTOM_API_KEY, ANTHROPIC_API_KEY, etc.)
+2. .env file in project root (loaded via python-dotenv)
+3. JSON config files at standard paths
 
 Usage:
-    from api_config import load_api_keys
+    from api_config import load_api_keys, get_api_key
 
     keys = load_api_keys()
     attom_key = keys['ATTOM_API_KEY']
-    rentcast_key = keys['RENTCAST_API_KEY']
+
+    # Or get a single key
+    anthropic_key = get_api_key('ANTHROPIC_API_KEY')
 """
 
 import json
 import os
 from pathlib import Path
 from typing import Dict, Optional
+
+
+# =============================================================================
+# .ENV FILE LOADING
+# =============================================================================
+# Attempt to load .env file from project root (multi-county-real-estate-research/)
+# This runs at module import time, making env vars available for subsequent calls.
+# Silently continues if python-dotenv is not installed or .env doesn't exist.
+
+def _load_dotenv():
+    """Load .env file if python-dotenv is available."""
+    try:
+        from dotenv import load_dotenv
+        # Project root is parent of core/ directory
+        project_root = Path(__file__).parent.parent
+        env_file = project_root / '.env'
+        if env_file.exists():
+            load_dotenv(env_file)
+            return True
+    except ImportError:
+        pass  # python-dotenv not installed
+    return False
+
+_dotenv_loaded = _load_dotenv()
 
 
 # Config file search paths (in priority order)
@@ -53,8 +84,8 @@ def load_api_keys() -> Dict[str, str]:
     """
     config = {}
 
-    # Priority 1: Check environment variables
-    env_keys = ['ATTOM_API_KEY', 'RENTCAST_API_KEY', 'GOOGLE_MAPS_API_KEY', 'BRAVE_SEARCH_API_KEY']
+    # Priority 1: Check environment variables (including those loaded from .env)
+    env_keys = ['ATTOM_API_KEY', 'RENTCAST_API_KEY', 'GOOGLE_MAPS_API_KEY', 'BRAVE_SEARCH_API_KEY', 'ANTHROPIC_API_KEY']
     for key in env_keys:
         env_value = os.environ.get(key)
         if env_value:
@@ -88,14 +119,15 @@ def load_api_keys() -> Dict[str, str]:
 
 def get_api_key(key_name: str) -> Optional[str]:
     """
-    Get API key from environment variable or config file.
+    Get API key from environment variable, .env file, or config file.
 
-    Checks:
-    1. Environment variable (e.g., ATTOM_API_KEY)
-    2. Config files at multiple paths (WSL mount, home dir, fallbacks)
+    Checks (in priority order):
+    1. Environment variable (e.g., ATTOM_API_KEY, ANTHROPIC_API_KEY)
+    2. .env file in project root (auto-loaded at module import)
+    3. Config files at multiple paths (WSL mount, home dir, fallbacks)
 
     Args:
-        key_name: Name of the key (e.g., 'ATTOM_API_KEY', 'RENTCAST_API_KEY')
+        key_name: Name of the key (e.g., 'ATTOM_API_KEY', 'ANTHROPIC_API_KEY')
 
     Returns:
         The API key value, or None if not found

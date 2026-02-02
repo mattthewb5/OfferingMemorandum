@@ -4,14 +4,20 @@ Fairfax County Report Generator
 Generates property analysis reports for Fairfax County using standardized
 class-based modules and shared presentation components.
 
-Features (7 Sections):
+Features (8 Sections):
 1. School Performance - Assigned schools and nearby facilities
 2. Crime & Safety - 6-month incident analysis with safety score
 3. Zoning & Development - Land use and overlay districts
 4. Parks & Recreation - Park access score and nearby parks
 5. Healthcare Access - Hospitals and urgent care proximity
 6. Flood Risk Analysis - FEMA flood zone assessment
-7. Transit & Metro Access - 32 WMATA stations, bus service (NEW)
+7. Transit & Metro Access - 32 WMATA stations, bus service
+8. Traffic & Road Network - VDOT traffic data, 148K road segments (NEW)
+
+Data advantages vs Loudoun:
+- 148,594 road segments (5x more than Loudoun's 29,217)
+- 32 Metro stations (vs Loudoun's 4)
+- Real VDOT ADT counts, not estimates
 
 This module demonstrates the router architecture where:
 - Data fetching uses county-specific modules (Fairfax classes)
@@ -409,6 +415,122 @@ def render_report(address: str, lat: float, lon: float) -> None:
         render_error_section("Transit Analysis", f"Data files not found: {e}")
     except Exception as e:
         render_error_section("Transit Analysis", str(e))
+
+    st.divider()
+
+    # ========== TRAFFIC & ROAD NETWORK ==========
+    render_section_header("🚗", "Traffic & Road Network", "VDOT traffic volumes and highway access")
+
+    try:
+        from core.fairfax_traffic_analysis import FairfaxTrafficAnalysis
+        traffic = FairfaxTrafficAnalysis()
+
+        # Calculate traffic exposure score (inverted: lower traffic = higher score)
+        exposure_score = traffic.calculate_traffic_exposure_score(lat, lon)
+
+        # Convert to score format for display
+        score_data = {
+            'score': exposure_score.get('score', 0),
+            'max_score': 100,
+            'rating': exposure_score.get('rating', 'Unknown'),
+            'description': 'Lower traffic exposure = higher score (better for residential)'
+        }
+        render_score_card("Traffic Exposure Score", score_data)
+
+        # Get nearby roads with traffic data
+        nearby_roads = traffic.get_nearby_traffic(lat, lon, radius_miles=0.5)
+
+        if nearby_roads:
+            st.markdown("### 🛣️ Nearest Roads")
+
+            # Show nearest road metrics
+            nearest = nearby_roads[0]
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric(
+                    "Nearest Road",
+                    nearest.get('road_name', 'Unknown')[:20]  # Truncate long names
+                )
+
+            with col2:
+                st.metric(
+                    "Distance",
+                    f"{nearest.get('distance_miles', 0):.2f} mi"
+                )
+
+            with col3:
+                adt = nearest.get('adt', 0)
+                st.metric(
+                    "Daily Traffic",
+                    f"{adt:,}" if adt else "N/A"
+                )
+
+            # Traffic level context
+            traffic_level = nearest.get('traffic_level', 'Unknown')
+            if traffic_level == 'Very High':
+                st.warning(f"⚠️ **{traffic_level} Traffic** - Nearest road carries significant vehicle volume")
+            elif traffic_level == 'High':
+                st.info(f"🟡 **{traffic_level} Traffic** - Moderate to high vehicle volume nearby")
+            elif traffic_level in ['Low', 'Very Low']:
+                st.success(f"✅ **{traffic_level} Traffic** - Quiet residential area")
+            else:
+                st.info(f"🔹 **{traffic_level} Traffic**")
+
+            # High-traffic roads count
+            high_traffic_count = exposure_score.get('high_traffic_roads_nearby', 0)
+            if high_traffic_count > 0:
+                st.markdown(f"**High-traffic roads within 1 mile:** {high_traffic_count}")
+
+        # Detailed road list in expander
+        if nearby_roads and len(nearby_roads) > 1:
+            with st.expander(f"📊 All Roads Within 0.5 Miles ({len(nearby_roads)} roads)"):
+                # Format data for table
+                table_data = []
+                for road in nearby_roads[:15]:  # Limit to 15
+                    table_data.append({
+                        'Road': road.get('road_name', 'Unknown'),
+                        'Route': road.get('route_name', '-'),
+                        'Distance': f"{road.get('distance_miles', 0):.2f} mi",
+                        'Daily Traffic': f"{road.get('adt', 0):,}",
+                        'Level': road.get('traffic_level', 'N/A')
+                    })
+
+                render_data_table(table_data)
+
+        # Analysis summary
+        analysis = exposure_score.get('analysis', '')
+        if analysis:
+            st.markdown(f"**Analysis:** {analysis}")
+
+        # Score interpretation
+        score = exposure_score.get('score', 0)
+        if score >= 70:
+            st.success(
+                "✅ **Low Traffic Exposure** - Property is well-insulated from heavy traffic. "
+                "Ideal for families and those seeking quiet residential environment."
+            )
+        elif score >= 40:
+            st.info(
+                "🟡 **Moderate Traffic Exposure** - Some traffic nearby but manageable. "
+                "Good balance of accessibility and residential character."
+            )
+        else:
+            st.warning(
+                "🟠 **High Traffic Exposure** - Property is near major roads with heavy traffic. "
+                "May experience noise. Consider during commute hours before purchase."
+            )
+
+        # VDOT data attribution
+        st.caption(
+            "📌 Traffic data: Virginia DOT (VDOT) actual vehicle counts. "
+            "ADT = Average Daily Traffic. Fairfax County: 148,594 road segments."
+        )
+
+    except FileNotFoundError as e:
+        render_error_section("Traffic Analysis", f"Data files not found: {e}")
+    except Exception as e:
+        render_error_section("Traffic Analysis", str(e))
 
     # ========== REPORT FOOTER ==========
     st.divider()

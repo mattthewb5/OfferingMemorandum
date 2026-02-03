@@ -38,7 +38,7 @@ from utils.county_detector import detect_county, get_supported_counties
 
 COUNTY_RENDERERS = {
     'loudoun': 'reports.loudoun_report',
-    'fairfax': 'reports.fairfax_report',
+    'fairfax': 'reports.fairfax_report_new',  # TEMPORARY: Testing Phase 1 port
 }
 
 # Display names for UI

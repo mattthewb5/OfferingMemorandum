@@ -1,0 +1,13 @@
+Module,Status,Priority,Complexity,Data_Files,External_APIs,Integration_Order
+loudoun_metro_analysis,Functional,Critical,Low,None,None,1
+loudoun_zoning_analysis,Functional,Critical,High,placetype_translations.json;zoning_translations.json;building_permits/*.csv,Loudoun LOGIS GIS,2
+loudoun_school_percentiles,Functional,Critical,Medium,school_performance_trends.csv;school_metadata.csv,None,3
+loudoun_sales_data,Functional,Critical,Medium,combined_sales.parquet,None,4
+loudoun_valuation_context,Functional,Critical,Low,None,None,5
+loudoun_school_performance,Functional,Important,Medium,school_performance_trends_with_state_avg.csv;loudoun_school_coordinates.csv,None,6
+loudoun_community_lookup,Functional,Important,Low,communities.json,None,7
+loudoun_gis_data,Functional,Important,Medium,roads/*.shp;aiod/*.shp;Major_Power_Lines.geojson,None,8
+loudoun_places_analysis,Functional,Important,Medium,cache/places/*.json,Google Places API,9
+loudoun_narrative_generator,Functional,Important,High,cache/narratives/*.json,Anthropic Claude API,10
+loudoun_traffic_volume,Functional,Nice-to-have,Medium,vdot_traffic_volume.geojson;vdot_road_mapping.json,None,11
+loudoun_utilities_analysis,Functional,Nice-to-have,Medium,Major_Power_Lines.geojson,None,12

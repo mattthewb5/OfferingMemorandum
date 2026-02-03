@@ -1,31 +1,39 @@
 """
-Loudoun County Property Intelligence Report
+Fairfax County Property Intelligence Report
+============================================
 
-Complete property analysis module for the multi-county router framework.
-Ported from original loudoun_streamlit_app.py (5,054 lines).
+Ported from Loudoun County report structure (4,970 lines) to ensure
+consistent UX and professional quality across all counties.
 
-Features (13 Sections):
-1. School Performance - Charts, percentiles, trajectories
+Architecture:
+- Uses Fairfax class-based analysis modules (core/fairfax_*.py)
+- Maintains Loudoun's proven display patterns and formatting
+- Comprehensive error handling and graceful degradation
+
+Sections:
+1. Schools Analysis - Assigned schools with performance trends
 2. Location Quality - Roads, airports, flood zones, parks, Metro
-3. Cell Tower Coverage - Tower proximity with maps
-4. Neighborhood Amenities - Google Places API, convenience scoring
-5. Community/HOA - HOA fees, amenities lookup
+3. Cell Tower Coverage - FCC tower data and RF analysis
+4. Neighborhood Amenities - Convenience scoring
+5. Community/HOA - Subdivision context
 6. Demographics - Census Bureau data, charts
 7. Economic Indicators - BLS unemployment, LFPR, industry mix
-8. Medical Access - Hospitals, urgent care, pharmacies, maternity
-9. Development Infrastructure - Building permits map, tech infrastructure
-10. Zoning - Place types, development probability
-11. Property Valuation - ATTOM/RentCast, forecasts, investment analysis
+8. Medical Access - Hospitals, urgent care facilities
+9. Development Infrastructure - Building permits, tech infrastructure
+10. Zoning - Land use and overlay districts
+11. Property Valuation - ATTOM/RentCast triangulation
 12. AI Analysis - Claude API narrative generation
 13. Data Sources Footer
 
-Architecture:
-- Called by unified_app.py router via render_report(address, lat, lon)
-- Uses all core/loudoun_*.py modules
-- Dark mode theme system included
+Data Advantages vs Loudoun:
+- 148,594 road segments (5x more than Loudoun)
+- 32 Metro stations (8x more than Loudoun)
+- Natural gas utility data (unique to Fairfax)
+- Public crime data API with daily updates
 
-Ported: 2026-02-02
-Original: loudoun_streamlit_app.py (5,054 lines)
+Status: Phase 1 - Porting Schools, Crime, Zoning sections
+Ported: 2026-02-03
+Template: loudoun_report.py (4,970 lines)
 """
 
 import streamlit as st
@@ -385,9 +393,11 @@ else:
 
 # Core imports
 from core.location_quality_analyzer import LocationQualityAnalyzer, get_cached_location_analyzer
-from core.loudoun_zoning_analysis import analyze_property_zoning_loudoun
-from core.loudoun_utilities_analysis import analyze_power_line_proximity, get_cached_power_line_analyzer
-from core.loudoun_metro_analysis import analyze_metro_access
+# Fairfax-specific modules (class-based)
+from core.fairfax_zoning_analysis import FairfaxZoningAnalysis
+from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
+from core.fairfax_transit_analysis import FairfaxTransitAnalysis
+from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 # from core.mls_sqft_lookup import get_mls_sqft  # DISABLED - not on this branch
 from core.api_config import get_api_key
 from core.loudoun_school_performance import (
@@ -502,11 +512,11 @@ else:
 # =============================================================================
 # Get repository root (one level up from reports/ directory)
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(REPO_ROOT, 'data', 'loudoun')
+DATA_DIR = os.path.join(REPO_ROOT, 'data', 'fairfax')
 SCHOOLS_DIR = os.path.join(DATA_DIR, 'schools')
 PERMITS_DIR = os.path.join(DATA_DIR, 'building_permits')
 GIS_DIR = os.path.join(DATA_DIR, 'gis')
-CELL_TOWERS_DIR = os.path.join(DATA_DIR, 'Cell-Towers')
+CELL_TOWERS_DIR = os.path.join(DATA_DIR, 'cell_towers')
 HEALTHCARE_DIR = os.path.join(DATA_DIR, 'healthcare')
 
 
@@ -598,28 +608,35 @@ def load_permits_data() -> pd.DataFrame:
 
 @st.cache_data
 def load_school_performance() -> pd.DataFrame:
-    """Load school performance data for Loudoun County."""
-    perf_path = os.path.join(SCHOOLS_DIR, 'school_performance_trends.csv')
+    """Load school performance data for Fairfax County."""
+    # Try loading from Fairfax performance data
+    perf_path = os.path.join(SCHOOLS_DIR, 'performance', 'processed', 'performance_summary.parquet')
     try:
-        df = pd.read_csv(perf_path)
-        # Filter for Loudoun County
-        loudoun = df[df['Division_Name'] == 'Loudoun County'].copy()
-        return loudoun
+        if os.path.exists(perf_path):
+            df = pd.read_parquet(perf_path)
+            return df
+        # Fallback to CSV if parquet not available
+        csv_path = os.path.join(SCHOOLS_DIR, 'performance', 'raw', 'fairfax_schools_vdoe.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return df
     except Exception as e:
-        st.error(f"Error loading school data: {e}")
-        return pd.DataFrame()
+        print(f"Error loading Fairfax school data: {e}")
+    return pd.DataFrame()
 
 
 @st.cache_data
 def load_school_metadata() -> pd.DataFrame:
-    """Load school metadata for Loudoun County."""
-    meta_path = os.path.join(SCHOOLS_DIR, 'school_metadata.csv')
+    """Load school metadata for Fairfax County."""
+    # Use facilities data for metadata
+    facilities_path = os.path.join(SCHOOLS_DIR, 'processed', 'facilities.parquet')
     try:
-        df = pd.read_csv(meta_path)
-        loudoun = df[df['Division_Name'] == 'Loudoun County'].copy()
-        return loudoun
+        if os.path.exists(facilities_path):
+            df = pd.read_parquet(facilities_path)
+            return df
     except Exception as e:
-        return pd.DataFrame()
+        print(f"Error loading school metadata: {e}")
+    return pd.DataFrame()
 
 
 @st.cache_data
@@ -1043,131 +1060,56 @@ def check_flood_zone(lat: float, lon: float) -> Dict[str, Any]:
 
 
 def find_assigned_schools(lat: float, lon: float) -> Dict[str, str]:
-    """Find assigned schools for a location using zone geojson files."""
-    # School code to name mapping for Loudoun County
-    SCHOOL_CODES = {
-        # Elementary
-        'ALD': 'Aldie Elementary', 'ALG': 'Algonkian Elementary', 'ARC': 'Arcola Elementary',
-        'ASH': 'Ashburn Elementary', 'BAL': "Ball's Bluff Elementary", 'BAN': 'Banneker Elementary',
-        'BST': 'Belmont Station Elementary', 'BUF': 'Buffalo Trail Elementary',
-        'CAT': 'Catoctin Elementary', 'CCE': "Creighton's Corner Elementary",
-        'CED': 'Cedar Lane Elementary', 'CRE': 'Cardinal Ridge Elementary',
-        'CSP': 'Cool Spring Elementary', 'CTY': 'Countryside Elementary',
-        'DIS': 'Discovery Elementary', 'DOM': 'Dominion Trail Elementary',
-        'EME': 'Emerick Elementary', 'ETE': 'Elaine Thompson Elementary',
-        'EVE': 'Evergreen Mill Elementary', 'FDE': 'Frederick Douglass Elementary',
-        'FHR': 'Frances Hazel Reid Elementary', 'FOR': 'Forest Grove Elementary',
-        'GPE': 'Goshen Post Elementary', 'GUI': 'Guilford Elementary',
-        'HAM': 'Hamilton Elementary', 'HLS': 'Hillside Elementary',
-        'HRZ': 'Horizon Elementary', 'HUT': 'Hutchison Farm Elementary',
-        'KWC': 'Kenneth Culbert Elementary', 'LEE': 'Leesburg Elementary',
-        'LEG': 'Legacy Elementary', 'LIB': 'Liberty Elementary',
-        'LIN': 'Lincoln Elementary', 'LIT': 'Little River Elementary',
-        'LOV': 'Lovettsville Elementary', 'LOW': 'Lowes Island Elementary',
-        'LUC': 'Lucketts Elementary', 'MEA': 'Meadowland Elementary',
-        'MIL': 'Mill Run Elementary', 'MSE': 'Moorefield Station Elementary',
-        'MTE': "Madison's Trust Elementary", 'MTV': 'Mountain View Elementary',
-        'NLE': 'Newton-Lee Elementary', 'PMK': 'Potowmack Elementary',
-        'PNB': 'Pinebrook Elementary', 'RHL': 'Round Hill Elementary',
-        'RLC': 'Rosa Lee Carter Elementary', 'RRD': 'Rolling Ridge Elementary',
-        'SAN': 'Sanders Corner Elementary', 'SEL': 'Seldens Landing Elementary',
-        'STE': 'Sterling Elementary', 'STU': 'Steuart Weller Elementary',
-        'SUG': 'Sugarland Elementary', 'SUL': 'Sully Elementary',
-        'SYC': 'Sycolin Creek Elementary', 'TOL': 'John Tolbert Elementary',
-        'WAT': 'Waterford Elementary', 'WES': 'Waxpool Elementary',
-        'HENHOV': 'Hovatter Elementary',
-        # Middle
-        'BAM': 'Brambleton Middle', 'BEM': 'Belmont Ridge Middle',
-        'BRM': 'Blue Ridge Middle', 'ERM': 'Eagle Ridge Middle',
-        'FWS': 'Farmwell Station Middle', 'HPM': 'Harper Park Middle',
-        'HRM': 'Harmony Middle', 'JLS': 'J. Lupton Simpson Middle',
-        'JML': 'J. Michael Lunsford Middle', 'MMS': 'Mercer Middle',
-        'RBM': 'River Bend Middle', 'SHM': 'Smart\'s Mill Middle',
-        'SMM': 'Stone Hill Middle', 'SRM': 'Sterling Middle',
-        'STM': 'Seneca Ridge Middle', 'TMS': 'Trailside Middle',
-        'WMS': 'Willard Middle',
-        # High
-        'BRH': 'Briar Woods High', 'BWH': 'Broad Run High',
-        'DMH': 'Dominion High', 'FHS': 'Freedom High',
-        'HTH': 'Heritage High', 'IHS': 'Independence High',
-        'JCH': 'John Champe High', 'LCH': 'Loudoun County High',
-        'LRH': 'Lightridge High', 'LVH': 'Loudoun Valley High',
-        'PFH': 'Park View High', 'PVH': 'Potomac Falls High',
-        'RRH': 'Rock Ridge High', 'RVH': 'Riverside High',
-        'SBH': 'Stone Bridge High', 'THS': 'Tuscarora High',
-        'WHS': 'Woodgrove High'
-    }
+    """Find assigned schools for a location using Fairfax school zones."""
+    # Use Fairfax class-based module
+    try:
+        from core.fairfax_schools_analysis import FairfaxSchoolsAnalysis
+        schools_analyzer = FairfaxSchoolsAnalysis()
 
-    assignments = {
+        result = schools_analyzer.get_assigned_schools(lat, lon)
+
+        if result:
+            return {
+                'elementary': result.get('elementary', {}).get('school_name') if result.get('elementary') else None,
+                'middle': result.get('middle', {}).get('school_name') if result.get('middle') else None,
+                'high': result.get('high', {}).get('school_name') if result.get('high') else None,
+                '_raw': result  # Keep raw data for additional details
+            }
+    except Exception as e:
+        print(f"Error in Fairfax school lookup: {e}")
+
+    # Return empty if lookup fails
+    return {
         'elementary': None,
         'middle': None,
         'high': None
     }
 
-    if not GEOPANDAS_AVAILABLE:
-        # Fallback: return placeholder
-        return {
-            'elementary': 'Evergreen Mill Elementary',
-            'middle': 'J. Lupton Simpson Middle',
-            'high': 'Tuscarora High'
-        }
 
-    point = Point(lon, lat)
-
-    # Zone files with their school code columns
-    zone_config = {
-        'elementary': ('elementary_zones.geojson', 'ES_SCH_CODE'),
-        'middle': ('middle_zones.geojson', 'MS_SCH_CODE'),
-        'high': ('high_zones.geojson', 'HS_SCH_CODE')
-    }
-
-    for level, (filename, code_col) in zone_config.items():
-        filepath = os.path.join(SCHOOLS_DIR, filename)
-        try:
-            zones_gdf = gpd.read_file(filepath)
-            # Find zone containing the point
-            for idx, zone in zones_gdf.iterrows():
-                if zone.geometry.contains(point):
-                    # Extract school code and map to name
-                    school_code = zone.get(code_col)
-                    if school_code:
-                        school_name = SCHOOL_CODES.get(school_code, f"School {school_code}")
-                        assignments[level] = school_name
-                    break
-        except Exception:
-            continue
-
-    # Fallbacks if zone lookup fails
-    if not assignments['elementary']:
-        assignments['elementary'] = 'Evergreen Mill Elementary'
-    if not assignments['middle']:
-        assignments['middle'] = 'J. Lupton Simpson Middle'
-    if not assignments['high']:
-        assignments['high'] = 'Tuscarora High'
-
-    return assignments
-
-
-def get_school_performance(school_name: str, performance_df: pd.DataFrame) -> Dict[str, Any]:
-    """Get performance data for a specific school."""
-    if performance_df.empty:
+def get_school_performance(school_name: str, performance_df: pd.DataFrame = None) -> Dict[str, Any]:
+    """Get performance data for a specific school using Fairfax performance module."""
+    if not school_name:
         return {}
 
-    # Find matching school
-    matches = performance_df[performance_df['School_Name'].str.contains(school_name.split()[0], case=False, na=False)]
+    try:
+        from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
+        perf_analyzer = FairfaxSchoolPerformanceAnalysis()
 
-    if matches.empty:
-        return {}
+        performance = perf_analyzer.get_school_performance(school_name)
 
-    # Get most recent year
-    latest = matches.sort_values('Year', ascending=False).iloc[0]
+        if performance.get('found', False):
+            return {
+                'reading': performance.get('recent_reading_pass_rate', 0),
+                'math': performance.get('recent_math_pass_rate', 0),
+                'science': performance.get('recent_science_pass_rate', 0),
+                'overall': performance.get('recent_overall_pass_rate', 0),
+                'trend': performance.get('trend', 'stable'),
+                '_raw': performance
+            }
+    except Exception as e:
+        print(f"Error getting school performance: {e}")
 
-    return {
-        'reading': latest.get('Reading_Pass_Rate', 0),
-        'math': latest.get('Math_Pass_Rate', 0),
-        'science': latest.get('Science_Pass_Rate', 0),
-        'overall': latest.get('Overall_Pass_Rate', 0)
-    }
+    return {}
 
 
 # =============================================================================
@@ -1470,6 +1412,102 @@ def display_schools_section(lat: float, lon: float):
                 st.error(f"Error loading school comparison data: {str(e)}")
 
     st.markdown("---")
+
+
+# =============================================================================
+# SECTION: CRIME & SAFETY (FAIRFAX)
+# =============================================================================
+
+def display_crime_section(lat: float, lon: float):
+    """Display crime and safety analysis for Fairfax County."""
+    st.markdown("## 🚨 Crime & Safety")
+
+    try:
+        from core.fairfax_crime_analysis import FairfaxCrimeAnalysis
+
+        crime_analyzer = FairfaxCrimeAnalysis()
+
+        # Get date range from metadata
+        import json
+        metadata_path = os.path.join(DATA_DIR, 'crime', 'processed', 'metadata.json')
+
+        date_range_text = "Recent crime statistics"
+        if os.path.exists(metadata_path):
+            try:
+                with open(metadata_path) as f:
+                    metadata = json.load(f)
+                    date_range = metadata.get('date_range', {})
+                    earliest = date_range.get('min', '')
+                    latest = date_range.get('max', '')
+                    if earliest and latest:
+                        date_range_text = f"Crime data: {earliest} to {latest}"
+            except:
+                pass
+
+        st.markdown(f"*{date_range_text}*")
+
+        # Calculate safety score
+        safety_score = crime_analyzer.calculate_safety_score(lat, lon, radius_miles=0.5)
+
+        if safety_score:
+            score = safety_score.get('score', 0)
+            rating = safety_score.get('rating', 'Unknown')
+            total_crimes = safety_score.get('total_crimes', 0)
+
+            # Display score card
+            st.markdown("### Safety Score")
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Safety Score", f"{score}/100")
+            with col2:
+                st.metric("Rating", rating)
+            with col3:
+                st.metric("Incidents", total_crimes)
+
+            # Crime breakdown
+            breakdown = safety_score.get('breakdown', {})
+            if breakdown:
+                st.markdown("### Crime Breakdown (0.5 mile radius)")
+
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    violent = breakdown.get('violent', breakdown.get('VIOLENT', 0))
+                    st.metric("Violent Crimes", violent)
+                with col2:
+                    property_crimes = breakdown.get('property', breakdown.get('PROPERTY', 0))
+                    st.metric("Property Crimes", property_crimes)
+                with col3:
+                    other = breakdown.get('other', breakdown.get('OTHER', 0))
+                    st.metric("Other Incidents", other)
+
+            # Context messaging
+            if total_crimes == 0:
+                st.success("✅ **Very Safe** - No reported incidents in the specified time period and radius.")
+            elif total_crimes <= 5:
+                st.success(f"✅ **Safe** - {total_crimes} reported incidents. Low crime area.")
+            elif total_crimes <= 15:
+                st.info(f"🟡 **Moderate** - {total_crimes} reported incidents. Average for the area.")
+            else:
+                st.warning(f"⚠️ **Higher Crime** - {total_crimes} reported incidents. Exercise normal caution.")
+
+            # Geocoding coverage note
+            geocoded_pct = safety_score.get('geocoded_percentage', 0)
+            if geocoded_pct > 0 and geocoded_pct < 80:
+                st.caption(f"📌 Note: {geocoded_pct:.1f}% of incidents have location data. Some crimes may not be reflected.")
+
+        else:
+            st.info("ℹ️ Crime data not available for this location.")
+
+        st.caption("📌 Crime data from Fairfax County Police Department via public API.")
+
+    except FileNotFoundError:
+        st.warning("⚠️ Crime data not available for this area")
+    except Exception as e:
+        st.error(f"❌ Error in crime analysis: {e}")
+        with st.expander("Error Details"):
+            import traceback
+            st.code(traceback.format_exc())
 
 
 # =============================================================================
@@ -3720,420 +3758,160 @@ def display_development_section(lat: float, lon: float):
 # =============================================================================
 
 def display_zoning_section(address: str, lat: float, lon: float):
-    """Display zoning information with plain English translations and integrated features."""
+    """Display zoning information for Fairfax County properties."""
     st.markdown("## 🏗️ Zoning & Land Use")
 
     try:
-        # Get full zoning analysis
-        zoning_result = analyze_property_zoning_loudoun(lat, lon)
+        # Initialize Fairfax zoning analyzer
+        zoning_analyzer = FairfaxZoningAnalysis()
+        zoning_result = zoning_analyzer.get_zoning(lat, lon)
 
-        if not zoning_result:
-            st.error("Unable to load zoning information")
+        if not zoning_result or zoning_result.get('message'):
+            st.warning(zoning_result.get('message', 'Unable to load zoning information'))
             return
 
-        # Extract components
-        jurisdiction = zoning_result.get('jurisdiction', 'LOUDOUN')
-        town_name = zoning_result.get('town_name')
-        current_zoning = zoning_result.get('current_zoning', {})
-        place_type = zoning_result.get('place_type', {})
-        dev_prob = zoning_result.get('development_probability', {})
-
-        # Get plain English translations
-        zoning_code = current_zoning.get('zoning', 'N/A')
-        place_type_code = place_type.get('place_type_code', '')
-
-        # Import translation functions
-        from core.loudoun_zoning_analysis import (
-            get_plain_english_zoning,
-            get_plain_english_placetype,
-            characterize_building_permits,
-            generate_zoning_narrative,
-            generate_permit_narrative
-        )
-        from core.loudoun_community_lookup import CommunityLookup
-
-        zoning_translation = get_plain_english_zoning(zoning_code)
-        place_translation = get_plain_english_placetype(place_type_code)
-
-        # Show jurisdiction if in a town
-        if town_name:
-            st.info(f"📍 This property is in the **Town of {town_name}** (incorporated)")
+        # Extract zoning data
+        zone_code = zoning_result.get('zone_code', 'N/A')
+        zone_type = zoning_result.get('zone_type', 'Unknown')
+        zone_type_desc = zoning_result.get('zone_type_description', zone_type)
+        zone_description = zoning_result.get('zone_description')
+        has_proffer = zoning_result.get('has_proffer', False)
+        public_land = zoning_result.get('public_land', False)
+        overlays = zoning_result.get('overlays', [])
 
         # INLINE SUMMARY - Clean and scannable
-        plain_zoning = zoning_translation.get('plain_english', zoning_code)
-        character = place_translation.get('character', 'Residential area')
-        st.markdown(f"📍 **Zoning:** {plain_zoning} • **Character:** {character}")
+        st.markdown(f"📍 **Zoning:** {zone_code} • **Type:** {zone_type_desc}")
+
+        # Show special indicators
+        if public_land:
+            st.info("📍 This property is on **public land**")
+        if has_proffer:
+            st.info("📋 This property has associated **proffers** (development conditions)")
 
         # MAIN EXPANDER: What This Means
-        with st.expander("📋 What This Means", expanded=False):
+        with st.expander("📋 Zoning Details", expanded=False):
 
             # === ZONING FOR THIS PROPERTY ===
             st.markdown("### Zoning for This Property")
 
-            # Generate flowing prose narrative
-            zoning_narrative = generate_zoning_narrative(
-                zoning_data=zoning_translation,
-                place_data=place_translation,
-                community_data=None  # Community data handled in separate section
-            )
-            st.markdown(zoning_narrative)
+            # Generate narrative based on zoning type
+            if zone_description:
+                st.markdown(f"""
+This property is zoned **{zone_code}** ({zone_description}).
+
+**Zone Type:** {zone_type_desc}
+
+This zoning classification determines what can be built on this property,
+including permitted uses, building heights, setbacks, and density limits.
+""")
+            else:
+                st.markdown(f"""
+This property is zoned **{zone_code}** ({zone_type_desc}).
+
+This zoning classification determines what can be built on this property,
+including permitted uses, building heights, setbacks, and density limits.
+""")
+
+            # === OVERLAY DISTRICTS ===
+            if overlays:
+                st.markdown("### Overlay Districts")
+                for overlay in overlays:
+                    overlay_type = overlay.get('overlay_type', 'Unknown')
+                    if overlay_type == 'airport_noise_impact':
+                        decibel = overlay.get('decibel_level', 0)
+                        st.warning(f"✈️ **Airport Noise Impact Zone** - {decibel} dB")
+                        if decibel >= 70:
+                            st.markdown("*High aircraft noise - may significantly impact outdoor activities and require noise mitigation.*")
+                        elif decibel >= 65:
+                            st.markdown("*Moderate aircraft noise - may affect conversations outdoors and sleep with windows open.*")
+                        else:
+                            st.markdown("*Low-moderate aircraft noise - generally acceptable for residential use.*")
+                    else:
+                        st.info(f"📍 **{overlay_type}** overlay applies to this property")
 
             # === RECENT CONSTRUCTION ACTIVITY ===
             st.markdown("### Recent Construction Activity")
-            permits = characterize_building_permits(lat, lon, radius_miles=2)
-
-            if permits and permits.get('success'):
-                # Generate flowing prose narrative with breakdowns and comparisons
-                permit_narrative = generate_permit_narrative(
-                    permit_data=permits,
-                    activity_level=permits.get('recent_activity', 'Unknown'),
-                    property_community=permits.get('property_community')
-                )
-                st.markdown(permit_narrative)
-            else:
-                st.info("No recent building permit data available for this area.")
-
-            # === NEARBY COMMUNITIES ===
-            st.markdown("### Nearby Communities")
-
             try:
-                from math import radians, sin, cos, sqrt, atan2
+                permits_analyzer = FairfaxPermitsAnalysis()
+                nearby_permits = permits_analyzer.get_permits_near_point(lat, lon, radius_miles=1.0, months_back=24)
 
-                def calculate_distance(lat1, lon1, lat2, lon2):
-                    """Calculate distance between two points using Haversine formula."""
-                    R = 3959  # Earth's radius in miles
-                    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-                    dlat = lat2 - lat1
-                    dlon = lon2 - lon1
-                    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-                    c = 2 * atan2(sqrt(a), sqrt(1-a))
-                    return R * c
+                if len(nearby_permits) > 0:
+                    total_permits = len(nearby_permits)
+                    residential_new = len(nearby_permits[nearby_permits['permit_category'] == 'residential_new']) if 'permit_category' in nearby_permits.columns else 0
+                    commercial = len(nearby_permits[nearby_permits['permit_category'].str.contains('commercial', na=False)]) if 'permit_category' in nearby_permits.columns else 0
 
-                # Load communities with coordinates
-                lookup = CommunityLookup()
+                    st.markdown(f"""
+**{total_permits} building permits** issued within 1 mile in the past 24 months.
 
-                # Calculate distances to all communities
-                nearby_communities = []
-
-                for comm_key in lookup.list_communities():
-                    # Get raw community data (has coordinates)
-                    comm_data = lookup.get_community_by_key(comm_key)
-                    summary = lookup.get_community_summary(comm_key)
-
-                    if comm_data and summary and 'latitude' in comm_data and 'longitude' in comm_data:
-                        # Calculate distance from current property
-                        dist = calculate_distance(
-                            lat, lon,
-                            comm_data['latitude'],
-                            comm_data['longitude']
-                        )
-
-                        nearby_communities.append({
-                            'key': comm_key,
-                            'name': summary.get('display_name', comm_key),
-                            'distance': dist,
-                            'homes': summary.get('total_homes'),
-                            'hoa': summary.get('monthly_fee'),
-                            'gated': summary.get('gated', False),
-                            'amenities': summary.get('amenities_list', []),
-                            'location': summary.get('location', '')
-                        })
-
-                # Sort by distance (closest first)
-                nearby_communities.sort(key=lambda x: x['distance'])
-
-                # Check if property is WITHIN a community (distance < 0.5 miles)
-                current_community = None
-                if nearby_communities and nearby_communities[0]['distance'] < 0.5:
-                    current_community = nearby_communities[0]
-                    nearby_communities = nearby_communities[1:]
-
-                # Display current community if detected
-                if current_community:
-                    st.success(f"📍 **This property is in {current_community['name']}**")
-
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        if current_community['homes']:
-                            st.metric("Community Size", f"{current_community['homes']:,} homes")
-                    with col2:
-                        if current_community['gated']:
-                            st.metric("Access", "🔒 Gated")
-                        else:
-                            st.metric("Access", "Open")
-                    with col3:
-                        if current_community['hoa']:
-                            st.metric("HOA Fee", f"${current_community['hoa']:.0f}/mo")
-
-                    if current_community['amenities']:
-                        st.markdown("**Amenities:** " + " • ".join(current_community['amenities'][:5]))
-
-                    st.markdown("---")
-
-                # Display nearby communities (within 5 miles)
-                communities_within_5mi = [c for c in nearby_communities if c['distance'] <= 5.0]
-
-                if communities_within_5mi:
-                    st.markdown(f"**Other Nearby Communities** ({len(communities_within_5mi)} within 5 miles):")
-
-                    for comm in communities_within_5mi[:10]:
-                        # Format distance
-                        if comm['distance'] < 0.1:
-                            dist_str = f"{comm['distance']*5280:.0f} ft"
-                        else:
-                            dist_str = f"{comm['distance']:.1f} mi"
-
-                        # Build detail parts
-                        details = []
-                        if comm['homes']:
-                            details.append(f"{comm['homes']:,} homes" if comm['homes'] >= 1000 else f"{comm['homes']} homes")
-                        if comm['gated']:
-                            details.append("Gated")
-                        if comm['hoa']:
-                            details.append(f"${comm['hoa']:.0f}/mo")
-                        if comm['amenities']:
-                            notable = [a for a in comm['amenities']
-                                      if any(kw in a.lower() for kw in ['pool', 'golf', 'trail', 'fitness'])]
-                            if notable:
-                                details.append(notable[0])
-
-                        if details:
-                            st.markdown(f"• **{comm['name']}** - {dist_str} ({' • '.join(details[:3])})")
-                        else:
-                            st.markdown(f"• **{comm['name']}** - {dist_str}")
-
-                    if len(communities_within_5mi) > 10:
-                        st.caption(f"+ {len(communities_within_5mi) - 10} more communities within 5 miles")
-
-                elif not current_community:
-                    st.info("No major communities found within 5 miles.")
-                    if nearby_communities:
-                        st.markdown("**Nearest Communities:**")
-                        for comm in nearby_communities[:3]:
-                            st.markdown(f"• **{comm['name']}** - {comm['distance']:.1f} mi ({comm['location']})")
-
-            except FileNotFoundError:
-                st.caption("💡 Community data not available")
+This indicates {"active" if total_permits > 20 else "moderate" if total_permits > 5 else "low"} construction activity in the area.
+""")
+                    if residential_new > 0:
+                        st.markdown(f"• **{residential_new}** new residential construction permits")
+                    if commercial > 0:
+                        st.markdown(f"• **{commercial}** commercial permits")
+                else:
+                    st.info("No recent building permits found within 1 mile (past 24 months).")
             except Exception as e:
-                st.caption(f"⚠️ Unable to load community data")
+                st.caption("💡 Permit data unavailable")
 
-            # Technical Reference (small text)
+            # Technical Reference
             st.markdown("---")
-            st.caption(f"**Technical Reference:** Zoning: {zoning_code}")
-            if current_zoning.get('zoning_description'):
-                st.caption(current_zoning['zoning_description'])
+            st.caption(f"**Technical Reference:** Zoning Code: {zone_code}")
+            if zone_description:
+                st.caption(zone_description)
+            st.caption("Source: Fairfax County GIS, 2025")
 
-            if place_type_code:
-                place_full = place_type.get('place_type', '')
-                st.caption(f"Place Type: {place_type_code} ({place_full})")
+        # Development Pressure (based on building permits)
+        with st.expander("🔮 Development Pressure", expanded=False):
+            try:
+                permits_analyzer = FairfaxPermitsAnalysis()
+                dev_pressure = permits_analyzer.calculate_development_pressure(lat, lon, radius_miles=1.0, months_back=24)
 
-            st.caption("Source: Loudoun County GIS, December 2025")
-
-        # Development Probability (existing functionality - keep as is)
-        if dev_prob.get('score') is not None:
-            with st.expander("🔮 Development Probability", expanded=False):
-                score = dev_prob['score']
-                risk_level = dev_prob.get('risk_level', 'Unknown')
+                score = dev_pressure.get('score', 0)
+                trend = dev_pressure.get('trend', 'stable')
 
                 # Display score with color
                 if score < 25:
                     color = "🟢"
+                    level = "Low"
                 elif score < 50:
                     color = "🟡"
+                    level = "Moderate"
                 elif score < 75:
                     color = "🟠"
+                    level = "High"
                 else:
                     color = "🔴"
+                    level = "Very High"
 
-                st.markdown(f"{color} **Development Score:** {score}/100 ({risk_level})")
+                st.markdown(f"{color} **Development Pressure:** {score}/100 ({level})")
+                st.markdown(f"**Trend:** {trend.title()}")
 
                 # Show current status
                 st.markdown("**Current Status:**")
-                st.markdown(f"• Zoned: {plain_zoning} ({zoning_code})")
-                st.markdown(f"• Place Type: {place_translation.get('plain_english', place_type.get('place_type', 'Unknown'))}")
+                st.markdown(f"• Zoned: {zone_code} ({zone_type_desc})")
 
-                # Score breakdown table
-                component_scores = dev_prob.get('component_scores', {})
-                component_reasons = dev_prob.get('component_reasons', {})
+                # Score breakdown
+                breakdown = dev_pressure.get('breakdown', {})
+                if breakdown:
+                    st.markdown("**Score Factors:**")
+                    for factor, value in breakdown.items():
+                        st.markdown(f"• {factor.replace('_', ' ').title()}: {value}")
 
-                if component_scores:
-                    st.markdown("**Score Breakdown:**")
+                st.markdown("""
+---
+**What This Means:**
 
-                    # Create breakdown data
-                    breakdown_data = {
-                        'Component': [
-                            'Zoning vs. Plan Mismatch',
-                            'Current Zoning Restrictiveness',
-                            'Comprehensive Plan Pressure',
-                            '**TOTAL**'
-                        ],
-                        'Score': [
-                            f"{component_scores.get('mismatch', 0)}/40",
-                            f"{component_scores.get('restrictiveness', 0)}/30",
-                            f"{component_scores.get('pressure', 0)}/30",
-                            f"**{score}/100**"
-                        ],
-                        'Reason': [
-                            component_reasons.get('mismatch', ''),
-                            component_reasons.get('restrictiveness', ''),
-                            component_reasons.get('pressure', ''),
-                            f"**{risk_level}**"
-                        ]
-                    }
+Development pressure is calculated from building permit activity within 1 mile
+over the past 24 months. Higher scores indicate more construction activity,
+which may signal:
 
-                    # Display as dataframe
-                    breakdown_df = pd.DataFrame(breakdown_data)
-                    st.dataframe(
-                        breakdown_df,
-                        width='stretch',
-                        hide_index=True
-                    )
-
-                # Educational explanation of components
-                with st.expander("📚 Understanding the Score Components"):
-                    st.markdown("""
-The development probability score combines three factors to assess whether this
-property might face redevelopment pressure in the next 10-20 years:
-
-**1. Zoning vs. Plan Mismatch (0-40 points)**
-
-Measures how different today's zoning is from the county's long-term vision in
-the 2019 Comprehensive Plan.
-
-- **High score** (30-40 pts): Large gap between current zoning and planned
-  intensity. Example: A property zoned for 1 home per acre (R-1) in an area the
-  county plans for mixed-use development would score high because there's
-  significant potential for rezoning to match the comprehensive plan.
-
-- **Low score** (0-10 pts): Current zoning already matches or exceeds what
-  the comprehensive plan envisions. No policy-driven pressure for change.
-
-**2. Current Zoning Restrictiveness (0-30 points, scaled by alignment)**
-
-Measures how difficult it is to increase density under current zoning rules.
-
-- **"Restrictive" means**: Hard to subdivide, limited building types allowed,
-  strict density caps. Most restrictive zones are Agricultural/Rural (AR-1, AR-2)
-  where subdividing a 20-40 acre parcel is difficult. Least restrictive are
-  already-dense zones like Town Center (PD-TC) or built-out master-planned
-  communities (PRN, PDH).
-
-- **The scaling**: If current zoning already matches the comprehensive plan,
-  restrictiveness is reduced by 80-85% (divided by 6) because it doesn't matter
-  how restrictive the zoning is if there's no policy pushing for change.
-
-**3. Comprehensive Plan Pressure (0-30 points, scaled by alignment)**
-
-Measures how aggressively the county's 2019 Comprehensive Plan calls for
-development in this area.
-
-- **High pressure** (30 pts raw): Urban Transit Center, Urban/Suburban Mixed Use
-  designations - the county's long-term vision actively wants dense, mixed-use
-  development in these areas.
-
-- **Moderate pressure** (10 pts raw): Suburban Neighborhood - county wants to
-  maintain existing residential character with only minor evolution.
-
-- **Low pressure** (5 pts raw): Rural preservation areas, incorporated town
-  boundaries (administrative only), or transition areas where the county expects
-  minimal change.
-
-- **The scaling**: Like restrictiveness, pressure is scaled by alignment. If a
-  property is already at Urban Mixed Use intensity (example: Ashburn Station
-  area), the pressure score is reduced by 80-85% because the development the
-  plan calls for has already happened.
+- **High pressure (60+):** Active development area with significant new construction
+- **Moderate (30-59):** Healthy development activity, typical suburban growth
+- **Low (0-29):** Established, stable neighborhood with minimal new construction
 """)
-
-                # Dynamic narrative based on score and intensity_diff
-                intensity_diff = dev_prob.get('intensity_diff', 0)
-                place_type_name = place_type.get('place_type', 'Unknown')
-
-                # Generate dynamic three-paragraph narrative
-                # Paragraph 1: What the score means
-                if score >= 80:
-                    para1 = f"This property has very high redevelopment pressure ({score}/100). A score this high indicates significant potential for neighborhood change - the county's comprehensive plan envisions substantially more density or different land use than currently exists, creating policy-driven pressure for rezoning and redevelopment over the next 10-20 years."
-                elif score >= 60:
-                    para1 = f"This property has high redevelopment pressure ({score}/100). This indicates notable potential for change - there's a meaningful gap between current zoning and the county's long-term vision, suggesting redevelopment pressure could build over the next 15-20 years as the area evolves toward the comprehensive plan designation."
-                elif score >= 40:
-                    para1 = f"This property has moderate redevelopment pressure ({score}/100). This suggests some potential for gradual evolution - while there's minor misalignment between current zoning and the comprehensive plan, major change would likely unfold slowly over 20+ years if it occurs at all."
-                elif score >= 20:
-                    para1 = f"This property has low redevelopment pressure ({score}/100). A score this low indicates strong neighborhood stability - the county's comprehensive plan generally aligns with existing zoning, suggesting minimal policy-driven pressure for change over the next 10-20 years."
-                else:
-                    para1 = f"This property has very low redevelopment pressure ({score}/100). A score this low indicates very strong neighborhood stability - current zoning closely matches or exceeds what the county's comprehensive plan envisions, meaning there's essentially no policy-driven pressure for redevelopment."
-
-                # Paragraph 2: Why it scores this way
-                if intensity_diff >= 2:
-                    para2 = f"This property is zoned **{plain_zoning}** ({zoning_code}) but the county's 2019 Comprehensive Plan designates this area as **{place_type_name}** - a significant intensity gap. This mismatch means the county's long-term vision calls for substantially more density or different use than currently allowed. When current zoning restricts what the comprehensive plan envisions, it creates pressure for future rezoning to align with county policy."
-                elif intensity_diff == 1:
-                    para2 = f"This property is zoned **{plain_zoning}** ({zoning_code}) and the county's 2019 Comprehensive Plan designates this area as **{place_type_name}** - a minor intensity difference. While there's slight misalignment, the current zoning is relatively close to the county's long-term vision. The modest scoring reflects this near-alignment, with component scores partially scaled to reflect the minor gap."
-                elif intensity_diff == 0:
-                    para2 = f"This property is zoned **{plain_zoning}** ({zoning_code}) and the county's 2019 Comprehensive Plan designates this area as **{place_type_name}** - a good match in intensity. The scoring reflects this strong alignment between what exists today and what the county plans for the future. When current zoning matches the comprehensive plan, there's minimal policy pressure for change, which is why the restrictiveness and pressure components are scaled down."
-                else:  # intensity_diff < 0
-                    para2 = f"This property is zoned **{plain_zoning}** ({zoning_code}) and the county's 2019 Comprehensive Plan designates this area as **{place_type_name}**. Notably, current zoning actually allows more intensity than the comprehensive plan designates - the area is already at or above the county's long-term vision. The scoring heavily scales down restrictiveness and pressure components because the development the plan envisions has already occurred."
-
-                # Paragraph 3: What could trigger change
-                if score >= 80:
-                    para3 = "**Realistic change scenarios:** The combination of restrictive current zoning and high-intensity comprehensive plan designation creates conditions where property owners, developers, or the county itself may pursue rezoning within 5-15 years. For change to occur: (1) property owner or developer would petition for rezoning to match the comprehensive plan, (2) county planning staff would likely support since it aligns with policy, (3) public hearings would be required but plan alignment strengthens the case. Timeline: 5-15 years for initial rezonings, 10-20+ years for widespread transformation."
-                elif score >= 60:
-                    para3 = "**Realistic change scenarios:** The notable gap between current zoning and comprehensive plan creates moderate conditions for future rezoning requests. For change to occur: (1) economic conditions would need to favor the more intensive use, (2) individual property owners or developers would petition for rezoning, (3) county review would consider comprehensive plan alignment favorably but community input would be significant. Timeline: 10-20 years for isolated rezonings, 20-30+ years for any widespread change."
-                elif score >= 40:
-                    para3 = "**Realistic change scenarios:** The minor misalignment creates modest potential for gradual evolution. For change to occur: (1) sustained growth pressure would need to build over many years, (2) individual property-by-property rezonings might occur opportunistically, (3) comprehensive plan amendments could shift the designation if area character evolves differently than planned. Timeline: 15-25 years minimum for any noticeable change, 30+ years for significant transformation if it happens at all."
-                elif score >= 20:
-                    para3 = "**Realistic change scenarios:** The strong alignment between current zoning and comprehensive plan means change would require the county to first amend its comprehensive plan through a multi-year public process, then rezone properties through additional hearings. In areas where current zoning matches county policy, plan amendments face higher scrutiny and often strong community opposition. Timeline: 20-30+ years if change occurs at all, with significant public process required before any rezoning."
-                else:
-                    para3 = "**Realistic change scenarios:** The very strong alignment (or over-development relative to the plan) means major change is highly unlikely. For any significant change: the county would first need to amend its comprehensive plan through a multi-year public process with extensive community input, then individual properties would need rezoning through separate hearings. In established communities or already-developed areas, comprehensive plan amendments are rare and typically face strong opposition. Timeline: 25-35+ years minimum if major change occurs at all, more likely the area remains stable indefinitely."
-
-                # Display the narrative
-                st.markdown("---")
-                st.markdown("#### Analysis")
-                st.markdown(para1)
-                st.markdown(para2)
-                st.markdown(para3)
-
-                # Comparative context
-                st.markdown("---")
-                st.markdown("#### 📊 Comparative Context")
-
-                comparative_text = f"""
-**High-Scoring Areas in Loudoun County (75-100 points):**
-
-Areas with significant redevelopment pressure typically have restrictive current
-zoning combined with high-intensity comprehensive plan designations:
-
-- Single-family residential (R-1, R-2, R-4) near Ashburn, Dulles Airport, or
-  Loudoun Gateway Metro stations in areas designated for Transit-Oriented Development
-  or Urban Mixed Use
-
-- Agricultural parcels (AR-1, AR-2) along the Route 7 corridor east of Leesburg
-  designated for Suburban Mixed Use
-
-- Low-density residential near planned town centers or activity centers where the
-  comprehensive plan calls for mixed-use development
-
-**Low-Scoring Areas in Loudoun County (0-25 points):**
-
-Areas with minimal redevelopment pressure typically have current zoning that matches
-or exceeds the comprehensive plan:
-
-- Established master-planned communities (PRN, PDH zones) like River Creek,
-  Lansdowne, Brambleton - built to their approved plans with no further density increases planned
-
-- Already-developed urban areas like Ashburn Station, One Loudoun, Loudoun Station -
-  at or above the intensity the comprehensive plan designates
-
-- Rural preservation areas (AR-1, AR-2) in western Loudoun where the comprehensive
-  plan also designates Rural or Transition Large Lot
-
-**This Property:**
-
-With a score of {score}/100, this property falls in the **{risk_level.upper()}** category,
-placing it in the {"most stable 15-20%" if score < 20 else "more stable half" if score < 40 else "moderate stability range" if score < 60 else "areas with notable redevelopment potential" if score < 80 else "highest redevelopment pressure areas"} of Loudoun County.
-"""
-                st.markdown(comparative_text)
-
-                # Score adjustment note for Tier 2 towns
-                if current_zoning.get('score_adjustment'):
-                    st.caption(f"⚠️ {current_zoning['score_adjustment']}")
+            except Exception as e:
+                st.caption("💡 Development pressure data unavailable")
 
     except Exception as e:
         st.warning(f"Zoning analysis error: {str(e)}")
@@ -4864,8 +4642,12 @@ def render_report(address: str, lat: float, lon: float):
         # Zoning (75%)
         status.text("⏳ Checking zoning...")
         progress.progress(75)
-        # Get zoning data and store in data dict for AI Summary
-        data['zoning'] = analyze_property_zoning_loudoun(lat, lon)
+        # Get zoning data using Fairfax module and store in data dict for AI Summary
+        try:
+            zoning_analyzer = FairfaxZoningAnalysis()
+            data['zoning'] = zoning_analyzer.get_zoning(lat, lon)
+        except Exception:
+            data['zoning'] = None
 
         # Valuation (85%)
         data['valuation'] = None

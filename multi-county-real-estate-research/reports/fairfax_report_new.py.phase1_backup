@@ -4587,55 +4587,48 @@ def render_report(address: str, lat: float, lon: float):
         # Pre-compute school assignments for AI narrative
         data['schools'] = find_assigned_schools(lat, lon)
 
-        # =========================================================================
-        # PHASE 2: INITIALIZATION CODE (TEMPORARILY DISABLED)
-        # These sections use Loudoun-specific modules not yet ported to Fairfax
-        # Uncomment after porting in Phase 2/3
-        # =========================================================================
+        # Location (30%)
+        status.text("⏳ Analyzing location quality...")
+        progress.progress(30)
+        data['location'] = analyze_location_quality(lat, lon, address)
 
-        # # Location (30%)
-        # status.text("⏳ Analyzing location quality...")
-        # progress.progress(30)
-        # data['location'] = analyze_location_quality(lat, lon, address)
+        # Power Lines (40%)
+        status.text("⏳ Checking power infrastructure...")
+        progress.progress(40)
+        data['power_lines'] = analyze_power_line_proximity(lat, lon)
 
-        # # Power Lines (40%)
-        # status.text("⏳ Checking power infrastructure...")
-        # progress.progress(40)
-        # data['power_lines'] = analyze_power_line_proximity(lat, lon)
+        # Cell Towers (42%)
+        status.text("⏳ Analyzing cell tower coverage...")
+        progress.progress(42)
+        data['cell_towers'] = analyze_cell_tower_coverage(lat, lon)
 
-        # # Cell Towers (42%)
-        # status.text("⏳ Analyzing cell tower coverage...")
-        # progress.progress(42)
-        # data['cell_towers'] = analyze_cell_tower_coverage(lat, lon)
+        # Metro Access (45%)
+        status.text("⏳ Analyzing Metro access...")
+        progress.progress(45)
+        data['metro'] = analyze_metro_access((lat, lon))
 
-        # # Metro Access (45%)
-        # status.text("⏳ Analyzing Metro access...")
-        # progress.progress(45)
-        # data['metro'] = analyze_metro_access((lat, lon))
+        # Flood Zone Check (47%)
+        status.text("⏳ Checking flood zone status...")
+        progress.progress(47)
+        data['flood_zone'] = check_flood_zone(lat, lon)
 
-        # # Flood Zone Check (47%)
-        # status.text("⏳ Checking flood zone status...")
-        # progress.progress(47)
-        # data['flood_zone'] = check_flood_zone(lat, lon)
+        # Parks Proximity (48%)
+        status.text("⏳ Finding nearby parks...")
+        progress.progress(48)
+        parks_static_data = load_parks_data()
+        data['parks'] = get_nearest_parks(lat, lon, parks_static_data)
 
-        # # Parks Proximity (48%)
-        # status.text("⏳ Finding nearby parks...")
-        # progress.progress(48)
-        # parks_static_data = load_parks_data()
-        # data['parks'] = get_nearest_parks(lat, lon, parks_static_data)
+        # Neighborhood Amenities (50%)
+        status.text("⏳ Discovering neighborhood amenities...")
+        progress.progress(50)
+        data['neighborhood'] = analyze_neighborhood((lat, lon))
 
-        # # Neighborhood Amenities (50%)
-        # status.text("⏳ Discovering neighborhood amenities...")
-        # progress.progress(50)
-        # data['neighborhood'] = analyze_neighborhood((lat, lon))
-
-        # # Development - Dual Radius (60%)
-        # status.text("⏳ Analyzing development activity (2mi + 5mi)...")
-        # progress.progress(55)
-        # data['development_2mi'] = analyze_development(lat, lon, radius_miles=2.0)
-        # progress.progress(60)
-        # data['development_5mi'] = analyze_development(lat, lon, radius_miles=5.0)
-        # =========================================================================
+        # Development - Dual Radius (60%)
+        status.text("⏳ Analyzing development activity (2mi + 5mi)...")
+        progress.progress(55)
+        data['development_2mi'] = analyze_development(lat, lon, radius_miles=2.0)
+        progress.progress(60)
+        data['development_5mi'] = analyze_development(lat, lon, radius_miles=5.0)
 
         # Square Footage - DISABLED for demo
         # MLS web search unreliable (DuckDuckGo: bot detection, Brave: wrong results)
@@ -4656,18 +4649,18 @@ def render_report(address: str, lat: float, lon: float):
         except Exception:
             data['zoning'] = None
 
-        # PHASE 2: Valuation (85%) - TEMPORARILY DISABLED
+        # Valuation (85%)
         data['valuation'] = None
-        # if VALUATION_AVAILABLE:
-        #     status.text("⏳ Fetching valuations...")
-        #     progress.progress(85)
-        #     # Pre-compute valuation for AI narrative
-        #     try:
-        #         orchestrator = PropertyValuationOrchestrator()
-        #         data['valuation'] = orchestrator.analyze_property(address, lat, lon, None)
-        #     except Exception as val_err:
-        #         # Valuation failure shouldn't block the whole analysis
-        #         data['valuation'] = None
+        if VALUATION_AVAILABLE:
+            status.text("⏳ Fetching valuations...")
+            progress.progress(85)
+            # Pre-compute valuation for AI narrative
+            try:
+                orchestrator = PropertyValuationOrchestrator()
+                data['valuation'] = orchestrator.analyze_property(address, lat, lon, None)
+            except Exception as val_err:
+                # Valuation failure shouldn't block the whole analysis
+                data['valuation'] = None
 
         # Complete
         progress.progress(100)
@@ -4681,71 +4674,54 @@ def render_report(address: str, lat: float, lon: float):
         st.success(f"✓ Analysis complete for: **{address}**")
         st.markdown("---")
 
-        # =========================================================================
-        # PHASE 1 SECTIONS (ACTIVE) - Schools, Crime, Zoning
-        # =========================================================================
-
         # Schools (uses pre-computed assignments)
         display_schools_section(lat, lon)
 
-        # Crime & Safety (Fairfax-specific)
-        display_crime_section(lat, lon)
+        # Location Quality
+        display_location_section(data['location'], data.get('power_lines', {}), data.get('metro', {}), data.get('flood_zone', {}), data.get('parks', {}), lat, lon)
+
+        # Cell Tower Coverage
+        display_cell_towers_section(lat, lon)
+
+        # Neighborhood Amenities
+        display_neighborhood_section(data.get('neighborhood', {}))
+
+        # Community & HOA Information
+        display_community_section(data.get('valuation', {}), lat, lon)
+
+        # Area Demographics (Census data)
+        demographics_data = None
+        if DEMOGRAPHICS_AVAILABLE:
+            st.markdown("## 📈 Area Demographics")
+            demographics_data = calculate_demographics(lat, lon, address)
+            display_demographics_section(demographics_data, st)
+
+        # Economic Indicators (LFPR, Industry Mix, Major Employers)
+        if ECONOMIC_INDICATORS_AVAILABLE:
+            display_economic_indicators_section()
+
+        # Medical Access (Hospitals, Urgent Care, Maternity)
+        display_medical_access_section(lat, lon)
+
+        # Development & Infrastructure (uses 2mi data from display_development_section)
+        display_development_section(lat, lon)
 
         # Zoning
         display_zoning_section(address, lat, lon)
 
-        # =========================================================================
-        # END OF PHASE 1 SECTIONS
-        # =========================================================================
+        # Valuation (now includes MLS sqft lookup)
+        display_valuation_section(address, lat, lon, sqft_result)
 
-        # =========================================================================
-        # PHASE 2/3 SECTIONS (TEMPORARILY DISABLED)
-        # Uncomment after porting Loudoun modules to Fairfax
-        # =========================================================================
-
-        # # Location Quality
-        # display_location_section(data['location'], data.get('power_lines', {}), data.get('metro', {}), data.get('flood_zone', {}), data.get('parks', {}), lat, lon)
-
-        # # Cell Tower Coverage
-        # display_cell_towers_section(lat, lon)
-
-        # # Neighborhood Amenities
-        # display_neighborhood_section(data.get('neighborhood', {}))
-
-        # # Community & HOA Information
-        # display_community_section(data.get('valuation', {}), lat, lon)
-
-        # # Area Demographics (Census data)
-        # demographics_data = None
-        # if DEMOGRAPHICS_AVAILABLE:
-        #     st.markdown("## 📈 Area Demographics")
-        #     demographics_data = calculate_demographics(lat, lon, address)
-        #     display_demographics_section(demographics_data, st)
-
-        # # Economic Indicators (LFPR, Industry Mix, Major Employers)
-        # if ECONOMIC_INDICATORS_AVAILABLE:
-        #     display_economic_indicators_section()
-
-        # # Medical Access (Hospitals, Urgent Care, Maternity)
-        # display_medical_access_section(lat, lon)
-
-        # # Development & Infrastructure (uses 2mi data from display_development_section)
-        # display_development_section(lat, lon)
-
-        # # Valuation (now includes MLS sqft lookup)
-        # display_valuation_section(address, lat, lon, sqft_result)
-
-        # # AI Analysis - pass all pre-computed data including demographics
-        # display_ai_analysis(
-        #     address=address,
-        #     coords=(lat, lon),
-        #     schools_info=data.get('schools'),
-        #     valuation_result=data.get('valuation'),
-        #     development_2mi=data.get('development_2mi'),
-        #     development_5mi=data.get('development_5mi'),
-        #     demographics=demographics_data
-        # )
-        # =========================================================================
+        # AI Analysis - pass all pre-computed data including demographics
+        display_ai_analysis(
+            address=address,
+            coords=(lat, lon),
+            schools_info=data.get('schools'),
+            valuation_result=data.get('valuation'),
+            development_2mi=data.get('development_2mi'),
+            development_5mi=data.get('development_5mi'),
+            demographics=demographics_data
+        )
 
         # Footer
         display_footer()

@@ -1,19 +1,78 @@
 """
-Geocoding Module (POC Implementation)
+Geocoding Module
 
 Converts addresses to latitude/longitude coordinates.
 
-POC LIMITATION: Uses hardcoded test addresses only.
-Production would integrate with Google Maps Geocoding API, Nominatim, or similar.
+Strategy:
+1. Try Google Maps Geocoding API (production - accurate to ~10m)
+2. Fall back to TEST_ADDRESSES (for testing/demos when API unavailable)
 """
 
 import logging
+import os
 from typing import Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
 
-# Hardcoded test addresses for POC
+def _geocode_with_google_maps(address: str) -> Optional[Tuple[float, float]]:
+    """
+    Geocode address using Google Maps API.
+
+    Args:
+        address: Full address string
+
+    Returns:
+        (latitude, longitude) tuple or None if geocoding fails
+    """
+    try:
+        import requests
+
+        # Try to get API key from environment or config
+        api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+        if not api_key:
+            try:
+                from core.api_config import get_api_key
+                api_key = get_api_key('GOOGLE_MAPS_API_KEY')
+            except Exception:
+                pass
+
+        if not api_key:
+            logger.debug("No Google Maps API key available")
+            return None
+
+        # Call Google Maps Geocoding API
+        url = "https://maps.googleapis.com/maps/api/geocode/json"
+        params = {
+            'address': address,
+            'key': api_key
+        }
+
+        response = requests.get(url, params=params, timeout=10)
+
+        if response.status_code != 200:
+            logger.warning(f"Google Maps API returned status {response.status_code}")
+            return None
+
+        data = response.json()
+
+        if data.get('status') != 'OK' or not data.get('results'):
+            logger.warning(f"Google Maps API status: {data.get('status')}")
+            return None
+
+        location = data['results'][0]['geometry']['location']
+        lat = location['lat']
+        lon = location['lng']
+
+        logger.info(f"Google Maps geocoded '{address}' -> ({lat}, {lon})")
+        return (lat, lon)
+
+    except Exception as e:
+        logger.warning(f"Google Maps geocoding error: {e}")
+        return None
+
+
+# Hardcoded test addresses for fallback/demos
 # Format: lowercase search term -> (lat, lon)
 TEST_ADDRESSES = {
     # Loudoun County addresses
@@ -57,8 +116,9 @@ def geocode_address(address: str) -> Tuple[float, float]:
     """
     Convert an address string to latitude/longitude coordinates.
 
-    POC LIMITATION: Only works with predefined test addresses.
-    Production implementation would use a real geocoding API.
+    Strategy:
+    1. Try Google Maps API first (production - accurate to ~10m)
+    2. Fall back to TEST_ADDRESSES (for testing/demos)
 
     Args:
         address: Address string to geocode
@@ -70,39 +130,48 @@ def geocode_address(address: str) -> Tuple[float, float]:
         GeocodingError: If address cannot be geocoded
 
     Example:
-        >>> lat, lon = geocode_address("Leesburg")
+        >>> lat, lon = geocode_address("13172 Ruby Lace Ct, Herndon, VA 20170")
         >>> print(f"{lat}, {lon}")
-        39.1157, -77.5636
+        38.919085, -77.401652
     """
     if not address or not isinstance(address, str):
         raise GeocodingError("Invalid address: must be a non-empty string")
 
-    # Normalize address for lookup
+    # Try Google Maps API first (production)
+    coords = _geocode_with_google_maps(address)
+    if coords:
+        lat, lon = coords
+        if is_valid_coordinates(lat, lon):
+            return coords
+        else:
+            logger.warning(f"Google Maps returned invalid coordinates: {coords}")
+
+    # Fall back to TEST_ADDRESSES (for testing/demos)
     normalized = address.lower().strip()
 
     # Direct match
     if normalized in TEST_ADDRESSES:
         coords = TEST_ADDRESSES[normalized]
-        logger.info(f"Geocoded '{address}' -> {coords}")
+        logger.info(f"Geocoded '{address}' (test fallback) -> {coords}")
         return coords
 
     # Partial match - check if any key is contained in the address
     for key, coords in TEST_ADDRESSES.items():
         if key in normalized:
-            logger.info(f"Geocoded '{address}' (partial match: '{key}') -> {coords}")
+            logger.info(f"Geocoded '{address}' (test fallback, partial: '{key}') -> {coords}")
             return coords
 
     # Check if address contains any key
     for key, coords in TEST_ADDRESSES.items():
         if normalized in key:
-            logger.info(f"Geocoded '{address}' (reverse partial match: '{key}') -> {coords}")
+            logger.info(f"Geocoded '{address}' (test fallback, reverse: '{key}') -> {coords}")
             return coords
 
     # No match found
-    logger.warning(f"POC geocoding: Address '{address}' not in test database")
+    logger.warning(f"Geocoding failed for: '{address}'")
     raise GeocodingError(
-        f"Address '{address}' not found in POC test database. "
-        "Try: Leesburg, Vienna, Ashburn, Fairfax, Reston, etc."
+        f"Address '{address}' could not be geocoded. "
+        "Ensure Google Maps API key is configured or try a known test address."
     )
 
 
@@ -143,7 +212,7 @@ def is_valid_coordinates(lat: float, lon: float) -> bool:
     Returns:
         True if coordinates are valid, False otherwise
     """
-    # Virginia approximate bounds
+    # Virginia/DC metro area approximate bounds
     return (
         36.5 <= lat <= 39.5 and
         -83.7 <= lon <= -75.2

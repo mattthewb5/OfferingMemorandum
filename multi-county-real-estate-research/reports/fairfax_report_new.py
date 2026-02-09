@@ -4592,6 +4592,75 @@ def display_ai_analysis(
 
 
 # =============================================================================
+# SECTION: TRANSIT / TRANSPORTATION
+# =============================================================================
+
+def display_transit_section(lat: float, lon: float):
+    """Display transit accessibility for Fairfax County properties.
+
+    Uses FairfaxTransitAnalysis to show Metro station proximity,
+    bus route coverage, and an overall transit score.
+    """
+    st.markdown("## 🚇 Transit & Transportation")
+
+    try:
+        transit = FairfaxTransitAnalysis()
+    except Exception as e:
+        st.warning(f"Transit data not available: {e}")
+        return
+
+    try:
+        # Get transit score and metro info
+        transit_score = transit.calculate_transit_score(lat, lon)
+        nearest_metro = transit.get_nearest_metro_station(lat, lon)
+        bus_routes = transit.get_nearby_bus_routes(lat, lon, radius_miles=0.5, limit=5)
+
+        # --- Score and Metro metrics row ---
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            rating = transit_score.get('rating', 'N/A').title()
+            st.metric("Transit Score", f"{transit_score.get('score', 0)}/100", help=f"Rating: {rating}")
+        with col2:
+            station = nearest_metro.get('station_name', 'N/A')
+            st.metric("Nearest Metro", station)
+        with col3:
+            dist = nearest_metro.get('distance_miles', 0)
+            st.metric("Metro Distance", f"{dist:.1f} mi")
+        with col4:
+            walk = nearest_metro.get('walk_time_minutes', 0)
+            st.metric("Walk to Metro", f"{walk} min" if walk else "N/A")
+
+        # --- Score breakdown ---
+        breakdown = transit_score.get('breakdown', {})
+        if breakdown:
+            with st.expander("Transit Score Breakdown", expanded=False):
+                b1, b2, b3 = st.columns(3)
+                with b1:
+                    st.metric("Metro Access", f"{breakdown.get('metro_access', 0)}/50")
+                with b2:
+                    st.metric("Bus Coverage", f"{breakdown.get('bus_coverage', 0)}/30")
+                with b3:
+                    st.metric("Service Variety", f"{breakdown.get('service_variety', 0)}/20")
+
+        # --- Nearby bus routes ---
+        if bus_routes:
+            with st.expander(f"Nearby Bus Routes ({len(bus_routes)} within 0.5 mi)", expanded=False):
+                for route in bus_routes:
+                    st.markdown(
+                        f"**{route['route_number']}** — {route['route_name']} "
+                        f"({route['service_type']}, {route['distance_miles']:.2f} mi)"
+                    )
+
+        st.caption("Source: WMATA Metro Stations, Fairfax Connector Bus Routes, Fairfax County GIS")
+
+    except Exception as e:
+        st.warning(f"Transit analysis error: {e}")
+        import traceback
+        with st.expander("Error Details"):
+            st.code(traceback.format_exc())
+
+
+# =============================================================================
 # SECTION: FOOTER
 # =============================================================================
 
@@ -4777,6 +4846,9 @@ def render_report(address: str, lat: float, lon: float):
         # Zoning
         display_zoning_section(address, lat, lon)
 
+        # Transit & Transportation (Fairfax-specific module)
+        display_transit_section(lat, lon)
+
         # =========================================================================
         # END OF PHASE 1 SECTIONS
         # =========================================================================
@@ -4798,12 +4870,16 @@ def render_report(address: str, lat: float, lon: float):
         # # Community & HOA Information
         # display_community_section(data.get('valuation', {}), lat, lon)
 
-        # # Area Demographics (Census data)
-        # demographics_data = None
-        # if DEMOGRAPHICS_AVAILABLE:
-        #     st.markdown("## 📈 Area Demographics")
-        #     demographics_data = calculate_demographics(lat, lon, address)
-        #     display_demographics_section(demographics_data, st)
+        # Area Demographics (Census data — Fairfax County FIPS 51059)
+        demographics_data = None
+        if DEMOGRAPHICS_AVAILABLE:
+            st.markdown("## 📈 Area Demographics")
+            demographics_data = calculate_demographics(
+                lat, lon, address,
+                county_fips='059',
+                county_name='Fairfax County, VA'
+            )
+            display_demographics_section(demographics_data, st)
 
         # # Economic Indicators (LFPR, Industry Mix, Major Employers)
         # if ECONOMIC_INDICATORS_AVAILABLE:

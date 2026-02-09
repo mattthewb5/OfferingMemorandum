@@ -402,7 +402,7 @@ from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 from core.api_config import get_api_key
 from core.loudoun_school_performance import (
     load_performance_data as load_performance_with_state_avg,
-    load_school_coordinates,
+    load_school_coordinates as _load_loudoun_school_coordinates,
     find_peer_schools,
     create_performance_chart as _loudoun_create_performance_chart,
     normalize_school_name,
@@ -420,6 +420,36 @@ def match_school_in_performance_data(school_name, perf_df):
     return _loudoun_match_school_in_performance_data(
         school_name, perf_df, division_name='Fairfax County'
     )
+
+
+def load_school_coordinates() -> 'pd.DataFrame':
+    """Load Fairfax school coordinates from the facilities parquet.
+
+    Returns a DataFrame with columns matching the Loudoun format
+    (School_Name, School_Type, Latitude, Longitude) so find_peer_schools()
+    works unchanged.
+    """
+    import pandas as _pd
+    facilities_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'data', 'fairfax', 'schools', 'processed', 'facilities.parquet'
+    )
+    try:
+        df = _pd.read_parquet(facilities_path)
+        # Map school_type to the format find_peer_schools() expects
+        type_map = {'ES': 'Elem', 'MS': 'Middle', 'HS': 'High'}
+        df = df[df['school_type'].isin(type_map.keys())].copy()
+        df['School_Type'] = df['school_type'].map(type_map)
+        # Build School_Name with suffix for VDOE matching
+        suffix_map = {'ES': ' Elementary', 'MS': ' Middle', 'HS': ' High'}
+        df['School_Name'] = df.apply(
+            lambda r: r['school_name'] + suffix_map.get(r['school_type'], ''), axis=1
+        )
+        df = df.rename(columns={'latitude': 'Latitude', 'longitude': 'Longitude'})
+        return df[['School_Name', 'School_Type', 'Latitude', 'Longitude']].reset_index(drop=True)
+    except Exception as e:
+        print(f"Error loading Fairfax school coordinates: {e}")
+        return _load_loudoun_school_coordinates()  # Fallback
 from core.loudoun_places_analysis import analyze_neighborhood
 from core.loudoun_traffic_volume import LoudounTrafficVolumeAnalyzer
 from core.loudoun_narrative_generator import compile_narrative_data, generate_property_narrative

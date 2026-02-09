@@ -478,7 +478,9 @@ def calculate_demographics(
     lat: float,
     lon: float,
     address: str,
-    radii: List[int] = None
+    radii: List[int] = None,
+    county_fips: str = None,
+    county_name: str = None
 ) -> Dict[str, Any]:
     """
     Calculate demographics for property location at specified radii.
@@ -491,25 +493,31 @@ def calculate_demographics(
         lon: Property longitude
         address: Property address (for metadata)
         radii: List of radii in miles (default: [1, 3])
+        county_fips: County FIPS code (default: LOUDOUN_COUNTY_FIPS "107")
+        county_name: County display name (default: "Loudoun County, VA")
 
     Returns:
         Complete demographics data structure with:
         - metadata: Property info, calculation timestamp
         - radii_data: Demographics for each radius
-        - county_comparison: Loudoun County benchmarks
+        - county_comparison: County benchmarks
     """
     if radii is None:
         radii = RADII
+    if county_fips is None:
+        county_fips = LOUDOUN_COUNTY_FIPS
+    if county_name is None:
+        county_name = 'Loudoun County, VA'
 
     try:
         # Get Census client
         client = get_census_client()
 
-        # Fetch all block group data for Loudoun County
-        block_groups = client.get_block_group_data()
+        # Fetch all block group data for the target county
+        block_groups = client.get_block_group_data(state=STATE_FIPS, county=county_fips)
 
         # Fetch block group centroids from TIGERweb
-        centroids = fetch_block_group_centroids()
+        centroids = fetch_block_group_centroids(state=STATE_FIPS, county=county_fips)
 
         if not centroids:
             return {
@@ -531,11 +539,11 @@ def calculate_demographics(
             radii_data[f'{radius}_mile'] = aggregated
 
         # Fetch county-level data for comparison
-        county_data = client.get_county_data()
+        county_data = client.get_county_data(state=STATE_FIPS, county=county_fips)
         county_comparison = calculate_county_comparison(county_data)
 
         # Fetch BLS labor stats including unemployment trajectory (supplementary data)
-        bls_labor_stats = fetch_bls_labor_stats()
+        bls_labor_stats = fetch_bls_labor_stats(state_fips=STATE_FIPS, county_fips=county_fips)
 
         # Add BLS data to county comparison if available
         if bls_labor_stats and bls_labor_stats.get('unemployment'):
@@ -565,7 +573,7 @@ def calculate_demographics(
                 'lat': lat,
                 'lon': lon,
                 'radii': radii,
-                'county': 'Loudoun County, VA',
+                'county': county_name,
                 'census_year': ACS_YEAR,
                 'acs_dataset': f'{int(ACS_YEAR)-4}-{ACS_YEAR}',
                 'calculated_at': datetime.now().isoformat(),

@@ -404,10 +404,22 @@ from core.loudoun_school_performance import (
     load_performance_data as load_performance_with_state_avg,
     load_school_coordinates,
     find_peer_schools,
-    create_performance_chart,
+    create_performance_chart as _loudoun_create_performance_chart,
     normalize_school_name,
-    match_school_in_performance_data
+    match_school_in_performance_data as _loudoun_match_school_in_performance_data
 )
+
+# Fairfax wrappers: override county filter from 'Loudoun County' to 'Fairfax County'
+def create_performance_chart(subject_school, peer_schools, metric_name, metric_col, school_type, perf_df):
+    return _loudoun_create_performance_chart(
+        subject_school, peer_schools, metric_name, metric_col, school_type, perf_df,
+        division_name='Fairfax County'
+    )
+
+def match_school_in_performance_data(school_name, perf_df):
+    return _loudoun_match_school_in_performance_data(
+        school_name, perf_df, division_name='Fairfax County'
+    )
 from core.loudoun_places_analysis import analyze_neighborhood
 from core.loudoun_traffic_volume import LoudounTrafficVolumeAnalyzer
 from core.loudoun_narrative_generator import compile_narrative_data, generate_property_narrative
@@ -1059,6 +1071,66 @@ def check_flood_zone(lat: float, lon: float) -> Dict[str, Any]:
         }
 
 
+# Known short-name expansions for Fairfax schools where the GIS boundary
+# data stores only a surname or abbreviation that differs from the official name.
+_FAIRFAX_SCHOOL_NAME_EXPANSIONS = {
+    "Carson": "Rachel Carson",
+    "Poe": "Edgar Allan Poe",
+    "Whitman": "Walt Whitman",
+    "Twain": "Mark Twain",
+    "Key": "Francis Scott Key",
+    "Sandburg": "Carl Sandburg",
+    "Thoreau": "Henry David Thoreau",
+    "Edison": "Thomas Edison",
+    "Jefferson": "Thomas Jefferson",
+    "Jackson": "Andrew Jackson",
+    "Kennedy": "John F. Kennedy",
+    "Luther Jackson": "Luther Jackson",
+    "Robinson": "Robinson",
+    "Stuart": "J.E.B. Stuart",
+    "Lee": "Robert E. Lee",
+    "Holmes": "Oliver Wendell Holmes",
+    "Kilmer": "Joyce Kilmer",
+    "Frost": "Robert Frost",
+    "Longfellow": "Henry Wadsworth Longfellow",
+    "Whitman": "Walt Whitman",
+}
+
+_LEVEL_SUFFIXES = {
+    'elementary': 'Elementary School',
+    'middle': 'Middle School',
+    'high': 'High School',
+}
+
+
+def expand_fairfax_school_name(short_name: str, level: str) -> str:
+    """Expand abbreviated GIS school name to full official name.
+
+    The Fairfax GIS boundary parquet files store only the base name
+    (e.g. 'Oak Hill', 'Carson', 'Westfield'). This function constructs
+    the full display name by applying known expansions and appending the
+    school-level suffix.
+
+    Args:
+        short_name: Raw school_name from GIS parquet (e.g. "Oak Hill")
+        level: One of 'elementary', 'middle', 'high'
+
+    Returns:
+        Full school name (e.g. "Oak Hill Elementary School")
+    """
+    if not short_name:
+        return short_name
+
+    # Apply known name expansions (e.g. "Carson" → "Rachel Carson")
+    expanded = _FAIRFAX_SCHOOL_NAME_EXPANSIONS.get(short_name, short_name)
+
+    # Append school level suffix
+    suffix = _LEVEL_SUFFIXES.get(level, '')
+    if suffix:
+        return f"{expanded} {suffix}"
+    return expanded
+
+
 def find_assigned_schools(lat: float, lon: float) -> Dict[str, str]:
     """Find assigned schools for a location using Fairfax school zones."""
     # Use Fairfax class-based module
@@ -1069,10 +1141,13 @@ def find_assigned_schools(lat: float, lon: float) -> Dict[str, str]:
         result = schools_analyzer.get_assigned_schools(lat, lon)
 
         if result:
+            elem_name = result.get('elementary', {}).get('school_name') if result.get('elementary') else None
+            mid_name = result.get('middle', {}).get('school_name') if result.get('middle') else None
+            high_name = result.get('high', {}).get('school_name') if result.get('high') else None
             return {
-                'elementary': result.get('elementary', {}).get('school_name') if result.get('elementary') else None,
-                'middle': result.get('middle', {}).get('school_name') if result.get('middle') else None,
-                'high': result.get('high', {}).get('school_name') if result.get('high') else None,
+                'elementary': expand_fairfax_school_name(elem_name, 'elementary') if elem_name else None,
+                'middle': expand_fairfax_school_name(mid_name, 'middle') if mid_name else None,
+                'high': expand_fairfax_school_name(high_name, 'high') if high_name else None,
                 '_raw': result  # Keep raw data for additional details
             }
     except Exception as e:
@@ -1229,7 +1304,7 @@ def display_schools_section(lat: float, lon: float):
     # School Performance Comparison with State Average and Peer Schools
     if PLOTLY_AVAILABLE:
         with st.expander("📊 School Performance vs State & Peers", expanded=False):
-            st.markdown("Compare assigned schools to Virginia state averages and nearest peer schools in Loudoun County.")
+            st.markdown("Compare assigned schools to Virginia state averages and nearby peer schools.")
 
             try:
                 # Load enhanced performance data with state averages
@@ -4535,31 +4610,31 @@ def display_footer():
 | Monthly Unemployment | Bureau of Labor Statistics - Local Area Unemployment Statistics |
 | Labor Force Participation | U.S. Census Bureau - ACS 5-Year Estimates |
 | Industry Employment | U.S. Census Bureau - ACS 5-Year Estimates |
-| Major Employers | Loudoun County ACFR (2008-2025) |
-| Schools | Loudoun County Public Schools (LCPS) Boundaries |
+| Major Employers | Fairfax County ACFR (2008-2025) |
+| Schools | Fairfax County Public Schools (FCPS) / Fairfax County GIS |
 | School Performance | Virginia Department of Education - SOL 5-Year Trends |
-| Building Permits | Loudoun County Permit Portal (Apr 2024 - Present) |
+| Building Permits | Fairfax County Permit Portal |
 | Traffic Volume | VDOT Bidirectional Traffic Volume Database |
-| Metro Access | WMATA Silver Line Stations / Loudoun County GeoHub |
-| Power Infrastructure | Loudoun County Major Power Lines (GIS) |
-| Cell Towers | Loudoun County Telecom Towers (GIS) + FCC Registration Database |
-| Medical Facilities | Loudoun County GIS, CMS Hospital Compare, Leapfrog Group |
+| Metro Access | WMATA Metro Stations / Fairfax County GIS |
+| Power Infrastructure | Fairfax County Power Infrastructure (GIS) |
+| Cell Towers | Fairfax County Telecom Towers (GIS) + FCC Registration Database |
+| Medical Facilities | Fairfax County GIS, CMS Hospital Compare, Leapfrog Group |
 | Pharmacies | Google Places API |
 | Neighborhood Amenities | Google Places API (Real-time) |
 | Travel Times | Google Distance Matrix API |
 | Parks & Recreation | Google Places API |
-| GIS Data | Loudoun County Official Shapefiles |
-| Road Network | Loudoun Street Centerline GIS |
-| Zoning | Loudoun County Zoning Districts (GIS) |
-| Airport Zones | Airport Impact Overlay Districts (Jan 2023) |
-| Flood Zones | FEMA Flood Insurance Rate Map (via Loudoun GIS) |
+| GIS Data | Fairfax County Official Shapefiles |
+| Road Network | Fairfax County Roadway Centerlines GIS |
+| Zoning | Fairfax County Zoning Districts (GIS) |
+| Airport Zones | Fairfax County Airport Overlay Districts |
+| Flood Zones | FEMA Flood Insurance Rate Map (via Fairfax County GIS) |
 | Community Data | NewCo Private Research, RentCast API |
 
 **Analysis Date:** {datetime.now().strftime('%B %d, %Y')}
 
 ---
 
-*Loudoun County Property Intelligence Platform*
+*Fairfax County Property Intelligence Platform*
 *Professional Real Estate Analysis*
 """)
 

@@ -1229,11 +1229,18 @@ def display_schools_section(lat: float, lon: float):
     assignments = find_assigned_schools(lat, lon)
     performance_df = load_school_performance()
 
+    # Short display names for the metric cards (strip level suffix)
+    def _short_name(full_name, level):
+        suffix = _LEVEL_SUFFIXES.get(level, '')
+        if suffix and full_name and full_name.endswith(suffix):
+            return full_name[:-len(suffix)].strip()
+        return full_name
+
     # Display assigned schools
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Elementary School", assignments['elementary'] or "N/A")
+        st.metric("Elementary School", _short_name(assignments['elementary'], 'elementary') or "N/A")
         if assignments['elementary']:
             perf = get_school_performance(assignments['elementary'], performance_df)
             if perf:
@@ -1243,7 +1250,7 @@ def display_schools_section(lat: float, lon: float):
                 )
 
     with col2:
-        st.metric("Middle School", assignments['middle'] or "N/A")
+        st.metric("Middle School", _short_name(assignments['middle'], 'middle') or "N/A")
         if assignments['middle']:
             perf = get_school_performance(assignments['middle'], performance_df)
             if perf:
@@ -1253,7 +1260,7 @@ def display_schools_section(lat: float, lon: float):
                 )
 
     with col3:
-        st.metric("High School", assignments['high'] or "N/A")
+        st.metric("High School", _short_name(assignments['high'], 'high') or "N/A")
         if assignments['high']:
             perf = get_school_performance(assignments['high'], performance_df)
             if perf:

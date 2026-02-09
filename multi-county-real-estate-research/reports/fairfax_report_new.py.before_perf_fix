@@ -1158,73 +1158,65 @@ def display_schools_section(lat: float, lon: float):
                 )
 
     # Performance charts
-    # PHASE 1 FIX: Fairfax data is summary format (no yearly trends)
-    # Loudoun code expects year-by-year data for line charts, but Fairfax only has summary statistics
-    # TODO Phase 2: Build Fairfax-specific charts using summary data columns:
-    #   - school_name, recent_reading_pass_rate, recent_math_pass_rate
-    #
-    # if PLOTLY_AVAILABLE and not performance_df.empty:
-    #     st.markdown("### School Performance Trends")
-    #
-    #     tab1, tab2 = st.tabs(["Reading Proficiency", "Math Proficiency"])
-    #
-    #     with tab1:
-    #         # Get trend data for assigned schools
-    #         chart_data = []
-    #         for level, school in assignments.items():
-    #             if school:
-    #                 # Use match function to get exact school name from performance data
-    #                 matched_name = match_school_in_performance_data(school, performance_df)
-    #                 if matched_name:
-    #                     school_data = performance_df[
-    #                         performance_df['School_Name'] == matched_name
-    #                     ]
-    #                     for _, row in school_data.iterrows():
-    #                         chart_data.append({
-    #                             'School': school,
-    #                             'Year': row['Year'],
-    #                             'Reading Pass Rate': row.get('Reading_Pass_Rate', 0)
-    #                         })
-    #
-    #         if chart_data:
-    #             chart_df = pd.DataFrame(chart_data)
-    #             fig = px.line(chart_df, x='Year', y='Reading Pass Rate', color='School',
-    #                          title='Reading Proficiency Trends',
-    #                          markers=True)
-    #             fig.update_layout(yaxis_range=[0, 100])
-    #             st.plotly_chart(fig, width='stretch')
-    #         else:
-    #             st.info("School performance trend data not available for assigned schools.")
-    #
-    #     with tab2:
-    #         chart_data = []
-    #         for level, school in assignments.items():
-    #             if school:
-    #                 # Use match function to get exact school name from performance data
-    #                 matched_name = match_school_in_performance_data(school, performance_df)
-    #                 if matched_name:
-    #                     school_data = performance_df[
-    #                         performance_df['School_Name'] == matched_name
-    #                     ]
-    #                     for _, row in school_data.iterrows():
-    #                         chart_data.append({
-    #                             'School': school,
-    #                             'Year': row['Year'],
-    #                             'Math Pass Rate': row.get('Math_Pass_Rate', 0)
-    #                         })
-    #
-    #         if chart_data:
-    #             chart_df = pd.DataFrame(chart_data)
-    #             fig = px.line(chart_df, x='Year', y='Math Pass Rate', color='School',
-    #                          title='Math Proficiency Trends',
-    #                          markers=True)
-    #             fig.update_layout(yaxis_range=[0, 100])
-    #             st.plotly_chart(fig, width='stretch')
-    #         else:
-    #             st.info("School performance trend data not available for assigned schools.")
+    if PLOTLY_AVAILABLE and not performance_df.empty:
+        st.markdown("### School Performance Trends")
 
-    # Show summary message instead of charts for Phase 1
-    st.info("📊 Performance trend charts coming in Phase 2 (Fairfax data format differs from Loudoun - summary stats only, no yearly trends)")
+        tab1, tab2 = st.tabs(["Reading Proficiency", "Math Proficiency"])
+
+        with tab1:
+            # Get trend data for assigned schools
+            chart_data = []
+            for level, school in assignments.items():
+                if school:
+                    # Use match function to get exact school name from performance data
+                    matched_name = match_school_in_performance_data(school, performance_df)
+                    if matched_name:
+                        school_data = performance_df[
+                            performance_df['School_Name'] == matched_name
+                        ]
+                        for _, row in school_data.iterrows():
+                            chart_data.append({
+                                'School': school,
+                                'Year': row['Year'],
+                                'Reading Pass Rate': row.get('Reading_Pass_Rate', 0)
+                            })
+
+            if chart_data:
+                chart_df = pd.DataFrame(chart_data)
+                fig = px.line(chart_df, x='Year', y='Reading Pass Rate', color='School',
+                             title='Reading Proficiency Trends',
+                             markers=True)
+                fig.update_layout(yaxis_range=[0, 100])
+                st.plotly_chart(fig, width='stretch')
+            else:
+                st.info("School performance trend data not available for assigned schools.")
+
+        with tab2:
+            chart_data = []
+            for level, school in assignments.items():
+                if school:
+                    # Use match function to get exact school name from performance data
+                    matched_name = match_school_in_performance_data(school, performance_df)
+                    if matched_name:
+                        school_data = performance_df[
+                            performance_df['School_Name'] == matched_name
+                        ]
+                        for _, row in school_data.iterrows():
+                            chart_data.append({
+                                'School': school,
+                                'Year': row['Year'],
+                                'Math Pass Rate': row.get('Math_Pass_Rate', 0)
+                            })
+
+            if chart_data:
+                chart_df = pd.DataFrame(chart_data)
+                fig = px.line(chart_df, x='Year', y='Math Pass Rate', color='School',
+                             title='Math Proficiency Trends',
+                             markers=True)
+                fig.update_layout(yaxis_range=[0, 100])
+                st.plotly_chart(fig, width='stretch')
+            else:
+                st.info("School performance trend data not available for assigned schools.")
 
     # School Performance Comparison with State Average and Peer Schools
     if PLOTLY_AVAILABLE:

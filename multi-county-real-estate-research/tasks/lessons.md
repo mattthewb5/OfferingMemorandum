@@ -78,6 +78,38 @@ The original app has its own module loading with feature flags:
 
 These are set based on successful imports.
 
+## Fairfax Report Lessons (2026-02-09)
+
+### Root Cause: Hardcoded County Filters
+- Core modules (`loudoun_school_performance.py`, `demographics_calculator.py`) hardcode `Division_Name == 'Loudoun County'`
+- Fix pattern: Add `division_name` / `county_fips` parameter with Loudoun default for backward compat
+- Then create Fairfax wrappers that pass the correct county
+- This pattern is reusable for all future county expansions
+
+### Root Cause: GIS Data Abbreviations
+- Fairfax school GIS boundary parquets store abbreviated names ("Oak Hill", "Carson")
+- The `school_name` column is the base name only, no level suffix
+- `type_description` and `level` columns exist but aren't passed through `get_assigned_schools()`
+- Fix: Name expansion function at the report level, not the core module level
+- Special cases (e.g., "Carson" → "Rachel Carson") require a manual lookup dict
+
+### Pattern: Wrapper Functions Over Core Modifications
+- Import with alias: `from core.module import func as _original_func`
+- Create local wrapper that adds county-specific parameters
+- Zero changes needed at call sites throughout the report
+- Example: `create_performance_chart` wrapper passes `division_name='Fairfax County'`
+
+### Pattern: Standalone Section vs. Uncomment Approach
+- Demographics: Simple uncomment + pass FIPS (underlying function accepts params)
+- Transit: Created new `display_transit_section()` using Fairfax-specific module directly
+- Don't try to match Loudoun's data structure if Fairfax has its own module with a different API
+
+### Test Address: Fairfax County
+- 13172 Ruby Lace Ct, Herndon, VA 20170 (38.919085, -77.401652)
+- Schools: Oak Hill Elementary, Rachel Carson Middle, Westfield High
+- Nearest Metro: Herndon (2.5 mi)
+- Transit Score: 20/100 (suburban area)
+
 ## Next Steps
 
 1. **Test in Streamlit**: `streamlit run unified_app.py`

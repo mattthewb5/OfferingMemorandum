@@ -2654,80 +2654,49 @@ def display_community_section(valuation_data: Dict[str, Any], lat: float = None,
 # =============================================================================
 
 def display_cell_towers_section(lat: float, lon: float):
-    """
-    Display cell tower information for a property location.
-
-    Shows nearby towers with basic infrastructure details.
-    """
+    """Display cell tower coverage for a Fairfax County property."""
     st.markdown("## 📡 Cell Tower Coverage")
 
-    # Get tower analysis
-    tower_data = analyze_cell_tower_coverage(lat, lon)
+    try:
+        from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
+        analyzer = FairfaxCellTowersAnalysis()
+        coverage = analyzer.calculate_coverage_score(lat, lon)
 
-    if not tower_data.get('available'):
-        st.info("Cell tower data not available for this location.")
-        return
+        if not coverage:
+            st.info("Cell tower data not available for this location.")
+            return
 
-    towers_2mi = tower_data.get('towers_within_2mi', 0)
-
-    # Single metric - towers within 2 miles
-    st.metric("Cell Towers Within 2 Miles", towers_2mi)
-
-    # Structure type descriptions for clarity
-    def get_structure_description(structure_type: str) -> str:
-        descriptions = {
-            'Trans-Mount': 'Trans-Mount (on power line tower)',
-            'Monopole': 'Monopole (single-pole tower)',
-            'Roof Top': 'Roof Top (building-mounted)',
-            'Lattice': 'Lattice (steel framework tower)',
-            'Water Tank': 'Water Tank (attached to tank)',
-            'Guyed': 'Guyed (cable-supported tower)',
-            'Silo': 'Silo (concealed in silo)',
-        }
-        return descriptions.get(structure_type, structure_type)
-
-    # Closest tower info
-    closest = tower_data.get('closest_tower')
-    if closest:
-        st.markdown("### Nearest Tower")
-        dist_ft = closest['distance_mi'] * 5280
-        col1, col2 = st.columns(2)
+        # Summary metrics
+        col1, col2, col3 = st.columns(3)
         with col1:
-            st.markdown(f"**{closest.get('name', 'Unknown')}**")
-            st.markdown(f"Distance: **{closest['distance_mi']:.2f} mi** ({dist_ft:,.0f} ft)")
+            st.metric("Coverage Score", f"{coverage.get('score', 0)}/100")
         with col2:
-            if closest.get('height_ft'):
-                st.markdown(f"Height: {closest['height_ft']:.0f} ft")
-            if closest.get('structure_type'):
-                st.markdown(f"Type: {get_structure_description(closest['structure_type'])}")
+            st.metric("Rating", coverage.get('rating', 'N/A'))
+        with col3:
+            st.metric("Towers Within 2 mi", coverage.get('towers_within_2mi', 0))
 
-    # Nearby towers table
-    nearby_towers = tower_data.get('nearby_towers')
-    if nearby_towers is not None and not nearby_towers.empty:
-        with st.expander(f"View All Nearby Towers ({len(nearby_towers)} within 2 mi)", expanded=False):
-            # Prepare display dataframe - simplified columns
-            display_df = nearby_towers[['tower_name', 'distance_mi', 'structure_type', 'height_ft', 'address']].copy()
+        # Nearest tower
+        nearest = coverage.get('nearest_tower_miles')
+        if nearest:
+            st.markdown(f"**Nearest tower:** {nearest:.2f} mi ({nearest * 5280:,.0f} ft)")
 
-            # Handle missing tower names - use street address as fallback
-            display_df['tower_name'] = display_df.apply(
-                lambda row: str(row['address']).split(',')[0].strip()
-                if pd.isna(row['tower_name']) or str(row['tower_name']).strip() == ''
-                else row['tower_name'],
-                axis=1
-            )
+        # Nearby towers table
+        nearby = analyzer.get_towers_near_point(lat, lon, radius_miles=2.0)
+        if nearby is not None and len(nearby) > 0:
+            with st.expander(f"View All Nearby Towers ({len(nearby)} within 2 mi)", expanded=False):
+                display_df = nearby[['structure_type_desc', 'distance_miles', 'height_feet', 'city']].copy()
+                display_df.columns = ['Type', 'Distance (mi)', 'Height (ft)', 'City']
+                display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")
+                display_df['Height (ft)'] = display_df['Height (ft)'].apply(
+                    lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "—"
+                )
 
-            display_df.columns = ['Tower Name', 'Distance (mi)', 'Type', 'Height (ft)', 'Address']
-            display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")
-            display_df['Height (ft)'] = display_df['Height (ft)'].apply(lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "—")
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-            st.dataframe(
-                display_df,
-                width='stretch',
-                hide_index=True
-            )
+        st.caption(f"📶 Source: FCC Antenna Structure Registration, Fairfax County")
 
-    # Simple factual statement
-    st.caption(f"📶 {towers_2mi} cell towers within 2 miles of this property.")
+    except Exception as e:
+        st.warning(f"Cell tower analysis unavailable: {e}")
 
 
 def analyze_development(lat: float, lon: float, radius_miles: float = 2.0) -> Dict[str, Any]:
@@ -3611,67 +3580,61 @@ def _infer_employer_industry(employer_name: str) -> str:
 
 
 def display_medical_access_section(lat: float, lon: float):
-    """
-    Display comprehensive medical access information.
-
-    Parent section containing:
-    - Hospitals & Emergency Centers (from GeoJSON)
-    - Urgent Care Centers (from GeoJSON)
-    - Pharmacies (Google Places API)
-    - Maternity Care (existing detailed component)
-    """
+    """Display healthcare access for a Fairfax County property."""
     st.markdown("## 🏥 Medical Access")
 
-    # Load facilities from GeoJSON
-    facilities = load_healthcare_facilities()
+    try:
+        from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
+        analyzer = FairfaxHealthcareAnalysis()
+        score = analyzer.calculate_healthcare_access_score(lat, lon)
 
-    # Load maternity data for count
-    maternity_data = load_maternity_hospitals()
-    maternity_hospitals = maternity_data.get('hospitals', []) if 'error' not in maternity_data else []
+        if not score:
+            st.info("Healthcare data not available for this location.")
+            return
 
-    # Search for pharmacies using Google Places API
-    from core.loudoun_places_analysis import search_nearby_places, PLACE_CATEGORIES
-    pharmacy_config = PLACE_CATEGORIES.get('pharmacy', {})
-    pharmacies, _ = search_nearby_places(
-        (lat, lon),
-        'pharmacy',
-        pharmacy_config.get('radius_miles', 5.0)
-    )
+        # Summary metrics
+        breakdown = score.get('breakdown', {})
+        nearest_hosp = breakdown.get('nearest_hospital', {})
+        uc_info = breakdown.get('urgent_care_nearby', {})
 
-    # Count by type
-    hospitals = [f for f in facilities if f.get('type') == 'H']
-    urgent_care = [f for f in facilities if f.get('type') == 'U']
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Access Score", f"{score.get('score', 0)}/100")
+            st.caption(score.get('rating', ''))
+        with col2:
+            st.metric("Hospitals Within 10 mi", score.get('hospitals_within_10mi', 0))
+        with col3:
+            st.metric("Urgent Care Within 3 mi", uc_info.get('count_within_3mi', 0))
 
-    # Summary metrics (4 columns)
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Hospitals/ER", len(hospitals))
-    with col2:
-        st.metric("Urgent Care", len(urgent_care))
-    with col3:
-        st.metric("Pharmacies", len(pharmacies))
-    with col4:
-        st.metric("Maternity Hospitals", len(maternity_hospitals))
+        # Nearest hospital details
+        if nearest_hosp:
+            st.markdown("### Nearest Hospital")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(f"**{nearest_hosp.get('name', 'N/A')}**")
+                st.markdown(f"Distance: **{nearest_hosp.get('distance_miles', 0):.1f} mi**")
+            with col2:
+                cms = nearest_hosp.get('cms_rating')
+                st.markdown(f"CMS Rating: **{cms}/5**" if cms else "CMS Rating: N/A")
+            with col3:
+                grade = nearest_hosp.get('leapfrog_grade', 'N/A')
+                st.markdown(f"Safety Grade: **{grade}**")
 
-    st.markdown("---")
+        # Nearby facilities table
+        nearby = analyzer.get_facilities_near_point(lat, lon, radius_miles=5.0)
+        if nearby is not None and len(nearby) > 0:
+            with st.expander(f"View All Nearby Facilities ({len(nearby)} within 5 mi)", expanded=False):
+                display_df = nearby[['name', 'facility_type', 'distance_miles', 'address', 'city']].copy()
+                display_df['facility_type'] = display_df['facility_type'].str.replace('_', ' ').str.title()
+                display_df['distance_miles'] = display_df['distance_miles'].round(2)
+                display_df.columns = ['Name', 'Type', 'Distance (mi)', 'Address', 'City']
 
-    # Subsection: Hospitals & Emergency
-    display_hospitals_subsection(facilities, lat, lon)
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-    # Subsection: Urgent Care
-    display_urgent_care_subsection(facilities, lat, lon)
+        st.caption("Source: Fairfax County GIS, CMS Hospital Compare, Leapfrog Group")
 
-    # Subsection: Pharmacies
-    display_pharmacies_subsection(pharmacies)
-
-    # Subsection: Maternity Care (existing component)
-    st.markdown("### 🍼 Maternity & Birthing Hospitals")
-    _display_maternity_content(lat, lon)
-
-    # Healthcare access quality note
-    st.success("✅ **Excellent Healthcare Access** — Loudoun County ranks in the top 10% nationally for primary care physician availability, with approximately 1 physician per 1,350 residents.")
-
-    st.caption("Data: Loudoun County GIS, Leapfrog Group, CMS Hospital Compare, Google Places API")
+    except Exception as e:
+        st.warning(f"Medical access analysis unavailable: {e}")
 
 
 def _display_maternity_content(lat: float, lon: float):
@@ -4952,8 +4915,8 @@ def render_report(address: str, lat: float, lon: float):
         # # Location Quality
         # display_location_section(data['location'], data.get('power_lines', {}), data.get('metro', {}), data.get('flood_zone', {}), data.get('parks', {}), lat, lon)
 
-        # # Cell Tower Coverage
-        # display_cell_towers_section(lat, lon)
+        # Cell Tower Coverage (rewired to Fairfax module)
+        display_cell_towers_section(lat, lon)
 
         # # Neighborhood Amenities
         # display_neighborhood_section(data.get('neighborhood', {}))
@@ -4976,8 +4939,8 @@ def render_report(address: str, lat: float, lon: float):
         # if ECONOMIC_INDICATORS_AVAILABLE:
         #     display_economic_indicators_section()
 
-        # # Medical Access (Hospitals, Urgent Care, Maternity)
-        # display_medical_access_section(lat, lon)
+        # Medical Access (rewired to Fairfax module)
+        display_medical_access_section(lat, lon)
 
         # # Development & Infrastructure (uses 2mi data from display_development_section)
         # display_development_section(lat, lon)

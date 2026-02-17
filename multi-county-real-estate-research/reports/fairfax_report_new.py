@@ -1335,9 +1335,6 @@ def display_schools_section(lat: float, lon: float):
     #         else:
     #             st.info("School performance trend data not available for assigned schools.")
 
-    # Show summary message instead of charts for Phase 1
-    st.info("📊 Performance trend charts coming in Phase 2 (Fairfax data format differs from Loudoun - summary stats only, no yearly trends)")
-
     # School Performance Comparison with State Average and Peer Schools
     if PLOTLY_AVAILABLE:
         with st.expander("📊 School Performance vs State & Peers", expanded=False):

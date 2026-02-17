@@ -143,15 +143,16 @@ class FairfaxPermitsAnalysis:
 
         Higher scores = more construction activity/development pressure.
 
-        Scoring algorithm:
-        - Residential new construction: +10 points each
-        - Commercial new construction: +15 points each
-        - Residential renovation: +3 points each
-        - Commercial renovation: +5 points each
-        - Residential demolition: +8 points each (often precedes new construction)
-        - Commercial demolition: +10 points each
-        - Other permits: +1 point each
-        - Normalized to 0-100 scale (50 weighted points = score of 50)
+        Recalibrated scoring (permit count → score):
+            0 permits  →  0   (No activity)
+            1-20       →  1-30  (Low)
+            21-50      → 31-60  (Moderate)
+            51-100     → 61-85  (High)
+            100+       → 86-100 (Very High)
+
+        Bonuses (up to +10 each):
+            - Recency bonus: proportion of permits in last 6 months × 10
+            - New construction bonus: proportion of new builds × 10
 
         Trend classification:
         - Increasing: second_half > first_half * 1.2
@@ -167,6 +168,7 @@ class FairfaxPermitsAnalysis:
         Returns:
             Dict with keys:
                 - score: int (0-100)
+                - rating: str ('Low', 'Moderate', 'High', 'Very High')
                 - trend: str ('increasing', 'stable', 'decreasing', 'insufficient_data')
                 - total_permits: int
                 - breakdown: dict (counts by detailed category)
@@ -178,6 +180,7 @@ class FairfaxPermitsAnalysis:
         if nearby.empty:
             return {
                 'score': 0,
+                'rating': 'No Activity',
                 'trend': 'insufficient_data',
                 'total_permits': 0,
                 'breakdown': {},
@@ -185,36 +188,51 @@ class FairfaxPermitsAnalysis:
                 'months_back': months_back
             }
 
-        # Weight by permit category
-        weights = {
-            'residential_new': 10,
-            'commercial_new': 15,
-            'residential_renovation': 3,
-            'commercial_renovation': 5,
-            'residential_demolition': 8,
-            'commercial_demolition': 10,
-            'certificate': 2,
-            'elevator': 1,
-            'other': 1
-        }
+        total_permits = len(nearby)
 
-        # Calculate weighted score
-        weighted_sum = 0
+        # Build category breakdown
         breakdown = {}
-
         category_counts = nearby['permit_category'].value_counts().to_dict()
-
         for category, count in category_counts.items():
-            weight = weights.get(category, 1)
-            weighted_sum += count * weight
-            breakdown[category] = {
-                'count': count,
-                'weight': weight,
-                'contribution': count * weight
-            }
+            breakdown[category] = {'count': count}
 
-        # Normalize to 0-100 scale (calibrated so 50 weighted points = score of 50)
-        score = min(100, int(weighted_sum * 1.0))
+        # Base score from permit count (piecewise linear)
+        if total_permits <= 20:
+            base_score = (total_permits / 20) * 30
+        elif total_permits <= 50:
+            base_score = 30 + ((total_permits - 20) / 30) * 30
+        elif total_permits <= 100:
+            base_score = 60 + ((total_permits - 50) / 50) * 25
+        else:
+            base_score = 85 + min((total_permits - 100) / 200 * 15, 15)
+
+        # Recency bonus: permits in last 6 months
+        recent_cutoff = pd.Timestamp.now() - pd.Timedelta(days=180)
+        recent = nearby[
+            (nearby['issued_date'] >= recent_cutoff) |
+            ((nearby['issued_date'].isna()) & (nearby['submitted_date'] >= recent_cutoff))
+        ]
+        recency_bonus = (len(recent) / max(total_permits, 1)) * 10
+
+        # New construction bonus
+        new_construction = nearby[nearby['permit_category'].isin(
+            ['residential_new', 'commercial_new']
+        )]
+        new_bonus = (len(new_construction) / max(total_permits, 1)) * 10
+
+        score = min(100, int(base_score + recency_bonus + new_bonus))
+
+        # Rating label
+        if score >= 86:
+            rating = 'Very High'
+        elif score >= 61:
+            rating = 'High'
+        elif score >= 31:
+            rating = 'Moderate'
+        elif score >= 1:
+            rating = 'Low'
+        else:
+            rating = 'No Activity'
 
         # Calculate trend
         if len(nearby) < 5:
@@ -250,6 +268,7 @@ class FairfaxPermitsAnalysis:
 
         return {
             'score': score,
+            'rating': rating,
             'trend': trend,
             'total_permits': len(nearby),
             'breakdown': breakdown,

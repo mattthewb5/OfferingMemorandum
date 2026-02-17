@@ -3909,89 +3909,295 @@ Lower rates generally indicate fewer unnecessary C-sections, but individual medi
         """)
 
 
+# =============================================================================
+# SECTION: DEVELOPMENT ACTIVITY & BUILDING PERMITS
+# =============================================================================
+
+
+def _create_permits_map(permits_df, property_lat: float, property_lon: float):
+    """Create Folium map of recent permits, color-coded by category.
+
+    Colors:
+        Green:  Residential New Construction
+        Blue:   Commercial New Construction
+        Orange: Residential Renovation
+        Gray:   Commercial Renovation
+    """
+    if not FOLIUM_AVAILABLE or permits_df.empty:
+        return None
+
+    m = folium.Map(
+        location=[property_lat, property_lon],
+        zoom_start=13,
+        tiles='cartodbpositron'
+    )
+
+    # Property marker
+    folium.Marker(
+        location=[property_lat, property_lon],
+        popup='<b>Subject Property</b>',
+        icon=folium.Icon(color='red', icon='home', prefix='fa')
+    ).add_to(m)
+
+    color_map = {
+        'residential_new': '#22c55e',
+        'commercial_new': '#3b82f6',
+        'residential_renovation': '#f97316',
+        'commercial_renovation': '#6b7280',
+    }
+
+    for _, permit in permits_df.iterrows():
+        category = permit.get('permit_category', 'other')
+        color = color_map.get(category, '#6b7280')
+
+        issued = permit.get('issued_date')
+        date_str = issued.strftime('%Y-%m-%d') if pd.notna(issued) else 'N/A'
+        address = permit.get('address', 'Address not available')
+        link = permit.get('link_url', '')
+
+        popup_html = (
+            f"<div style='width:220px'>"
+            f"<b>{permit.get('permit_type', 'Unknown')}</b><br>"
+            f"<i>{date_str}</i><br>"
+            f"{address}<br>"
+        )
+        if link and str(link) != 'nan':
+            popup_html += f"<br><a href='{link}' target='_blank'>View on Fairfax Portal</a>"
+        popup_html += "</div>"
+
+        folium.CircleMarker(
+            location=[permit['centroid_lat'], permit['centroid_lon']],
+            radius=5,
+            popup=folium.Popup(popup_html, max_width=250),
+            color=color,
+            fill=True,
+            fillColor=color,
+            fillOpacity=0.7,
+            weight=1,
+        ).add_to(m)
+
+    return m
+
+
 def display_development_section(lat: float, lon: float):
-    """Display development and infrastructure section."""
-    st.markdown("## 📊 Neighborhood Development & Infrastructure")
+    """Display neighborhood development activity and building permits."""
+    st.markdown("## 🏗 Neighborhood Development Activity")
 
-    dev_data = analyze_development(lat, lon)
+    try:
+        from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 
-    if 'error' in dev_data:
-        st.warning(f"Development analysis unavailable: {dev_data['error']}")
-        return
+        analyzer = FairfaxPermitsAnalysis()
 
-    # Key metrics
-    col1, col2, col3, col4 = st.columns(4)
+        # Adaptive radius: expand until we find >= 20 permits (or hit 5mi)
+        radius = 2.0
+        permits_24mo = analyzer.get_permits_near_point(
+            lat, lon, radius_miles=radius, months_back=24
+        )
+        if len(permits_24mo) < 20:
+            radius = 3.0
+            permits_24mo = analyzer.get_permits_near_point(
+                lat, lon, radius_miles=radius, months_back=24
+            )
+        if len(permits_24mo) < 20:
+            radius = 5.0
+            permits_24mo = analyzer.get_permits_near_point(
+                lat, lon, radius_miles=radius, months_back=24
+            )
 
-    with col1:
-        st.metric("Total Permits (2 mi)", f"{dev_data['total_permits']:,}")
+        # 6-month window for map
+        permits_6mo = analyzer.get_permits_near_point(
+            lat, lon, radius_miles=radius, months_back=6
+        )
 
-    with col2:
-        value_millions = dev_data['total_value'] / 1_000_000
-        st.metric("Construction Value", f"${value_millions:.1f}M")
+        # Development pressure (recalibrated)
+        pressure = analyzer.calculate_development_pressure(
+            lat, lon, radius_miles=radius, months_back=24
+        )
+        score = pressure.get('score', 0)
+        rating = pressure.get('rating', 'Unknown')
+        trend = pressure.get('trend', 'insufficient_data')
 
-    with col3:
-        st.metric("Recent (6 mo)", f"{dev_data['recent_count']:,}")
+        # Counts
+        new_construction = permits_24mo[
+            permits_24mo['permit_category'].isin(['residential_new', 'commercial_new'])
+        ]
+        active_districts = permits_24mo['development_center'].dropna()
+        active_districts = active_districts[active_districts != '']
+        n_districts = active_districts.nunique()
 
-    with col4:
-        st.metric("Tech Infrastructure", f"{dev_data['infrastructure_count']:,}")
-
-    # Map
-    if FOLIUM_AVAILABLE and not dev_data['nearby_permits'].empty:
-        st.markdown("### Development Activity Map")
-
-        # Legend
-        st.markdown("""
-        <small>🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other Construction</small>
-        """, unsafe_allow_html=True)
-
-        m = create_development_map(lat, lon, dev_data['nearby_permits'])
-        st_folium(m, width=None, height=450, returned_objects=[])
-
-    # Loudoun's Data Center Economy
-    if dev_data['datacenter_count'] > 0 or dev_data['fiber_count'] > 0:
-        st.markdown("---")
-        st.markdown("### 💡 Loudoun's Data Center Economy")
-
-        col1, col2 = st.columns([2, 1])
-
+        # ── 4-column metrics ──
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.markdown(f"""
-            This property is located in the world's largest data center market.
-
-            **Tech Infrastructure Within 2 Miles:**
-            - 🏢 Data Center Projects: **{dev_data['datacenter_count']}**
-            - 📡 Fiber/Telecom Projects: **{dev_data['fiber_count']}**
-            - 💰 Total Tech Investment: **${dev_data['total_value']/1e6:.1f}M**
-
-            **Why This Matters:**
-            - Robust fiber connectivity infrastructure
-            - Stable tech sector employment nearby
-            - Property values supported by commercial investment
-            - World-class internet infrastructure
-            """)
-
+            st.metric("Development Pressure", f"{score}/100")
+            color = {'Very High': '🔴', 'High': '🟠', 'Moderate': '🟡',
+                     'Low': '🟢', 'No Activity': '⚪'}.get(rating, '')
+            st.caption(f"{color} {rating}")
         with col2:
-            # Simple pie chart of permit types
-            if PLOTLY_AVAILABLE:
-                nearby = dev_data['nearby_permits']
-                infra = len(nearby[nearby['is_infrastructure'] == True])
-                other = len(nearby) - infra
+            st.metric("Permit Activity", f"{len(permits_24mo):,}")
+            st.caption(f"Last 24 months · {radius:.0f} mi radius")
+        with col3:
+            st.metric("New Construction", len(new_construction))
+            st.caption("New buildings (24 mo)")
+        with col4:
+            trend_icon = {'increasing': '📈', 'decreasing': '📉',
+                          'stable': '➡️'}.get(trend, 'ℹ️')
+            st.metric("Trend", f"{trend_icon} {trend.title()}")
+            st.caption("12-month comparison")
 
-                if infra > 0:
-                    fig = go.Figure(data=[go.Pie(
-                        labels=['Tech Infrastructure', 'Other'],
-                        values=[infra, other],
-                        hole=0.4,
-                        marker_colors=['#6366f1', '#22c55e']
-                    )])
-                    fig.update_layout(
-                        showlegend=True,
-                        height=250,
-                        margin=dict(l=20, r=20, t=20, b=20)
-                    )
-                    st.plotly_chart(fig, width='stretch')
+        if radius > 2.0:
+            st.caption(
+                f"ℹ️ Search radius expanded to {radius:.0f} miles "
+                f"(fewer than 20 permits within 2 miles — property is near "
+                f"the county boundary)."
+            )
 
-    st.markdown("---")
+        # ── Development narrative ──
+        st.markdown("### Development Overview")
+
+        if len(permits_24mo) == 0:
+            st.info(
+                f"**Minimal Development Activity** — No building permits issued "
+                f"within {radius:.0f} miles in the past 24 months. This is a very "
+                f"stable, established neighborhood."
+            )
+            st.caption("Source: Fairfax County PLUS Permit Portal, Fairfax County GIS")
+            return  # nothing else to show
+
+        if score >= 70:
+            st.warning(
+                f"**Very High Development Pressure** — {len(permits_24mo):,} permits "
+                f"in 24 months, including {len(new_construction)} new construction "
+                f"projects. Expect ongoing construction activity and neighborhood "
+                f"evolution."
+            )
+        elif score >= 50:
+            st.info(
+                f"**High Development Activity** — {len(permits_24mo):,} permits in "
+                f"24 months with {len(new_construction)} new construction projects "
+                f"alongside renovations."
+            )
+        elif score >= 30:
+            st.success(
+                f"**Moderate Development** — Steady activity with "
+                f"{len(permits_24mo):,} permits over 24 months, including "
+                f"{len(new_construction)} new construction projects."
+            )
+        else:
+            st.success(
+                f"**Low Development Pressure** — Limited activity with "
+                f"{len(permits_24mo):,} permits. This is a relatively stable "
+                f"neighborhood."
+            )
+
+        # ── Active planning districts ──
+        if n_districts > 0:
+            st.markdown("### Active Planning Districts")
+            district_counts = active_districts.value_counts().head(5)
+            for district, count in district_counts.items():
+                pct = count / len(permits_24mo) * 100
+                st.markdown(f"**{district}:** {count} permits ({pct:.0f}%)")
+
+            with st.expander("ℹ️ What are Planning Districts?"):
+                st.markdown(
+                    "**Planning Districts** (officially *Development Centers*) are "
+                    "designated growth areas in Fairfax County's Comprehensive Plan. "
+                    "They receive focused infrastructure investment and coordinated "
+                    "planning. Examples include Dulles Route 28 Corridor, Herndon "
+                    "Transit Station Area, and Tysons Corner Urban Center."
+                )
+
+        # ── Permit map (last 6 months) ──
+        st.markdown("### Recent Construction Activity Map")
+        st.caption(f"Showing {len(permits_6mo):,} permits from the last 6 months")
+
+        if len(permits_6mo) > 0 and FOLIUM_AVAILABLE:
+            permit_map = _create_permits_map(permits_6mo, lat, lon)
+            if permit_map:
+                st_folium(permit_map, width=None, height=450, returned_objects=[])
+
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.markdown("🟢 **Residential New**")
+            with col2:
+                st.markdown("🔵 **Commercial New**")
+            with col3:
+                st.markdown("🟠 **Residential Reno**")
+            with col4:
+                st.markdown("⚫ **Commercial Reno**")
+        elif not FOLIUM_AVAILABLE:
+            st.info("Map display requires the folium package.")
+        else:
+            st.info(f"No permits issued in the last 6 months within {radius:.0f} miles.")
+
+        # ── Permit type breakdown ──
+        st.markdown("### Permit Type Breakdown (24 Months)")
+        type_counts = permits_24mo['permit_type'].value_counts()
+        cols = st.columns(2)
+        for idx, (ptype, count) in enumerate(type_counts.items()):
+            with cols[idx % 2]:
+                pct = count / len(permits_24mo) * 100
+                st.markdown(f"**{ptype}:** {count} ({pct:.0f}%)")
+
+        # ── Yearly trend chart ──
+        if PLOTLY_AVAILABLE:
+            trends = analyzer.get_permit_trends(
+                lat, lon, radius_miles=radius, months_back=48
+            )
+            yearly = trends.get('yearly', {})
+            if len(yearly) >= 2:
+                st.markdown("### Permit Activity by Year")
+                by_cat = trends.get('by_major_category', {})
+                chart_rows = []
+                for year in sorted(yearly.keys()):
+                    cats = by_cat.get(year, {})
+                    chart_rows.append({
+                        'Year': str(int(year)),
+                        'Residential': cats.get('residential', 0),
+                        'Commercial': cats.get('commercial', 0),
+                    })
+                chart_df = pd.DataFrame(chart_rows)
+                fig = go.Figure()
+                fig.add_trace(go.Bar(
+                    x=chart_df['Year'], y=chart_df['Residential'],
+                    name='Residential', marker_color='#22c55e'
+                ))
+                fig.add_trace(go.Bar(
+                    x=chart_df['Year'], y=chart_df['Commercial'],
+                    name='Commercial', marker_color='#3b82f6'
+                ))
+                fig.update_layout(
+                    barmode='stack', height=300,
+                    margin=dict(l=40, r=20, t=20, b=40),
+                    legend=dict(orientation='h', y=-0.15),
+                    yaxis_title='Permits',
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # ── Full permit table ──
+        with st.expander(f"📋 View All {len(permits_24mo):,} Permits (24 Months)"):
+            tbl = permits_24mo.copy()
+            tbl = tbl.sort_values('issued_date', ascending=False)
+            tbl['Issued'] = tbl['issued_date'].dt.strftime('%Y-%m-%d')
+            tbl['Dist'] = tbl['distance_miles'].round(2).astype(str) + ' mi'
+
+            display_cols = ['Issued', 'permit_type', 'address', 'city',
+                            'development_center', 'Dist']
+            col_names = ['Date', 'Type', 'Address', 'City',
+                         'Planning District', 'Distance']
+
+            show = tbl[display_cols].copy()
+            show.columns = col_names
+            st.dataframe(show, use_container_width=True, hide_index=True)
+
+        st.caption(
+            f"Source: Fairfax County Permit Portal (PLUS System), "
+            f"Fairfax County GIS | Search radius: {radius:.0f} miles"
+        )
+
+    except FileNotFoundError:
+        st.info("Building permits data not available.")
+    except Exception as e:
+        st.warning(f"Development analysis unavailable: {e}")
 
 
 # =============================================================================
@@ -5048,8 +5254,8 @@ def render_report(address: str, lat: float, lon: float):
         # Medical Access (rewired to Fairfax module)
         display_medical_access_section(lat, lon)
 
-        # # Development & Infrastructure (uses 2mi data from display_development_section)
-        # display_development_section(lat, lon)
+        # Development Activity & Building Permits
+        display_development_section(lat, lon)
 
         # # Valuation (now includes MLS sqft lookup)
         # display_valuation_section(address, lat, lon, sqft_result)

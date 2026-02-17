@@ -1212,7 +1212,12 @@ def find_assigned_schools(lat: float, lon: float) -> Dict[str, str]:
 
 
 def get_school_performance(school_name: str, performance_df: pd.DataFrame = None) -> Dict[str, Any]:
-    """Get performance data for a specific school using Fairfax performance module."""
+    """Get performance data for a specific school using Fairfax performance module.
+
+    Tries multiple name variants to handle the mismatch between expanded display
+    names (e.g. "Rachel Carson Middle School") and the shorter names stored in the
+    performance parquet (e.g. "Carson Middle").
+    """
     if not school_name:
         return {}
 
@@ -1220,17 +1225,36 @@ def get_school_performance(school_name: str, performance_df: pd.DataFrame = None
         from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
         perf_analyzer = FairfaxSchoolPerformanceAnalysis()
 
-        performance = perf_analyzer.get_school_performance(school_name)
+        # Build name variants to try (most specific → least specific)
+        # Performance data uses short names like "Carson Middle" while display
+        # names are expanded like "Rachel Carson Middle School"
+        variants = [school_name]
 
-        if performance.get('found', False):
-            return {
-                'reading': performance.get('recent_reading_pass_rate', 0),
-                'math': performance.get('recent_math_pass_rate', 0),
-                'science': performance.get('recent_science_pass_rate', 0),
-                'overall': performance.get('recent_overall_pass_rate', 0),
-                'trend': performance.get('trend', 'stable'),
-                '_raw': performance
-            }
+        # Strip "School" suffix: "Rachel Carson Middle School" → "Rachel Carson Middle"
+        if school_name.endswith(' School'):
+            variants.append(school_name[:-len(' School')])
+
+        # Try with last-word-of-base + level: "Rachel Carson Middle" → "Carson Middle"
+        for level_word in ('Elementary', 'Middle', 'High'):
+            if level_word in school_name:
+                base = school_name.split(f' {level_word}')[0]
+                last_word = base.split()[-1] if base.split() else base
+                short = f"{last_word} {level_word}"
+                if short not in variants:
+                    variants.append(short)
+                break
+
+        for variant in variants:
+            performance = perf_analyzer.get_school_performance(variant)
+            if performance.get('found', False):
+                return {
+                    'reading': performance.get('recent_reading_pass_rate', 0),
+                    'math': performance.get('recent_math_pass_rate', 0),
+                    'science': performance.get('recent_science_pass_rate', 0),
+                    'overall': performance.get('recent_overall_pass_rate', 0),
+                    'trend': performance.get('trend', 'stable'),
+                    '_raw': performance
+                }
     except Exception as e:
         print(f"Error getting school performance: {e}")
 

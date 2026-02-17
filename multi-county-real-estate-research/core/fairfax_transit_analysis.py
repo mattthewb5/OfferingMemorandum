@@ -14,10 +14,17 @@ Usage:
 
 import geopandas as gpd
 import math
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 from shapely.geometry import Point
 from shapely.ops import nearest_points
+
+try:
+    import googlemaps
+    _GOOGLEMAPS_AVAILABLE = True
+except ImportError:
+    _GOOGLEMAPS_AVAILABLE = False
 
 
 # Data paths
@@ -121,9 +128,43 @@ class FairfaxTransitAnalysis:
         nearest_geom = nearest_points(point, geometry)[1]
         return self._haversine_distance(lat, lon, nearest_geom.y, nearest_geom.x)
 
+    def _get_driving_distance(self, origin_lat: float, origin_lon: float,
+                              dest_lat: float, dest_lon: float) -> Optional[float]:
+        """Get driving distance in miles via Google Distance Matrix API.
+
+        Returns driving distance in miles, or None if unavailable.
+        """
+        if not _GOOGLEMAPS_AVAILABLE:
+            return None
+
+        from core.api_config import get_api_key
+        api_key = get_api_key('GOOGLE_MAPS_API_KEY')
+        if not api_key:
+            return None
+
+        try:
+            gmaps = googlemaps.Client(key=api_key)
+            result = gmaps.distance_matrix(
+                origins=[f"{origin_lat},{origin_lon}"],
+                destinations=[f"{dest_lat},{dest_lon}"],
+                mode="driving"
+            )
+            element = result['rows'][0]['elements'][0]
+            if element['status'] == 'OK':
+                distance_meters = element['distance']['value']
+                return round(distance_meters / 1609.34, 1)
+        except Exception:
+            pass
+
+        return None
+
     def get_nearest_metro_station(self, lat: float, lon: float) -> Dict:
         """
         Find the closest Metro station.
+
+        Uses Haversine to identify the nearest station, then attempts to
+        get actual driving distance via Google Distance Matrix API.
+        Falls back to Haversine if the API is unavailable.
 
         Args:
             lat: Latitude
@@ -144,7 +185,7 @@ class FairfaxTransitAnalysis:
                 'message': 'Invalid coordinates provided'
             }
 
-        # Calculate distance to all stations
+        # Calculate Haversine distance to all stations to find nearest
         distances = []
         for idx, row in self.metro_stations.iterrows():
             station_lat = row['latitude']
@@ -158,19 +199,25 @@ class FairfaxTransitAnalysis:
                 'year_opened': row.get('year_opened')
             })
 
-        # Find nearest
+        # Find nearest by straight-line distance
         distances.sort(key=lambda x: x['distance'])
         nearest = distances[0]
 
-        # Calculate walk/bike times
+        # Try to get actual driving distance via Google Distance Matrix API
+        driving_distance = self._get_driving_distance(
+            lat, lon, nearest['latitude'], nearest['longitude']
+        )
+        final_distance = driving_distance if driving_distance is not None else nearest['distance']
+
+        # Calculate walk/bike times based on final distance
         # Walk: 3 mph average
         # Bike: 12 mph average
-        walk_time = (nearest['distance'] / 3.0) * 60  # minutes
-        bike_time = (nearest['distance'] / 12.0) * 60  # minutes
+        walk_time = (final_distance / 3.0) * 60  # minutes
+        bike_time = (final_distance / 12.0) * 60  # minutes
 
         return {
             'station_name': nearest['station_name'],
-            'distance_miles': round(nearest['distance'], 2),
+            'distance_miles': round(final_distance, 2),
             'latitude': round(nearest['latitude'], 4),
             'longitude': round(nearest['longitude'], 4),
             'year_opened': nearest['year_opened'],

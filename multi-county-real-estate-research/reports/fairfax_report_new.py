@@ -1369,45 +1369,28 @@ def display_schools_section(lat: float, lon: float):
                         if elem_peers:
                             st.caption(f"Comparing to: {elem_peers[0][0]} ({elem_peers[0][1]:.1f} mi), {elem_peers[1][0]} ({elem_peers[1][1]:.1f} mi)" if len(elem_peers) >= 2 else f"Comparing to: {elem_peers[0][0]} ({elem_peers[0][1]:.1f} mi)")
 
-                        # Subject tabs for elementary
-                        e_math, e_read, e_hist, e_sci, e_overall = st.tabs([
-                            "Math", "Reading", "History", "Science", "Overall"
-                        ])
+                        # Pre-compute charts to skip subjects with no data
+                        _e_subjects = [
+                            ("Math", "Math_Pass_Rate"),
+                            ("Reading", "Reading_Pass_Rate"),
+                            ("History", "History_Pass_Rate"),
+                            ("Science", "Science_Pass_Rate"),
+                            ("Overall", "Overall_Pass_Rate"),
+                        ]
+                        _e_charts = {}
+                        for _name, _col in _e_subjects:
+                            _fig = create_performance_chart(elem_school, elem_peers, _name, _col, "Elem", perf_with_state_df)
+                            if _fig:
+                                _e_charts[_name] = _fig
 
-                        with e_math:
-                            fig = create_performance_chart(elem_school, elem_peers, "Math", "Math_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No math data available")
-
-                        with e_read:
-                            fig = create_performance_chart(elem_school, elem_peers, "Reading", "Reading_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No reading data available")
-
-                        with e_hist:
-                            fig = create_performance_chart(elem_school, elem_peers, "History", "History_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No history data available")
-
-                        with e_sci:
-                            fig = create_performance_chart(elem_school, elem_peers, "Science", "Science_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No science data available")
-
-                        with e_overall:
-                            fig = create_performance_chart(elem_school, elem_peers, "Overall", "Overall_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No overall data available")
+                        if _e_charts:
+                            _e_tab_names = list(_e_charts.keys())
+                            _e_tabs = st.tabs(_e_tab_names)
+                            for _tab, _name in zip(_e_tabs, _e_tab_names):
+                                with _tab:
+                                    st.plotly_chart(_e_charts[_name], width='stretch')
+                        else:
+                            st.info("No performance data available")
                     else:
                         st.info("No elementary school assigned to this property")
 
@@ -1427,44 +1410,28 @@ def display_schools_section(lat: float, lon: float):
                         if mid_peers:
                             st.caption(f"Comparing to: {mid_peers[0][0]} ({mid_peers[0][1]:.1f} mi), {mid_peers[1][0]} ({mid_peers[1][1]:.1f} mi)" if len(mid_peers) >= 2 else f"Comparing to: {mid_peers[0][0]} ({mid_peers[0][1]:.1f} mi)")
 
-                        m_math, m_read, m_hist, m_sci, m_overall = st.tabs([
-                            "Math", "Reading", "History", "Science", "Overall"
-                        ])
+                        # Pre-compute charts to skip subjects with no data
+                        _m_subjects = [
+                            ("Math", "Math_Pass_Rate"),
+                            ("Reading", "Reading_Pass_Rate"),
+                            ("History", "History_Pass_Rate"),
+                            ("Science", "Science_Pass_Rate"),
+                            ("Overall", "Overall_Pass_Rate"),
+                        ]
+                        _m_charts = {}
+                        for _name, _col in _m_subjects:
+                            _fig = create_performance_chart(mid_school, mid_peers, _name, _col, "Middle", perf_with_state_df)
+                            if _fig:
+                                _m_charts[_name] = _fig
 
-                        with m_math:
-                            fig = create_performance_chart(mid_school, mid_peers, "Math", "Math_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No math data available")
-
-                        with m_read:
-                            fig = create_performance_chart(mid_school, mid_peers, "Reading", "Reading_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No reading data available")
-
-                        with m_hist:
-                            fig = create_performance_chart(mid_school, mid_peers, "History", "History_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No history data available")
-
-                        with m_sci:
-                            fig = create_performance_chart(mid_school, mid_peers, "Science", "Science_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No science data available")
-
-                        with m_overall:
-                            fig = create_performance_chart(mid_school, mid_peers, "Overall", "Overall_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No overall data available")
+                        if _m_charts:
+                            _m_tab_names = list(_m_charts.keys())
+                            _m_tabs = st.tabs(_m_tab_names)
+                            for _tab, _name in zip(_m_tabs, _m_tab_names):
+                                with _tab:
+                                    st.plotly_chart(_m_charts[_name], width='stretch')
+                        else:
+                            st.info("No performance data available")
                     else:
                         st.info("No middle school assigned to this property")
 
@@ -1484,44 +1451,28 @@ def display_schools_section(lat: float, lon: float):
                         if high_peers:
                             st.caption(f"Comparing to: {high_peers[0][0]} ({high_peers[0][1]:.1f} mi), {high_peers[1][0]} ({high_peers[1][1]:.1f} mi)" if len(high_peers) >= 2 else f"Comparing to: {high_peers[0][0]} ({high_peers[0][1]:.1f} mi)")
 
-                        h_math, h_read, h_hist, h_sci, h_overall = st.tabs([
-                            "Math", "Reading", "History", "Science", "Overall"
-                        ])
+                        # Pre-compute charts to skip subjects with no data
+                        _h_subjects = [
+                            ("Math", "Math_Pass_Rate"),
+                            ("Reading", "Reading_Pass_Rate"),
+                            ("History", "History_Pass_Rate"),
+                            ("Science", "Science_Pass_Rate"),
+                            ("Overall", "Overall_Pass_Rate"),
+                        ]
+                        _h_charts = {}
+                        for _name, _col in _h_subjects:
+                            _fig = create_performance_chart(high_school, high_peers, _name, _col, "High", perf_with_state_df)
+                            if _fig:
+                                _h_charts[_name] = _fig
 
-                        with h_math:
-                            fig = create_performance_chart(high_school, high_peers, "Math", "Math_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No math data available")
-
-                        with h_read:
-                            fig = create_performance_chart(high_school, high_peers, "Reading", "Reading_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No reading data available")
-
-                        with h_hist:
-                            fig = create_performance_chart(high_school, high_peers, "History", "History_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No history data available")
-
-                        with h_sci:
-                            fig = create_performance_chart(high_school, high_peers, "Science", "Science_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No science data available")
-
-                        with h_overall:
-                            fig = create_performance_chart(high_school, high_peers, "Overall", "Overall_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No overall data available")
+                        if _h_charts:
+                            _h_tab_names = list(_h_charts.keys())
+                            _h_tabs = st.tabs(_h_tab_names)
+                            for _tab, _name in zip(_h_tabs, _h_tab_names):
+                                with _tab:
+                                    st.plotly_chart(_h_charts[_name], width='stretch')
+                        else:
+                            st.info("No performance data available")
                     else:
                         st.info("No high school assigned to this property")
 

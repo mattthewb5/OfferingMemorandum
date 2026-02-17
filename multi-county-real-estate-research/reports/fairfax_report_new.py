@@ -3930,43 +3930,45 @@ This indicates {"active" if total_permits > 20 else "moderate" if total_permits 
             st.caption("Source: Fairfax County GIS, 2025")
 
         # Development Pressure (based on building permits)
-        with st.expander("🔮 Development Pressure", expanded=False):
-            try:
-                permits_analyzer = FairfaxPermitsAnalysis()
-                dev_pressure = permits_analyzer.calculate_development_pressure(lat, lon, radius_miles=1.0, months_back=24)
+        # Only show section if meaningful permit data is available
+        try:
+            permits_analyzer = FairfaxPermitsAnalysis()
+            dev_pressure = permits_analyzer.calculate_development_pressure(lat, lon, radius_miles=1.0, months_back=24)
+            score = dev_pressure.get('score', 0)
+            trend = dev_pressure.get('trend', 'stable')
 
-                score = dev_pressure.get('score', 0)
-                trend = dev_pressure.get('trend', 'stable')
+            # Skip entire section if data is insufficient
+            if trend != 'insufficient_data' and (score > 0 or dev_pressure.get('total_permits', 0) > 0):
+                with st.expander("🔮 Development Pressure", expanded=False):
+                    # Display score with color
+                    if score < 25:
+                        color = "🟢"
+                        level = "Low"
+                    elif score < 50:
+                        color = "🟡"
+                        level = "Moderate"
+                    elif score < 75:
+                        color = "🟠"
+                        level = "High"
+                    else:
+                        color = "🔴"
+                        level = "Very High"
 
-                # Display score with color
-                if score < 25:
-                    color = "🟢"
-                    level = "Low"
-                elif score < 50:
-                    color = "🟡"
-                    level = "Moderate"
-                elif score < 75:
-                    color = "🟠"
-                    level = "High"
-                else:
-                    color = "🔴"
-                    level = "Very High"
+                    st.markdown(f"{color} **Development Pressure:** {score}/100 ({level})")
+                    st.markdown(f"**Trend:** {trend.title()}")
 
-                st.markdown(f"{color} **Development Pressure:** {score}/100 ({level})")
-                st.markdown(f"**Trend:** {trend.title()}")
+                    # Show current status
+                    st.markdown("**Current Status:**")
+                    st.markdown(f"• Zoned: {zone_code} ({zone_type_desc})")
 
-                # Show current status
-                st.markdown("**Current Status:**")
-                st.markdown(f"• Zoned: {zone_code} ({zone_type_desc})")
+                    # Score breakdown
+                    breakdown = dev_pressure.get('breakdown', {})
+                    if breakdown:
+                        st.markdown("**Score Factors:**")
+                        for factor, value in breakdown.items():
+                            st.markdown(f"• {factor.replace('_', ' ').title()}: {value}")
 
-                # Score breakdown
-                breakdown = dev_pressure.get('breakdown', {})
-                if breakdown:
-                    st.markdown("**Score Factors:**")
-                    for factor, value in breakdown.items():
-                        st.markdown(f"• {factor.replace('_', ' ').title()}: {value}")
-
-                st.markdown("""
+                    st.markdown("""
 ---
 **What This Means:**
 
@@ -3978,8 +3980,8 @@ which may signal:
 - **Moderate (30-59):** Healthy development activity, typical suburban growth
 - **Low (0-29):** Established, stable neighborhood with minimal new construction
 """)
-            except Exception as e:
-                st.caption("💡 Development pressure data unavailable")
+        except Exception:
+            pass  # Silently skip if permits data unavailable
 
     except Exception as e:
         st.warning(f"Zoning analysis error: {str(e)}")

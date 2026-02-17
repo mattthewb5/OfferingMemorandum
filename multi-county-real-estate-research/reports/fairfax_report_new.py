@@ -416,6 +416,26 @@ def create_performance_chart(subject_school, peer_schools, metric_name, metric_c
         division_name='Fairfax County'
     )
 
+def _schools_have_data(subject_school, peer_schools, metric_col, perf_df):
+    """Check if the subject school or any peer has data for a metric.
+
+    Returns True only if at least one real school (not state average)
+    has non-null data. This prevents showing charts with only a state
+    average line when no actual schools have data for a subject.
+    """
+    import pandas as pd
+    all_schools = [subject_school] + [name for name, _ in peer_schools]
+    for school in all_schools:
+        match = match_school_in_performance_data(school, perf_df)
+        if match:
+            rows = perf_df[
+                (perf_df['School_Name'] == match) &
+                (perf_df['Division_Name'] == 'Fairfax County')
+            ]
+            if rows[metric_col].notna().any():
+                return True
+    return False
+
 def match_school_in_performance_data(school_name, perf_df):
     return _loudoun_match_school_in_performance_data(
         school_name, perf_df, division_name='Fairfax County'
@@ -1369,7 +1389,7 @@ def display_schools_section(lat: float, lon: float):
                         if elem_peers:
                             st.caption(f"Comparing to: {elem_peers[0][0]} ({elem_peers[0][1]:.1f} mi), {elem_peers[1][0]} ({elem_peers[1][1]:.1f} mi)" if len(elem_peers) >= 2 else f"Comparing to: {elem_peers[0][0]} ({elem_peers[0][1]:.1f} mi)")
 
-                        # Pre-compute charts to skip subjects with no data
+                        # Pre-compute charts to skip subjects with no real school data
                         _e_subjects = [
                             ("Math", "Math_Pass_Rate"),
                             ("Reading", "Reading_Pass_Rate"),
@@ -1379,6 +1399,8 @@ def display_schools_section(lat: float, lon: float):
                         ]
                         _e_charts = {}
                         for _name, _col in _e_subjects:
+                            if not _schools_have_data(elem_school, elem_peers, _col, perf_with_state_df):
+                                continue
                             _fig = create_performance_chart(elem_school, elem_peers, _name, _col, "Elem", perf_with_state_df)
                             if _fig:
                                 _e_charts[_name] = _fig
@@ -1410,7 +1432,7 @@ def display_schools_section(lat: float, lon: float):
                         if mid_peers:
                             st.caption(f"Comparing to: {mid_peers[0][0]} ({mid_peers[0][1]:.1f} mi), {mid_peers[1][0]} ({mid_peers[1][1]:.1f} mi)" if len(mid_peers) >= 2 else f"Comparing to: {mid_peers[0][0]} ({mid_peers[0][1]:.1f} mi)")
 
-                        # Pre-compute charts to skip subjects with no data
+                        # Pre-compute charts to skip subjects with no real school data
                         _m_subjects = [
                             ("Math", "Math_Pass_Rate"),
                             ("Reading", "Reading_Pass_Rate"),
@@ -1420,6 +1442,8 @@ def display_schools_section(lat: float, lon: float):
                         ]
                         _m_charts = {}
                         for _name, _col in _m_subjects:
+                            if not _schools_have_data(mid_school, mid_peers, _col, perf_with_state_df):
+                                continue
                             _fig = create_performance_chart(mid_school, mid_peers, _name, _col, "Middle", perf_with_state_df)
                             if _fig:
                                 _m_charts[_name] = _fig
@@ -1451,7 +1475,7 @@ def display_schools_section(lat: float, lon: float):
                         if high_peers:
                             st.caption(f"Comparing to: {high_peers[0][0]} ({high_peers[0][1]:.1f} mi), {high_peers[1][0]} ({high_peers[1][1]:.1f} mi)" if len(high_peers) >= 2 else f"Comparing to: {high_peers[0][0]} ({high_peers[0][1]:.1f} mi)")
 
-                        # Pre-compute charts to skip subjects with no data
+                        # Pre-compute charts to skip subjects with no real school data
                         _h_subjects = [
                             ("Math", "Math_Pass_Rate"),
                             ("Reading", "Reading_Pass_Rate"),
@@ -1461,6 +1485,8 @@ def display_schools_section(lat: float, lon: float):
                         ]
                         _h_charts = {}
                         for _name, _col in _h_subjects:
+                            if not _schools_have_data(high_school, high_peers, _col, perf_with_state_df):
+                                continue
                             _fig = create_performance_chart(high_school, high_peers, _name, _col, "High", perf_with_state_df)
                             if _fig:
                                 _h_charts[_name] = _fig

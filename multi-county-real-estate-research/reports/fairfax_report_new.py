@@ -3323,7 +3323,7 @@ def display_economic_indicators_section():
                 fig.add_trace(go.Bar(
                     y=sectors,
                     x=loudoun_vals,
-                    name='Loudoun',
+                    name='Fairfax Co.',
                     orientation='h',
                     marker_color='#1f77b4',
                     text=[f"{v:.1f}%" for v in loudoun_vals],
@@ -3374,9 +3374,9 @@ def display_economic_indicators_section():
         with tab_table:
             if all_industries:
                 df = pd.DataFrame(all_industries)
-                df.columns = ["Sector", "Loudoun %", "Virginia %", "USA %"]
+                df.columns = ["Sector", "Fairfax Co. %", "Virginia %", "USA %"]
                 # Format percentages
-                df["Loudoun %"] = df["Loudoun %"].apply(lambda x: f"{x:.1f}%" if x else "N/A")
+                df["Fairfax Co. %"] = df["Fairfax Co. %"].apply(lambda x: f"{x:.1f}%" if x else "N/A")
                 df["Virginia %"] = df["Virginia %"].apply(lambda x: f"{x:.1f}%" if x else "N/A")
                 df["USA %"] = df["USA %"].apply(lambda x: f"{x:.1f}%" if x else "N/A")
                 st.dataframe(df, width='stretch', hide_index=True)

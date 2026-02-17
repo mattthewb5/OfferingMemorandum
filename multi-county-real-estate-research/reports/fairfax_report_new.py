@@ -416,6 +416,26 @@ def create_performance_chart(subject_school, peer_schools, metric_name, metric_c
         division_name='Fairfax County'
     )
 
+def _schools_have_data(subject_school, peer_schools, metric_col, perf_df):
+    """Check if the subject school or any peer has data for a metric.
+
+    Returns True only if at least one real school (not state average)
+    has non-null data. This prevents showing charts with only a state
+    average line when no actual schools have data for a subject.
+    """
+    import pandas as pd
+    all_schools = [subject_school] + [name for name, _ in peer_schools]
+    for school in all_schools:
+        match = match_school_in_performance_data(school, perf_df)
+        if match:
+            rows = perf_df[
+                (perf_df['School_Name'] == match) &
+                (perf_df['Division_Name'] == 'Fairfax County')
+            ]
+            if rows[metric_col].notna().any():
+                return True
+    return False
+
 def match_school_in_performance_data(school_name, perf_df):
     return _loudoun_match_school_in_performance_data(
         school_name, perf_df, division_name='Fairfax County'
@@ -1192,7 +1212,12 @@ def find_assigned_schools(lat: float, lon: float) -> Dict[str, str]:
 
 
 def get_school_performance(school_name: str, performance_df: pd.DataFrame = None) -> Dict[str, Any]:
-    """Get performance data for a specific school using Fairfax performance module."""
+    """Get performance data for a specific school using Fairfax performance module.
+
+    Tries multiple name variants to handle the mismatch between expanded display
+    names (e.g. "Rachel Carson Middle School") and the shorter names stored in the
+    performance parquet (e.g. "Carson Middle").
+    """
     if not school_name:
         return {}
 
@@ -1200,17 +1225,36 @@ def get_school_performance(school_name: str, performance_df: pd.DataFrame = None
         from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
         perf_analyzer = FairfaxSchoolPerformanceAnalysis()
 
-        performance = perf_analyzer.get_school_performance(school_name)
+        # Build name variants to try (most specific → least specific)
+        # Performance data uses short names like "Carson Middle" while display
+        # names are expanded like "Rachel Carson Middle School"
+        variants = [school_name]
 
-        if performance.get('found', False):
-            return {
-                'reading': performance.get('recent_reading_pass_rate', 0),
-                'math': performance.get('recent_math_pass_rate', 0),
-                'science': performance.get('recent_science_pass_rate', 0),
-                'overall': performance.get('recent_overall_pass_rate', 0),
-                'trend': performance.get('trend', 'stable'),
-                '_raw': performance
-            }
+        # Strip "School" suffix: "Rachel Carson Middle School" → "Rachel Carson Middle"
+        if school_name.endswith(' School'):
+            variants.append(school_name[:-len(' School')])
+
+        # Try with last-word-of-base + level: "Rachel Carson Middle" → "Carson Middle"
+        for level_word in ('Elementary', 'Middle', 'High'):
+            if level_word in school_name:
+                base = school_name.split(f' {level_word}')[0]
+                last_word = base.split()[-1] if base.split() else base
+                short = f"{last_word} {level_word}"
+                if short not in variants:
+                    variants.append(short)
+                break
+
+        for variant in variants:
+            performance = perf_analyzer.get_school_performance(variant)
+            if performance.get('found', False):
+                return {
+                    'reading': performance.get('recent_reading_pass_rate', 0),
+                    'math': performance.get('recent_math_pass_rate', 0),
+                    'science': performance.get('recent_science_pass_rate', 0),
+                    'overall': performance.get('recent_overall_pass_rate', 0),
+                    'trend': performance.get('trend', 'stable'),
+                    '_raw': performance
+                }
     except Exception as e:
         print(f"Error getting school performance: {e}")
 
@@ -1335,9 +1379,6 @@ def display_schools_section(lat: float, lon: float):
     #         else:
     #             st.info("School performance trend data not available for assigned schools.")
 
-    # Show summary message instead of charts for Phase 1
-    st.info("📊 Performance trend charts coming in Phase 2 (Fairfax data format differs from Loudoun - summary stats only, no yearly trends)")
-
     # School Performance Comparison with State Average and Peer Schools
     if PLOTLY_AVAILABLE:
         with st.expander("📊 School Performance vs State & Peers", expanded=False):
@@ -1372,45 +1413,30 @@ def display_schools_section(lat: float, lon: float):
                         if elem_peers:
                             st.caption(f"Comparing to: {elem_peers[0][0]} ({elem_peers[0][1]:.1f} mi), {elem_peers[1][0]} ({elem_peers[1][1]:.1f} mi)" if len(elem_peers) >= 2 else f"Comparing to: {elem_peers[0][0]} ({elem_peers[0][1]:.1f} mi)")
 
-                        # Subject tabs for elementary
-                        e_math, e_read, e_hist, e_sci, e_overall = st.tabs([
-                            "Math", "Reading", "History", "Science", "Overall"
-                        ])
+                        # Pre-compute charts to skip subjects with no real school data
+                        _e_subjects = [
+                            ("Math", "Math_Pass_Rate"),
+                            ("Reading", "Reading_Pass_Rate"),
+                            ("History", "History_Pass_Rate"),
+                            ("Science", "Science_Pass_Rate"),
+                            ("Overall", "Overall_Pass_Rate"),
+                        ]
+                        _e_charts = {}
+                        for _name, _col in _e_subjects:
+                            if not _schools_have_data(elem_school, elem_peers, _col, perf_with_state_df):
+                                continue
+                            _fig = create_performance_chart(elem_school, elem_peers, _name, _col, "Elem", perf_with_state_df)
+                            if _fig:
+                                _e_charts[_name] = _fig
 
-                        with e_math:
-                            fig = create_performance_chart(elem_school, elem_peers, "Math", "Math_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No math data available")
-
-                        with e_read:
-                            fig = create_performance_chart(elem_school, elem_peers, "Reading", "Reading_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No reading data available")
-
-                        with e_hist:
-                            fig = create_performance_chart(elem_school, elem_peers, "History", "History_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No history data available")
-
-                        with e_sci:
-                            fig = create_performance_chart(elem_school, elem_peers, "Science", "Science_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No science data available")
-
-                        with e_overall:
-                            fig = create_performance_chart(elem_school, elem_peers, "Overall", "Overall_Pass_Rate", "Elem", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No overall data available")
+                        if _e_charts:
+                            _e_tab_names = list(_e_charts.keys())
+                            _e_tabs = st.tabs(_e_tab_names)
+                            for _tab, _name in zip(_e_tabs, _e_tab_names):
+                                with _tab:
+                                    st.plotly_chart(_e_charts[_name], width='stretch')
+                        else:
+                            st.info("No performance data available")
                     else:
                         st.info("No elementary school assigned to this property")
 
@@ -1430,44 +1456,30 @@ def display_schools_section(lat: float, lon: float):
                         if mid_peers:
                             st.caption(f"Comparing to: {mid_peers[0][0]} ({mid_peers[0][1]:.1f} mi), {mid_peers[1][0]} ({mid_peers[1][1]:.1f} mi)" if len(mid_peers) >= 2 else f"Comparing to: {mid_peers[0][0]} ({mid_peers[0][1]:.1f} mi)")
 
-                        m_math, m_read, m_hist, m_sci, m_overall = st.tabs([
-                            "Math", "Reading", "History", "Science", "Overall"
-                        ])
+                        # Pre-compute charts to skip subjects with no real school data
+                        _m_subjects = [
+                            ("Math", "Math_Pass_Rate"),
+                            ("Reading", "Reading_Pass_Rate"),
+                            ("History", "History_Pass_Rate"),
+                            ("Science", "Science_Pass_Rate"),
+                            ("Overall", "Overall_Pass_Rate"),
+                        ]
+                        _m_charts = {}
+                        for _name, _col in _m_subjects:
+                            if not _schools_have_data(mid_school, mid_peers, _col, perf_with_state_df):
+                                continue
+                            _fig = create_performance_chart(mid_school, mid_peers, _name, _col, "Middle", perf_with_state_df)
+                            if _fig:
+                                _m_charts[_name] = _fig
 
-                        with m_math:
-                            fig = create_performance_chart(mid_school, mid_peers, "Math", "Math_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No math data available")
-
-                        with m_read:
-                            fig = create_performance_chart(mid_school, mid_peers, "Reading", "Reading_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No reading data available")
-
-                        with m_hist:
-                            fig = create_performance_chart(mid_school, mid_peers, "History", "History_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No history data available")
-
-                        with m_sci:
-                            fig = create_performance_chart(mid_school, mid_peers, "Science", "Science_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No science data available")
-
-                        with m_overall:
-                            fig = create_performance_chart(mid_school, mid_peers, "Overall", "Overall_Pass_Rate", "Middle", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No overall data available")
+                        if _m_charts:
+                            _m_tab_names = list(_m_charts.keys())
+                            _m_tabs = st.tabs(_m_tab_names)
+                            for _tab, _name in zip(_m_tabs, _m_tab_names):
+                                with _tab:
+                                    st.plotly_chart(_m_charts[_name], width='stretch')
+                        else:
+                            st.info("No performance data available")
                     else:
                         st.info("No middle school assigned to this property")
 
@@ -1487,44 +1499,30 @@ def display_schools_section(lat: float, lon: float):
                         if high_peers:
                             st.caption(f"Comparing to: {high_peers[0][0]} ({high_peers[0][1]:.1f} mi), {high_peers[1][0]} ({high_peers[1][1]:.1f} mi)" if len(high_peers) >= 2 else f"Comparing to: {high_peers[0][0]} ({high_peers[0][1]:.1f} mi)")
 
-                        h_math, h_read, h_hist, h_sci, h_overall = st.tabs([
-                            "Math", "Reading", "History", "Science", "Overall"
-                        ])
+                        # Pre-compute charts to skip subjects with no real school data
+                        _h_subjects = [
+                            ("Math", "Math_Pass_Rate"),
+                            ("Reading", "Reading_Pass_Rate"),
+                            ("History", "History_Pass_Rate"),
+                            ("Science", "Science_Pass_Rate"),
+                            ("Overall", "Overall_Pass_Rate"),
+                        ]
+                        _h_charts = {}
+                        for _name, _col in _h_subjects:
+                            if not _schools_have_data(high_school, high_peers, _col, perf_with_state_df):
+                                continue
+                            _fig = create_performance_chart(high_school, high_peers, _name, _col, "High", perf_with_state_df)
+                            if _fig:
+                                _h_charts[_name] = _fig
 
-                        with h_math:
-                            fig = create_performance_chart(high_school, high_peers, "Math", "Math_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No math data available")
-
-                        with h_read:
-                            fig = create_performance_chart(high_school, high_peers, "Reading", "Reading_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No reading data available")
-
-                        with h_hist:
-                            fig = create_performance_chart(high_school, high_peers, "History", "History_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No history data available")
-
-                        with h_sci:
-                            fig = create_performance_chart(high_school, high_peers, "Science", "Science_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No science data available")
-
-                        with h_overall:
-                            fig = create_performance_chart(high_school, high_peers, "Overall", "Overall_Pass_Rate", "High", perf_with_state_df)
-                            if fig:
-                                st.plotly_chart(fig, width='stretch')
-                            else:
-                                st.info("No overall data available")
+                        if _h_charts:
+                            _h_tab_names = list(_h_charts.keys())
+                            _h_tabs = st.tabs(_h_tab_names)
+                            for _tab, _name in zip(_h_tabs, _h_tab_names):
+                                with _tab:
+                                    st.plotly_chart(_h_charts[_name], width='stretch')
+                        else:
+                            st.info("No performance data available")
                     else:
                         st.info("No high school assigned to this property")
 
@@ -1567,7 +1565,7 @@ def display_crime_section(lat: float, lon: float):
         st.markdown(f"*{date_range_text}*")
 
         # Calculate safety score
-        safety_score = crime_analyzer.calculate_safety_score(lat, lon, radius_miles=0.5)
+        safety_score = crime_analyzer.calculate_safety_score(lat, lon, radius_miles=2.0)
 
         if safety_score:
             score = safety_score.get('score', 0)
@@ -1588,7 +1586,7 @@ def display_crime_section(lat: float, lon: float):
             # Crime breakdown
             breakdown = safety_score.get('breakdown', {})
             if breakdown:
-                st.markdown("### Crime Breakdown (0.5 mile radius)")
+                st.markdown("### Crime Breakdown (2.0 mile radius)")
 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -1610,6 +1608,84 @@ def display_crime_section(lat: float, lon: float):
                 st.info(f"🟡 **Moderate** - {total_crimes} reported incidents. Average for the area.")
             else:
                 st.warning(f"⚠️ **Higher Crime** - {total_crimes} reported incidents. Exercise normal caution.")
+
+            # Incident details with map
+            with st.expander("📋 View Individual Incidents"):
+                incidents = crime_analyzer.get_crimes_near_point(lat, lon, radius_miles=2.0)
+
+                if len(incidents) > 0:
+                    # Build incident map
+                    try:
+                        import plotly.graph_objects as go
+
+                        color_map = {'violent': 'red', 'property': 'orange', 'other': 'blue'}
+
+                        fig = go.Figure()
+
+                        # Property marker
+                        fig.add_trace(go.Scattermapbox(
+                            lat=[lat], lon=[lon],
+                            mode='markers',
+                            marker=dict(size=15, color='green'),
+                            text=['Your Property'],
+                            name='Property',
+                            showlegend=True
+                        ))
+
+                        # Incident markers by category
+                        for category, color in color_map.items():
+                            cat_data = incidents[incidents['category'] == category]
+                            if cat_data.empty:
+                                continue
+                            hover_text = cat_data.apply(
+                                lambda row: f"{row['description']}<br>{row['address']}<br>{row['date'].strftime('%Y-%m-%d') if hasattr(row['date'], 'strftime') else row['date']}",
+                                axis=1
+                            )
+                            fig.add_trace(go.Scattermapbox(
+                                lat=cat_data['latitude'], lon=cat_data['longitude'],
+                                mode='markers',
+                                marker=dict(size=8, color=color),
+                                text=hover_text,
+                                name=f'{category.title()} ({len(cat_data)})',
+                                showlegend=True
+                            ))
+
+                        fig.update_layout(
+                            mapbox=dict(
+                                style='open-street-map',
+                                center=dict(lat=lat, lon=lon),
+                                zoom=12
+                            ),
+                            height=400,
+                            margin=dict(l=0, r=0, t=0, b=0),
+                            showlegend=True,
+                            legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
+                        )
+
+                        st.plotly_chart(fig, use_container_width=True)
+                    except Exception:
+                        pass  # Map is optional; table below still shows
+
+                    st.markdown(f"**{len(incidents)} geocoded incidents** within 2 miles")
+
+                    # Display table
+                    display_df = incidents[['date', 'description', 'address', 'distance_miles']].copy()
+                    display_df['date'] = pd.to_datetime(display_df['date']).dt.strftime('%Y-%m-%d')
+                    display_df['distance_miles'] = display_df['distance_miles'].round(2)
+
+                    st.dataframe(
+                        display_df,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            'date': 'Date',
+                            'description': 'Type',
+                            'address': 'Location',
+                            'distance_miles': st.column_config.NumberColumn('Distance (mi)', format="%.2f")
+                        }
+                    )
+                else:
+                    st.info("No geocoded incidents found within 2 miles.")
 
             # Geocoding coverage note
             geocoded_pct = safety_score.get('geocoded_percentage', 0)
@@ -2602,80 +2678,49 @@ def display_community_section(valuation_data: Dict[str, Any], lat: float = None,
 # =============================================================================
 
 def display_cell_towers_section(lat: float, lon: float):
-    """
-    Display cell tower information for a property location.
-
-    Shows nearby towers with basic infrastructure details.
-    """
+    """Display cell tower coverage for a Fairfax County property."""
     st.markdown("## 📡 Cell Tower Coverage")
 
-    # Get tower analysis
-    tower_data = analyze_cell_tower_coverage(lat, lon)
+    try:
+        from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
+        analyzer = FairfaxCellTowersAnalysis()
+        coverage = analyzer.calculate_coverage_score(lat, lon)
 
-    if not tower_data.get('available'):
-        st.info("Cell tower data not available for this location.")
-        return
+        if not coverage:
+            st.info("Cell tower data not available for this location.")
+            return
 
-    towers_2mi = tower_data.get('towers_within_2mi', 0)
-
-    # Single metric - towers within 2 miles
-    st.metric("Cell Towers Within 2 Miles", towers_2mi)
-
-    # Structure type descriptions for clarity
-    def get_structure_description(structure_type: str) -> str:
-        descriptions = {
-            'Trans-Mount': 'Trans-Mount (on power line tower)',
-            'Monopole': 'Monopole (single-pole tower)',
-            'Roof Top': 'Roof Top (building-mounted)',
-            'Lattice': 'Lattice (steel framework tower)',
-            'Water Tank': 'Water Tank (attached to tank)',
-            'Guyed': 'Guyed (cable-supported tower)',
-            'Silo': 'Silo (concealed in silo)',
-        }
-        return descriptions.get(structure_type, structure_type)
-
-    # Closest tower info
-    closest = tower_data.get('closest_tower')
-    if closest:
-        st.markdown("### Nearest Tower")
-        dist_ft = closest['distance_mi'] * 5280
-        col1, col2 = st.columns(2)
+        # Summary metrics
+        col1, col2, col3 = st.columns(3)
         with col1:
-            st.markdown(f"**{closest.get('name', 'Unknown')}**")
-            st.markdown(f"Distance: **{closest['distance_mi']:.2f} mi** ({dist_ft:,.0f} ft)")
+            st.metric("Coverage Score", f"{coverage.get('score', 0)}/100")
         with col2:
-            if closest.get('height_ft'):
-                st.markdown(f"Height: {closest['height_ft']:.0f} ft")
-            if closest.get('structure_type'):
-                st.markdown(f"Type: {get_structure_description(closest['structure_type'])}")
+            st.metric("Rating", coverage.get('rating', 'N/A'))
+        with col3:
+            st.metric("Towers Within 2 mi", coverage.get('towers_within_2mi', 0))
 
-    # Nearby towers table
-    nearby_towers = tower_data.get('nearby_towers')
-    if nearby_towers is not None and not nearby_towers.empty:
-        with st.expander(f"View All Nearby Towers ({len(nearby_towers)} within 2 mi)", expanded=False):
-            # Prepare display dataframe - simplified columns
-            display_df = nearby_towers[['tower_name', 'distance_mi', 'structure_type', 'height_ft', 'address']].copy()
+        # Nearest tower
+        nearest = coverage.get('nearest_tower_miles')
+        if nearest:
+            st.markdown(f"**Nearest tower:** {nearest:.2f} mi ({nearest * 5280:,.0f} ft)")
 
-            # Handle missing tower names - use street address as fallback
-            display_df['tower_name'] = display_df.apply(
-                lambda row: str(row['address']).split(',')[0].strip()
-                if pd.isna(row['tower_name']) or str(row['tower_name']).strip() == ''
-                else row['tower_name'],
-                axis=1
-            )
+        # Nearby towers table
+        nearby = analyzer.get_towers_near_point(lat, lon, radius_miles=2.0)
+        if nearby is not None and len(nearby) > 0:
+            with st.expander(f"View All Nearby Towers ({len(nearby)} within 2 mi)", expanded=False):
+                display_df = nearby[['structure_type_desc', 'distance_miles', 'height_feet', 'city']].copy()
+                display_df.columns = ['Type', 'Distance (mi)', 'Height (ft)', 'City']
+                display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")
+                display_df['Height (ft)'] = display_df['Height (ft)'].apply(
+                    lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "—"
+                )
 
-            display_df.columns = ['Tower Name', 'Distance (mi)', 'Type', 'Height (ft)', 'Address']
-            display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")
-            display_df['Height (ft)'] = display_df['Height (ft)'].apply(lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "—")
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-            st.dataframe(
-                display_df,
-                width='stretch',
-                hide_index=True
-            )
+        st.caption(f"📶 Source: FCC Antenna Structure Registration, Fairfax County")
 
-    # Simple factual statement
-    st.caption(f"📶 {towers_2mi} cell towers within 2 miles of this property.")
+    except Exception as e:
+        st.warning(f"Cell tower analysis unavailable: {e}")
 
 
 def analyze_development(lat: float, lon: float, radius_miles: float = 2.0) -> Dict[str, Any]:
@@ -3375,7 +3420,7 @@ def display_economic_indicators_section():
                 fig.add_trace(go.Bar(
                     y=sectors,
                     x=loudoun_vals,
-                    name='Loudoun',
+                    name='Fairfax Co.',
                     orientation='h',
                     marker_color='#1f77b4',
                     text=[f"{v:.1f}%" for v in loudoun_vals],
@@ -3426,9 +3471,9 @@ def display_economic_indicators_section():
         with tab_table:
             if all_industries:
                 df = pd.DataFrame(all_industries)
-                df.columns = ["Sector", "Loudoun %", "Virginia %", "USA %"]
+                df.columns = ["Sector", "Fairfax Co. %", "Virginia %", "USA %"]
                 # Format percentages
-                df["Loudoun %"] = df["Loudoun %"].apply(lambda x: f"{x:.1f}%" if x else "N/A")
+                df["Fairfax Co. %"] = df["Fairfax Co. %"].apply(lambda x: f"{x:.1f}%" if x else "N/A")
                 df["Virginia %"] = df["Virginia %"].apply(lambda x: f"{x:.1f}%" if x else "N/A")
                 df["USA %"] = df["USA %"].apply(lambda x: f"{x:.1f}%" if x else "N/A")
                 st.dataframe(df, width='stretch', hide_index=True)
@@ -3559,67 +3604,143 @@ def _infer_employer_industry(employer_name: str) -> str:
 
 
 def display_medical_access_section(lat: float, lon: float):
-    """
-    Display comprehensive medical access information.
-
-    Parent section containing:
-    - Hospitals & Emergency Centers (from GeoJSON)
-    - Urgent Care Centers (from GeoJSON)
-    - Pharmacies (Google Places API)
-    - Maternity Care (existing detailed component)
-    """
+    """Display healthcare access for a Fairfax County property."""
     st.markdown("## 🏥 Medical Access")
 
-    # Load facilities from GeoJSON
-    facilities = load_healthcare_facilities()
+    try:
+        from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
+        analyzer = FairfaxHealthcareAnalysis()
+        score = analyzer.calculate_healthcare_access_score(lat, lon)
 
-    # Load maternity data for count
-    maternity_data = load_maternity_hospitals()
-    maternity_hospitals = maternity_data.get('hospitals', []) if 'error' not in maternity_data else []
+        if not score:
+            st.info("Healthcare data not available for this location.")
+            return
 
-    # Search for pharmacies using Google Places API
-    from core.loudoun_places_analysis import search_nearby_places, PLACE_CATEGORIES
-    pharmacy_config = PLACE_CATEGORIES.get('pharmacy', {})
-    pharmacies, _ = search_nearby_places(
-        (lat, lon),
-        'pharmacy',
-        pharmacy_config.get('radius_miles', 5.0)
-    )
+        # Get all nearby facilities
+        all_nearby = analyzer.get_facilities_near_point(lat, lon, radius_miles=10.0)
+        hospitals = all_nearby[all_nearby['facility_type'] == 'hospital'].copy()
+        urgent_care_nearby = analyzer.get_facilities_near_point(lat, lon, radius_miles=3.0)
+        urgent_care = urgent_care_nearby[urgent_care_nearby['facility_type'] == 'urgent_care'].copy()
 
-    # Count by type
-    hospitals = [f for f in facilities if f.get('type') == 'H']
-    urgent_care = [f for f in facilities if f.get('type') == 'U']
+        # Summary metrics
+        breakdown = score.get('breakdown', {})
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Access Score", f"{score.get('score', 0)}/100")
+            st.caption(score.get('rating', ''))
+        with col2:
+            st.metric("Hospitals/ER", len(hospitals))
+        with col3:
+            st.metric("Urgent Care (3 mi)", len(urgent_care))
+        with col4:
+            nearest_dist = breakdown.get('nearest_hospital', {}).get('distance_miles')
+            st.metric("Nearest Hospital", f"{nearest_dist:.1f} mi" if nearest_dist else "N/A")
 
-    # Summary metrics (4 columns)
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Hospitals/ER", len(hospitals))
-    with col2:
-        st.metric("Urgent Care", len(urgent_care))
-    with col3:
-        st.metric("Pharmacies", len(pharmacies))
-    with col4:
-        st.metric("Maternity Hospitals", len(maternity_hospitals))
+        st.markdown("---")
 
-    st.markdown("---")
+        # ── Hospitals & Emergency subsection ──
+        st.markdown("### 🏥 Hospitals & Emergency")
 
-    # Subsection: Hospitals & Emergency
-    display_hospitals_subsection(facilities, lat, lon)
+        # Split CMS-rated hospitals from others
+        cms_hospitals = hospitals[hospitals['cms_rating'].notna()].copy()
+        other_facilities = hospitals[hospitals['cms_rating'].isna()].copy()
 
-    # Subsection: Urgent Care
-    display_urgent_care_subsection(facilities, lat, lon)
+        if len(cms_hospitals) > 0:
+            for _, h in cms_hospitals.iterrows():
+                name = h['name']
+                dist = h['distance_miles']
+                cms = h.get('cms_rating')
+                leap = h.get('leapfrog_grade')
+                address = h.get('address', '')
+                city = h.get('city', '')
+                phone = h.get('phone', '')
+                emergency = h.get('emergency_services')
+                htype = h.get('hospital_type', '')
+                leap_notes = h.get('leapfrog_notes', '')
 
-    # Subsection: Pharmacies
-    display_pharmacies_subsection(pharmacies)
+                # Build star display
+                stars = ''
+                if cms and not pd.isna(cms):
+                    stars = '⭐' * int(float(cms))
 
-    # Subsection: Maternity Care (existing component)
-    st.markdown("### 🍼 Maternity & Birthing Hospitals")
-    _display_maternity_content(lat, lon)
+                # Leapfrog badge
+                leap_badge = ''
+                if leap and str(leap) != 'nan':
+                    leap_badge = f" | Safety: **{leap}**"
 
-    # Healthcare access quality note
-    st.success("✅ **Excellent Healthcare Access** — Loudoun County ranks in the top 10% nationally for primary care physician availability, with approximately 1 physician per 1,350 residents.")
+                emergency_badge = " | 🚨 ER" if emergency == 'Yes' else ""
 
-    st.caption("Data: Loudoun County GIS, Leapfrog Group, CMS Hospital Compare, Google Places API")
+                with st.container():
+                    col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+
+                    with col1:
+                        st.markdown(f"**{name}**")
+                        st.caption(f"📍 {address}, {city}" if address else htype or '')
+
+                    with col2:
+                        if stars:
+                            st.markdown(f"{stars} ({int(float(cms))}/5)")
+                        else:
+                            st.markdown("Not rated")
+
+                    with col3:
+                        if leap and str(leap) != 'nan':
+                            st.markdown(f"Safety: **{leap}**")
+                            if leap_notes and str(leap_notes) != 'nan':
+                                st.caption(leap_notes)
+                        else:
+                            st.markdown("—")
+
+                    with col4:
+                        st.markdown(f"**{dist:.1f} mi**")
+                        if emergency == 'Yes':
+                            st.caption("🚨 ER")
+
+                    st.divider()
+
+        if len(other_facilities) > 0:
+            with st.expander(f"View {len(other_facilities)} Other Facilities (ERs, Specialty)", expanded=False):
+                for _, h in other_facilities.iterrows():
+                    name = h['name']
+                    dist = h['distance_miles']
+                    htype = h.get('hospital_type', '')
+                    address = h.get('address', '')
+                    city = h.get('city', '')
+                    label = htype if htype and str(htype) != 'nan' else 'Facility'
+                    st.markdown(f"**{name}** — {dist:.1f} mi")
+                    st.caption(f"{label} | {address}, {city}" if address else label)
+
+        # ── Urgent Care subsection ──
+        st.markdown("### 🩺 Urgent Care Centers")
+
+        if len(urgent_care) > 0:
+            # Show 3 nearest directly
+            top_uc = urgent_care.head(3)
+            for _, uc in top_uc.iterrows():
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.markdown(f"**{uc['name']}**")
+                    addr = uc.get('address', '')
+                    city = uc.get('city', '')
+                    st.caption(f"📍 {addr}, {city}" if addr else '')
+                with col2:
+                    st.markdown(f"**{uc['distance_miles']:.1f} mi**")
+
+            # Rest in expander
+            if len(urgent_care) > 3:
+                remaining = urgent_care.iloc[3:]
+                with st.expander(f"View {len(remaining)} More Urgent Care Centers"):
+                    uc_display = remaining[['name', 'address', 'city', 'distance_miles']].copy()
+                    uc_display['distance_miles'] = uc_display['distance_miles'].round(2)
+                    uc_display.columns = ['Name', 'Address', 'City', 'Distance (mi)']
+                    st.dataframe(uc_display, use_container_width=True, hide_index=True)
+        else:
+            st.info("No urgent care centers found within 3 miles.")
+
+        st.caption("Source: Fairfax County GIS, CMS Hospital Compare, Leapfrog Group")
+
+    except Exception as e:
+        st.warning(f"Medical access analysis unavailable: {e}")
 
 
 def _display_maternity_content(lat: float, lon: float):
@@ -3788,89 +3909,295 @@ Lower rates generally indicate fewer unnecessary C-sections, but individual medi
         """)
 
 
+# =============================================================================
+# SECTION: DEVELOPMENT ACTIVITY & BUILDING PERMITS
+# =============================================================================
+
+
+def _create_permits_map(permits_df, property_lat: float, property_lon: float):
+    """Create Folium map of recent permits, color-coded by category.
+
+    Colors:
+        Green:  Residential New Construction
+        Blue:   Commercial New Construction
+        Orange: Residential Renovation
+        Gray:   Commercial Renovation
+    """
+    if not FOLIUM_AVAILABLE or permits_df.empty:
+        return None
+
+    m = folium.Map(
+        location=[property_lat, property_lon],
+        zoom_start=13,
+        tiles='cartodbpositron'
+    )
+
+    # Property marker
+    folium.Marker(
+        location=[property_lat, property_lon],
+        popup='<b>Subject Property</b>',
+        icon=folium.Icon(color='red', icon='home', prefix='fa')
+    ).add_to(m)
+
+    color_map = {
+        'residential_new': '#22c55e',
+        'commercial_new': '#3b82f6',
+        'residential_renovation': '#f97316',
+        'commercial_renovation': '#6b7280',
+    }
+
+    for _, permit in permits_df.iterrows():
+        category = permit.get('permit_category', 'other')
+        color = color_map.get(category, '#6b7280')
+
+        issued = permit.get('issued_date')
+        date_str = issued.strftime('%Y-%m-%d') if pd.notna(issued) else 'N/A'
+        address = permit.get('address', 'Address not available')
+        link = permit.get('link_url', '')
+
+        popup_html = (
+            f"<div style='width:220px'>"
+            f"<b>{permit.get('permit_type', 'Unknown')}</b><br>"
+            f"<i>{date_str}</i><br>"
+            f"{address}<br>"
+        )
+        if link and str(link) != 'nan':
+            popup_html += f"<br><a href='{link}' target='_blank'>View on Fairfax Portal</a>"
+        popup_html += "</div>"
+
+        folium.CircleMarker(
+            location=[permit['centroid_lat'], permit['centroid_lon']],
+            radius=5,
+            popup=folium.Popup(popup_html, max_width=250),
+            color=color,
+            fill=True,
+            fillColor=color,
+            fillOpacity=0.7,
+            weight=1,
+        ).add_to(m)
+
+    return m
+
+
 def display_development_section(lat: float, lon: float):
-    """Display development and infrastructure section."""
-    st.markdown("## 📊 Neighborhood Development & Infrastructure")
+    """Display neighborhood development activity and building permits."""
+    st.markdown("## 🏗 Neighborhood Development Activity")
 
-    dev_data = analyze_development(lat, lon)
+    try:
+        from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 
-    if 'error' in dev_data:
-        st.warning(f"Development analysis unavailable: {dev_data['error']}")
-        return
+        analyzer = FairfaxPermitsAnalysis()
 
-    # Key metrics
-    col1, col2, col3, col4 = st.columns(4)
+        # Adaptive radius: expand until we find >= 20 permits (or hit 5mi)
+        radius = 2.0
+        permits_24mo = analyzer.get_permits_near_point(
+            lat, lon, radius_miles=radius, months_back=24
+        )
+        if len(permits_24mo) < 20:
+            radius = 3.0
+            permits_24mo = analyzer.get_permits_near_point(
+                lat, lon, radius_miles=radius, months_back=24
+            )
+        if len(permits_24mo) < 20:
+            radius = 5.0
+            permits_24mo = analyzer.get_permits_near_point(
+                lat, lon, radius_miles=radius, months_back=24
+            )
 
-    with col1:
-        st.metric("Total Permits (2 mi)", f"{dev_data['total_permits']:,}")
+        # 6-month window for map
+        permits_6mo = analyzer.get_permits_near_point(
+            lat, lon, radius_miles=radius, months_back=6
+        )
 
-    with col2:
-        value_millions = dev_data['total_value'] / 1_000_000
-        st.metric("Construction Value", f"${value_millions:.1f}M")
+        # Development pressure (recalibrated)
+        pressure = analyzer.calculate_development_pressure(
+            lat, lon, radius_miles=radius, months_back=24
+        )
+        score = pressure.get('score', 0)
+        rating = pressure.get('rating', 'Unknown')
+        trend = pressure.get('trend', 'insufficient_data')
 
-    with col3:
-        st.metric("Recent (6 mo)", f"{dev_data['recent_count']:,}")
+        # Counts
+        new_construction = permits_24mo[
+            permits_24mo['permit_category'].isin(['residential_new', 'commercial_new'])
+        ]
+        active_districts = permits_24mo['development_center'].dropna()
+        active_districts = active_districts[active_districts != '']
+        n_districts = active_districts.nunique()
 
-    with col4:
-        st.metric("Tech Infrastructure", f"{dev_data['infrastructure_count']:,}")
-
-    # Map
-    if FOLIUM_AVAILABLE and not dev_data['nearby_permits'].empty:
-        st.markdown("### Development Activity Map")
-
-        # Legend
-        st.markdown("""
-        <small>🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other Construction</small>
-        """, unsafe_allow_html=True)
-
-        m = create_development_map(lat, lon, dev_data['nearby_permits'])
-        st_folium(m, width=None, height=450, returned_objects=[])
-
-    # Loudoun's Data Center Economy
-    if dev_data['datacenter_count'] > 0 or dev_data['fiber_count'] > 0:
-        st.markdown("---")
-        st.markdown("### 💡 Loudoun's Data Center Economy")
-
-        col1, col2 = st.columns([2, 1])
-
+        # ── 4-column metrics ──
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.markdown(f"""
-            This property is located in the world's largest data center market.
-
-            **Tech Infrastructure Within 2 Miles:**
-            - 🏢 Data Center Projects: **{dev_data['datacenter_count']}**
-            - 📡 Fiber/Telecom Projects: **{dev_data['fiber_count']}**
-            - 💰 Total Tech Investment: **${dev_data['total_value']/1e6:.1f}M**
-
-            **Why This Matters:**
-            - Robust fiber connectivity infrastructure
-            - Stable tech sector employment nearby
-            - Property values supported by commercial investment
-            - World-class internet infrastructure
-            """)
-
+            st.metric("Development Pressure", f"{score}/100")
+            color = {'Very High': '🔴', 'High': '🟠', 'Moderate': '🟡',
+                     'Low': '🟢', 'No Activity': '⚪'}.get(rating, '')
+            st.caption(f"{color} {rating}")
         with col2:
-            # Simple pie chart of permit types
-            if PLOTLY_AVAILABLE:
-                nearby = dev_data['nearby_permits']
-                infra = len(nearby[nearby['is_infrastructure'] == True])
-                other = len(nearby) - infra
+            st.metric("Permit Activity", f"{len(permits_24mo):,}")
+            st.caption(f"Last 24 months · {radius:.0f} mi radius")
+        with col3:
+            st.metric("New Construction", len(new_construction))
+            st.caption("New buildings (24 mo)")
+        with col4:
+            trend_icon = {'increasing': '📈', 'decreasing': '📉',
+                          'stable': '➡️'}.get(trend, 'ℹ️')
+            st.metric("Trend", f"{trend_icon} {trend.title()}")
+            st.caption("12-month comparison")
 
-                if infra > 0:
-                    fig = go.Figure(data=[go.Pie(
-                        labels=['Tech Infrastructure', 'Other'],
-                        values=[infra, other],
-                        hole=0.4,
-                        marker_colors=['#6366f1', '#22c55e']
-                    )])
-                    fig.update_layout(
-                        showlegend=True,
-                        height=250,
-                        margin=dict(l=20, r=20, t=20, b=20)
-                    )
-                    st.plotly_chart(fig, width='stretch')
+        if radius > 2.0:
+            st.caption(
+                f"ℹ️ Search radius expanded to {radius:.0f} miles "
+                f"(fewer than 20 permits within 2 miles — property is near "
+                f"the county boundary)."
+            )
 
-    st.markdown("---")
+        # ── Development narrative ──
+        st.markdown("### Development Overview")
+
+        if len(permits_24mo) == 0:
+            st.info(
+                f"**Minimal Development Activity** — No building permits issued "
+                f"within {radius:.0f} miles in the past 24 months. This is a very "
+                f"stable, established neighborhood."
+            )
+            st.caption("Source: Fairfax County PLUS Permit Portal, Fairfax County GIS")
+            return  # nothing else to show
+
+        if score >= 70:
+            st.warning(
+                f"**Very High Development Pressure** — {len(permits_24mo):,} permits "
+                f"in 24 months, including {len(new_construction)} new construction "
+                f"projects. Expect ongoing construction activity and neighborhood "
+                f"evolution."
+            )
+        elif score >= 50:
+            st.info(
+                f"**High Development Activity** — {len(permits_24mo):,} permits in "
+                f"24 months with {len(new_construction)} new construction projects "
+                f"alongside renovations."
+            )
+        elif score >= 30:
+            st.success(
+                f"**Moderate Development** — Steady activity with "
+                f"{len(permits_24mo):,} permits over 24 months, including "
+                f"{len(new_construction)} new construction projects."
+            )
+        else:
+            st.success(
+                f"**Low Development Pressure** — Limited activity with "
+                f"{len(permits_24mo):,} permits. This is a relatively stable "
+                f"neighborhood."
+            )
+
+        # ── Active planning districts ──
+        if n_districts > 0:
+            st.markdown("### Active Planning Districts")
+            district_counts = active_districts.value_counts().head(5)
+            for district, count in district_counts.items():
+                pct = count / len(permits_24mo) * 100
+                st.markdown(f"**{district}:** {count} permits ({pct:.0f}%)")
+
+            with st.expander("ℹ️ What are Planning Districts?"):
+                st.markdown(
+                    "**Planning Districts** (officially *Development Centers*) are "
+                    "designated growth areas in Fairfax County's Comprehensive Plan. "
+                    "They receive focused infrastructure investment and coordinated "
+                    "planning. Examples include Dulles Route 28 Corridor, Herndon "
+                    "Transit Station Area, and Tysons Corner Urban Center."
+                )
+
+        # ── Permit map (last 6 months) ──
+        st.markdown("### Recent Construction Activity Map")
+        st.caption(f"Showing {len(permits_6mo):,} permits from the last 6 months")
+
+        if len(permits_6mo) > 0 and FOLIUM_AVAILABLE:
+            permit_map = _create_permits_map(permits_6mo, lat, lon)
+            if permit_map:
+                st_folium(permit_map, width=None, height=450, returned_objects=[])
+
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.markdown("🟢 **Residential New**")
+            with col2:
+                st.markdown("🔵 **Commercial New**")
+            with col3:
+                st.markdown("🟠 **Residential Reno**")
+            with col4:
+                st.markdown("⚫ **Commercial Reno**")
+        elif not FOLIUM_AVAILABLE:
+            st.info("Map display requires the folium package.")
+        else:
+            st.info(f"No permits issued in the last 6 months within {radius:.0f} miles.")
+
+        # ── Permit type breakdown ──
+        st.markdown("### Permit Type Breakdown (24 Months)")
+        type_counts = permits_24mo['permit_type'].value_counts()
+        cols = st.columns(2)
+        for idx, (ptype, count) in enumerate(type_counts.items()):
+            with cols[idx % 2]:
+                pct = count / len(permits_24mo) * 100
+                st.markdown(f"**{ptype}:** {count} ({pct:.0f}%)")
+
+        # ── Yearly trend chart ──
+        if PLOTLY_AVAILABLE:
+            trends = analyzer.get_permit_trends(
+                lat, lon, radius_miles=radius, months_back=48
+            )
+            yearly = trends.get('yearly', {})
+            if len(yearly) >= 2:
+                st.markdown("### Permit Activity by Year")
+                by_cat = trends.get('by_major_category', {})
+                chart_rows = []
+                for year in sorted(yearly.keys()):
+                    cats = by_cat.get(year, {})
+                    chart_rows.append({
+                        'Year': str(int(year)),
+                        'Residential': cats.get('residential', 0),
+                        'Commercial': cats.get('commercial', 0),
+                    })
+                chart_df = pd.DataFrame(chart_rows)
+                fig = go.Figure()
+                fig.add_trace(go.Bar(
+                    x=chart_df['Year'], y=chart_df['Residential'],
+                    name='Residential', marker_color='#22c55e'
+                ))
+                fig.add_trace(go.Bar(
+                    x=chart_df['Year'], y=chart_df['Commercial'],
+                    name='Commercial', marker_color='#3b82f6'
+                ))
+                fig.update_layout(
+                    barmode='stack', height=300,
+                    margin=dict(l=40, r=20, t=20, b=40),
+                    legend=dict(orientation='h', y=-0.15),
+                    yaxis_title='Permits',
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        # ── Full permit table ──
+        with st.expander(f"📋 View All {len(permits_24mo):,} Permits (24 Months)"):
+            tbl = permits_24mo.copy()
+            tbl = tbl.sort_values('issued_date', ascending=False)
+            tbl['Issued'] = tbl['issued_date'].dt.strftime('%Y-%m-%d')
+            tbl['Dist'] = tbl['distance_miles'].round(2).astype(str) + ' mi'
+
+            display_cols = ['Issued', 'permit_type', 'address', 'city',
+                            'development_center', 'Dist']
+            col_names = ['Date', 'Type', 'Address', 'City',
+                         'Planning District', 'Distance']
+
+            show = tbl[display_cols].copy()
+            show.columns = col_names
+            st.dataframe(show, use_container_width=True, hide_index=True)
+
+        st.caption(
+            f"Source: Fairfax County Permit Portal (PLUS System), "
+            f"Fairfax County GIS | Search radius: {radius:.0f} miles"
+        )
+
+    except FileNotFoundError:
+        st.info("Building permits data not available.")
+    except Exception as e:
+        st.warning(f"Development analysis unavailable: {e}")
 
 
 # =============================================================================
@@ -3982,43 +4309,45 @@ This indicates {"active" if total_permits > 20 else "moderate" if total_permits 
             st.caption("Source: Fairfax County GIS, 2025")
 
         # Development Pressure (based on building permits)
-        with st.expander("🔮 Development Pressure", expanded=False):
-            try:
-                permits_analyzer = FairfaxPermitsAnalysis()
-                dev_pressure = permits_analyzer.calculate_development_pressure(lat, lon, radius_miles=1.0, months_back=24)
+        # Only show section if meaningful permit data is available
+        try:
+            permits_analyzer = FairfaxPermitsAnalysis()
+            dev_pressure = permits_analyzer.calculate_development_pressure(lat, lon, radius_miles=1.0, months_back=24)
+            score = dev_pressure.get('score', 0)
+            trend = dev_pressure.get('trend', 'stable')
 
-                score = dev_pressure.get('score', 0)
-                trend = dev_pressure.get('trend', 'stable')
+            # Skip entire section if data is insufficient
+            if trend != 'insufficient_data' and (score > 0 or dev_pressure.get('total_permits', 0) > 0):
+                with st.expander("🔮 Development Pressure", expanded=False):
+                    # Display score with color
+                    if score < 25:
+                        color = "🟢"
+                        level = "Low"
+                    elif score < 50:
+                        color = "🟡"
+                        level = "Moderate"
+                    elif score < 75:
+                        color = "🟠"
+                        level = "High"
+                    else:
+                        color = "🔴"
+                        level = "Very High"
 
-                # Display score with color
-                if score < 25:
-                    color = "🟢"
-                    level = "Low"
-                elif score < 50:
-                    color = "🟡"
-                    level = "Moderate"
-                elif score < 75:
-                    color = "🟠"
-                    level = "High"
-                else:
-                    color = "🔴"
-                    level = "Very High"
+                    st.markdown(f"{color} **Development Pressure:** {score}/100 ({level})")
+                    st.markdown(f"**Trend:** {trend.title()}")
 
-                st.markdown(f"{color} **Development Pressure:** {score}/100 ({level})")
-                st.markdown(f"**Trend:** {trend.title()}")
+                    # Show current status
+                    st.markdown("**Current Status:**")
+                    st.markdown(f"• Zoned: {zone_code} ({zone_type_desc})")
 
-                # Show current status
-                st.markdown("**Current Status:**")
-                st.markdown(f"• Zoned: {zone_code} ({zone_type_desc})")
+                    # Score breakdown
+                    breakdown = dev_pressure.get('breakdown', {})
+                    if breakdown:
+                        st.markdown("**Score Factors:**")
+                        for factor, value in breakdown.items():
+                            st.markdown(f"• {factor.replace('_', ' ').title()}: {value}")
 
-                # Score breakdown
-                breakdown = dev_pressure.get('breakdown', {})
-                if breakdown:
-                    st.markdown("**Score Factors:**")
-                    for factor, value in breakdown.items():
-                        st.markdown(f"• {factor.replace('_', ' ').title()}: {value}")
-
-                st.markdown("""
+                    st.markdown("""
 ---
 **What This Means:**
 
@@ -4030,8 +4359,8 @@ which may signal:
 - **Moderate (30-59):** Healthy development activity, typical suburban growth
 - **Low (0-29):** Established, stable neighborhood with minimal new construction
 """)
-            except Exception as e:
-                st.caption("💡 Development pressure data unavailable")
+        except Exception:
+            pass  # Silently skip if permits data unavailable
 
     except Exception as e:
         st.warning(f"Zoning analysis error: {str(e)}")
@@ -4898,8 +5227,8 @@ def render_report(address: str, lat: float, lon: float):
         # # Location Quality
         # display_location_section(data['location'], data.get('power_lines', {}), data.get('metro', {}), data.get('flood_zone', {}), data.get('parks', {}), lat, lon)
 
-        # # Cell Tower Coverage
-        # display_cell_towers_section(lat, lon)
+        # Cell Tower Coverage (rewired to Fairfax module)
+        display_cell_towers_section(lat, lon)
 
         # # Neighborhood Amenities
         # display_neighborhood_section(data.get('neighborhood', {}))
@@ -4922,11 +5251,11 @@ def render_report(address: str, lat: float, lon: float):
         # if ECONOMIC_INDICATORS_AVAILABLE:
         #     display_economic_indicators_section()
 
-        # # Medical Access (Hospitals, Urgent Care, Maternity)
-        # display_medical_access_section(lat, lon)
+        # Medical Access (rewired to Fairfax module)
+        display_medical_access_section(lat, lon)
 
-        # # Development & Infrastructure (uses 2mi data from display_development_section)
-        # display_development_section(lat, lon)
+        # Development Activity & Building Permits
+        display_development_section(lat, lon)
 
         # # Valuation (now includes MLS sqft lookup)
         # display_valuation_section(address, lat, lon, sqft_result)

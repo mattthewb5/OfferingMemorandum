@@ -1515,7 +1515,7 @@ def display_crime_section(lat: float, lon: float):
         st.markdown(f"*{date_range_text}*")
 
         # Calculate safety score
-        safety_score = crime_analyzer.calculate_safety_score(lat, lon, radius_miles=0.5)
+        safety_score = crime_analyzer.calculate_safety_score(lat, lon, radius_miles=2.0)
 
         if safety_score:
             score = safety_score.get('score', 0)
@@ -1536,7 +1536,7 @@ def display_crime_section(lat: float, lon: float):
             # Crime breakdown
             breakdown = safety_score.get('breakdown', {})
             if breakdown:
-                st.markdown("### Crime Breakdown (0.5 mile radius)")
+                st.markdown("### Crime Breakdown (2.0 mile radius)")
 
                 col1, col2, col3 = st.columns(3)
                 with col1:

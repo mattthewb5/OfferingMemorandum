@@ -402,12 +402,54 @@ from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 from core.api_config import get_api_key
 from core.loudoun_school_performance import (
     load_performance_data as load_performance_with_state_avg,
-    load_school_coordinates,
+    load_school_coordinates as _load_loudoun_school_coordinates,
     find_peer_schools,
-    create_performance_chart,
+    create_performance_chart as _loudoun_create_performance_chart,
     normalize_school_name,
-    match_school_in_performance_data
+    match_school_in_performance_data as _loudoun_match_school_in_performance_data
 )
+
+# Fairfax wrappers: override county filter from 'Loudoun County' to 'Fairfax County'
+def create_performance_chart(subject_school, peer_schools, metric_name, metric_col, school_type, perf_df):
+    return _loudoun_create_performance_chart(
+        subject_school, peer_schools, metric_name, metric_col, school_type, perf_df,
+        division_name='Fairfax County'
+    )
+
+def match_school_in_performance_data(school_name, perf_df):
+    return _loudoun_match_school_in_performance_data(
+        school_name, perf_df, division_name='Fairfax County'
+    )
+
+
+def load_school_coordinates() -> 'pd.DataFrame':
+    """Load Fairfax school coordinates from the facilities parquet.
+
+    Returns a DataFrame with columns matching the Loudoun format
+    (School_Name, School_Type, Latitude, Longitude) so find_peer_schools()
+    works unchanged.
+    """
+    import pandas as _pd
+    facilities_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'data', 'fairfax', 'schools', 'processed', 'facilities.parquet'
+    )
+    try:
+        df = _pd.read_parquet(facilities_path)
+        # Map school_type to the format find_peer_schools() expects
+        type_map = {'ES': 'Elem', 'MS': 'Middle', 'HS': 'High'}
+        df = df[df['school_type'].isin(type_map.keys())].copy()
+        df['School_Type'] = df['school_type'].map(type_map)
+        # Build School_Name with suffix for VDOE matching
+        suffix_map = {'ES': ' Elementary', 'MS': ' Middle', 'HS': ' High'}
+        df['School_Name'] = df.apply(
+            lambda r: r['school_name'] + suffix_map.get(r['school_type'], ''), axis=1
+        )
+        df = df.rename(columns={'latitude': 'Latitude', 'longitude': 'Longitude'})
+        return df[['School_Name', 'School_Type', 'Latitude', 'Longitude']].reset_index(drop=True)
+    except Exception as e:
+        print(f"Error loading Fairfax school coordinates: {e}")
+        return _load_loudoun_school_coordinates()  # Fallback
 from core.loudoun_places_analysis import analyze_neighborhood
 from core.loudoun_traffic_volume import LoudounTrafficVolumeAnalyzer
 from core.loudoun_narrative_generator import compile_narrative_data, generate_property_narrative
@@ -1059,6 +1101,66 @@ def check_flood_zone(lat: float, lon: float) -> Dict[str, Any]:
         }
 
 
+# Known short-name expansions for Fairfax schools where the GIS boundary
+# data stores only a surname or abbreviation that differs from the official name.
+_FAIRFAX_SCHOOL_NAME_EXPANSIONS = {
+    "Carson": "Rachel Carson",
+    "Poe": "Edgar Allan Poe",
+    "Whitman": "Walt Whitman",
+    "Twain": "Mark Twain",
+    "Key": "Francis Scott Key",
+    "Sandburg": "Carl Sandburg",
+    "Thoreau": "Henry David Thoreau",
+    "Edison": "Thomas Edison",
+    "Jefferson": "Thomas Jefferson",
+    "Jackson": "Andrew Jackson",
+    "Kennedy": "John F. Kennedy",
+    "Luther Jackson": "Luther Jackson",
+    "Robinson": "Robinson",
+    "Stuart": "J.E.B. Stuart",
+    "Lee": "Robert E. Lee",
+    "Holmes": "Oliver Wendell Holmes",
+    "Kilmer": "Joyce Kilmer",
+    "Frost": "Robert Frost",
+    "Longfellow": "Henry Wadsworth Longfellow",
+    "Whitman": "Walt Whitman",
+}
+
+_LEVEL_SUFFIXES = {
+    'elementary': 'Elementary School',
+    'middle': 'Middle School',
+    'high': 'High School',
+}
+
+
+def expand_fairfax_school_name(short_name: str, level: str) -> str:
+    """Expand abbreviated GIS school name to full official name.
+
+    The Fairfax GIS boundary parquet files store only the base name
+    (e.g. 'Oak Hill', 'Carson', 'Westfield'). This function constructs
+    the full display name by applying known expansions and appending the
+    school-level suffix.
+
+    Args:
+        short_name: Raw school_name from GIS parquet (e.g. "Oak Hill")
+        level: One of 'elementary', 'middle', 'high'
+
+    Returns:
+        Full school name (e.g. "Oak Hill Elementary School")
+    """
+    if not short_name:
+        return short_name
+
+    # Apply known name expansions (e.g. "Carson" → "Rachel Carson")
+    expanded = _FAIRFAX_SCHOOL_NAME_EXPANSIONS.get(short_name, short_name)
+
+    # Append school level suffix
+    suffix = _LEVEL_SUFFIXES.get(level, '')
+    if suffix:
+        return f"{expanded} {suffix}"
+    return expanded
+
+
 def find_assigned_schools(lat: float, lon: float) -> Dict[str, str]:
     """Find assigned schools for a location using Fairfax school zones."""
     # Use Fairfax class-based module
@@ -1069,10 +1171,13 @@ def find_assigned_schools(lat: float, lon: float) -> Dict[str, str]:
         result = schools_analyzer.get_assigned_schools(lat, lon)
 
         if result:
+            elem_name = result.get('elementary', {}).get('school_name') if result.get('elementary') else None
+            mid_name = result.get('middle', {}).get('school_name') if result.get('middle') else None
+            high_name = result.get('high', {}).get('school_name') if result.get('high') else None
             return {
-                'elementary': result.get('elementary', {}).get('school_name') if result.get('elementary') else None,
-                'middle': result.get('middle', {}).get('school_name') if result.get('middle') else None,
-                'high': result.get('high', {}).get('school_name') if result.get('high') else None,
+                'elementary': expand_fairfax_school_name(elem_name, 'elementary') if elem_name else None,
+                'middle': expand_fairfax_school_name(mid_name, 'middle') if mid_name else None,
+                'high': expand_fairfax_school_name(high_name, 'high') if high_name else None,
                 '_raw': result  # Keep raw data for additional details
             }
     except Exception as e:
@@ -1124,11 +1229,18 @@ def display_schools_section(lat: float, lon: float):
     assignments = find_assigned_schools(lat, lon)
     performance_df = load_school_performance()
 
+    # Short display names for the metric cards (strip level suffix)
+    def _short_name(full_name, level):
+        suffix = _LEVEL_SUFFIXES.get(level, '')
+        if suffix and full_name and full_name.endswith(suffix):
+            return full_name[:-len(suffix)].strip()
+        return full_name
+
     # Display assigned schools
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Elementary School", assignments['elementary'] or "N/A")
+        st.metric("Elementary School", _short_name(assignments['elementary'], 'elementary') or "N/A")
         if assignments['elementary']:
             perf = get_school_performance(assignments['elementary'], performance_df)
             if perf:
@@ -1138,7 +1250,7 @@ def display_schools_section(lat: float, lon: float):
                 )
 
     with col2:
-        st.metric("Middle School", assignments['middle'] or "N/A")
+        st.metric("Middle School", _short_name(assignments['middle'], 'middle') or "N/A")
         if assignments['middle']:
             perf = get_school_performance(assignments['middle'], performance_df)
             if perf:
@@ -1148,7 +1260,7 @@ def display_schools_section(lat: float, lon: float):
                 )
 
     with col3:
-        st.metric("High School", assignments['high'] or "N/A")
+        st.metric("High School", _short_name(assignments['high'], 'high') or "N/A")
         if assignments['high']:
             perf = get_school_performance(assignments['high'], performance_df)
             if perf:
@@ -1229,7 +1341,7 @@ def display_schools_section(lat: float, lon: float):
     # School Performance Comparison with State Average and Peer Schools
     if PLOTLY_AVAILABLE:
         with st.expander("📊 School Performance vs State & Peers", expanded=False):
-            st.markdown("Compare assigned schools to Virginia state averages and nearest peer schools in Loudoun County.")
+            st.markdown("Compare assigned schools to Virginia state averages and nearby peer schools.")
 
             try:
                 # Load enhanced performance data with state averages
@@ -4517,6 +4629,75 @@ def display_ai_analysis(
 
 
 # =============================================================================
+# SECTION: TRANSIT / TRANSPORTATION
+# =============================================================================
+
+def display_transit_section(lat: float, lon: float):
+    """Display transit accessibility for Fairfax County properties.
+
+    Uses FairfaxTransitAnalysis to show Metro station proximity,
+    bus route coverage, and an overall transit score.
+    """
+    st.markdown("## 🚇 Transit & Transportation")
+
+    try:
+        transit = FairfaxTransitAnalysis()
+    except Exception as e:
+        st.warning(f"Transit data not available: {e}")
+        return
+
+    try:
+        # Get transit score and metro info
+        transit_score = transit.calculate_transit_score(lat, lon)
+        nearest_metro = transit.get_nearest_metro_station(lat, lon)
+        bus_routes = transit.get_nearby_bus_routes(lat, lon, radius_miles=0.5, limit=5)
+
+        # --- Score and Metro metrics row ---
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            rating = transit_score.get('rating', 'N/A').title()
+            st.metric("Transit Score", f"{transit_score.get('score', 0)}/100", help=f"Rating: {rating}")
+        with col2:
+            station = nearest_metro.get('station_name', 'N/A')
+            st.metric("Nearest Metro", station)
+        with col3:
+            dist = nearest_metro.get('distance_miles', 0)
+            st.metric("Metro Distance", f"{dist:.1f} mi")
+        with col4:
+            walk = nearest_metro.get('walk_time_minutes', 0)
+            st.metric("Walk to Metro", f"{walk} min" if walk else "N/A")
+
+        # --- Score breakdown ---
+        breakdown = transit_score.get('breakdown', {})
+        if breakdown:
+            with st.expander("Transit Score Breakdown", expanded=False):
+                b1, b2, b3 = st.columns(3)
+                with b1:
+                    st.metric("Metro Access", f"{breakdown.get('metro_access', 0)}/50")
+                with b2:
+                    st.metric("Bus Coverage", f"{breakdown.get('bus_coverage', 0)}/30")
+                with b3:
+                    st.metric("Service Variety", f"{breakdown.get('service_variety', 0)}/20")
+
+        # --- Nearby bus routes ---
+        if bus_routes:
+            with st.expander(f"Nearby Bus Routes ({len(bus_routes)} within 0.5 mi)", expanded=False):
+                for route in bus_routes:
+                    st.markdown(
+                        f"**{route['route_number']}** — {route['route_name']} "
+                        f"({route['service_type']}, {route['distance_miles']:.2f} mi)"
+                    )
+
+        st.caption("Source: WMATA Metro Stations, Fairfax Connector Bus Routes, Fairfax County GIS")
+
+    except Exception as e:
+        st.warning(f"Transit analysis error: {e}")
+        import traceback
+        with st.expander("Error Details"):
+            st.code(traceback.format_exc())
+
+
+# =============================================================================
 # SECTION: FOOTER
 # =============================================================================
 
@@ -4535,31 +4716,31 @@ def display_footer():
 | Monthly Unemployment | Bureau of Labor Statistics - Local Area Unemployment Statistics |
 | Labor Force Participation | U.S. Census Bureau - ACS 5-Year Estimates |
 | Industry Employment | U.S. Census Bureau - ACS 5-Year Estimates |
-| Major Employers | Loudoun County ACFR (2008-2025) |
-| Schools | Loudoun County Public Schools (LCPS) Boundaries |
+| Major Employers | Fairfax County ACFR (2008-2025) |
+| Schools | Fairfax County Public Schools (FCPS) / Fairfax County GIS |
 | School Performance | Virginia Department of Education - SOL 5-Year Trends |
-| Building Permits | Loudoun County Permit Portal (Apr 2024 - Present) |
+| Building Permits | Fairfax County Permit Portal |
 | Traffic Volume | VDOT Bidirectional Traffic Volume Database |
-| Metro Access | WMATA Silver Line Stations / Loudoun County GeoHub |
-| Power Infrastructure | Loudoun County Major Power Lines (GIS) |
-| Cell Towers | Loudoun County Telecom Towers (GIS) + FCC Registration Database |
-| Medical Facilities | Loudoun County GIS, CMS Hospital Compare, Leapfrog Group |
+| Metro Access | WMATA Metro Stations / Fairfax County GIS |
+| Power Infrastructure | Fairfax County Power Infrastructure (GIS) |
+| Cell Towers | Fairfax County Telecom Towers (GIS) + FCC Registration Database |
+| Medical Facilities | Fairfax County GIS, CMS Hospital Compare, Leapfrog Group |
 | Pharmacies | Google Places API |
 | Neighborhood Amenities | Google Places API (Real-time) |
 | Travel Times | Google Distance Matrix API |
 | Parks & Recreation | Google Places API |
-| GIS Data | Loudoun County Official Shapefiles |
-| Road Network | Loudoun Street Centerline GIS |
-| Zoning | Loudoun County Zoning Districts (GIS) |
-| Airport Zones | Airport Impact Overlay Districts (Jan 2023) |
-| Flood Zones | FEMA Flood Insurance Rate Map (via Loudoun GIS) |
+| GIS Data | Fairfax County Official Shapefiles |
+| Road Network | Fairfax County Roadway Centerlines GIS |
+| Zoning | Fairfax County Zoning Districts (GIS) |
+| Airport Zones | Fairfax County Airport Overlay Districts |
+| Flood Zones | FEMA Flood Insurance Rate Map (via Fairfax County GIS) |
 | Community Data | NewCo Private Research, RentCast API |
 
 **Analysis Date:** {datetime.now().strftime('%B %d, %Y')}
 
 ---
 
-*Loudoun County Property Intelligence Platform*
+*Fairfax County Property Intelligence Platform*
 *Professional Real Estate Analysis*
 """)
 
@@ -4702,6 +4883,9 @@ def render_report(address: str, lat: float, lon: float):
         # Zoning
         display_zoning_section(address, lat, lon)
 
+        # Transit & Transportation (Fairfax-specific module)
+        display_transit_section(lat, lon)
+
         # =========================================================================
         # END OF PHASE 1 SECTIONS
         # =========================================================================
@@ -4723,12 +4907,16 @@ def render_report(address: str, lat: float, lon: float):
         # # Community & HOA Information
         # display_community_section(data.get('valuation', {}), lat, lon)
 
-        # # Area Demographics (Census data)
-        # demographics_data = None
-        # if DEMOGRAPHICS_AVAILABLE:
-        #     st.markdown("## 📈 Area Demographics")
-        #     demographics_data = calculate_demographics(lat, lon, address)
-        #     display_demographics_section(demographics_data, st)
+        # Area Demographics (Census data — Fairfax County FIPS 51059)
+        demographics_data = None
+        if DEMOGRAPHICS_AVAILABLE:
+            st.markdown("## 📈 Area Demographics")
+            demographics_data = calculate_demographics(
+                lat, lon, address,
+                county_fips='059',
+                county_name='Fairfax County, VA'
+            )
+            display_demographics_section(demographics_data, st)
 
         # # Economic Indicators (LFPR, Industry Mix, Major Employers)
         # if ECONOMIC_INDICATORS_AVAILABLE:

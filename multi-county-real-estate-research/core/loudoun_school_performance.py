@@ -231,7 +231,7 @@ def find_peer_schools(
     return distances[:n]
 
 
-def match_school_in_performance_data(school_name: str, perf_df: pd.DataFrame) -> Optional[str]:
+def match_school_in_performance_data(school_name: str, perf_df: pd.DataFrame, division_name: str = 'Loudoun County') -> Optional[str]:
     """
     Find matching school name in performance data using priority matching.
 
@@ -273,8 +273,8 @@ def match_school_in_performance_data(school_name: str, perf_df: pd.DataFrame) ->
         >>> match_school_in_performance_data("Steuart Weller Elementary", perf_df)
         "Steuart W. Weller Elementary"  # Normalized exact match (Priority 2)
     """
-    # Get unique school names from Loudoun County
-    loudoun_schools = perf_df[perf_df['Division_Name'] == 'Loudoun County']['School_Name'].unique()
+    # Get unique school names from the specified county
+    loudoun_schools = perf_df[perf_df['Division_Name'] == division_name]['School_Name'].unique()
 
     # Priority 1: Literal exact match (case-insensitive)
     # Catches: "Riverside High" exactly (not "Riverside Elementary")
@@ -309,7 +309,8 @@ def create_performance_chart(
     metric_name: str,
     metric_col: str,
     school_type: str,
-    perf_df: pd.DataFrame
+    perf_df: pd.DataFrame,
+    division_name: str = 'Loudoun County'
 ) -> Optional[px.line]:
     """
     Create line chart comparing school performance.
@@ -337,11 +338,11 @@ def create_performance_chart(
     target_type = type_mapping.get(school_type, school_type)
 
     # 1. Get subject school data
-    subject_match = match_school_in_performance_data(subject_school, perf_df)
+    subject_match = match_school_in_performance_data(subject_school, perf_df, division_name=division_name)
     if subject_match:
         subject_data = perf_df[
             (perf_df['School_Name'] == subject_match) &
-            (perf_df['Division_Name'] == 'Loudoun County')
+            (perf_df['Division_Name'] == division_name)
         ]
         for _, row in subject_data.iterrows():
             if pd.notna(row.get(metric_col)):
@@ -366,11 +367,11 @@ def create_performance_chart(
 
     # 3. Get peer school data
     for peer_name, peer_dist in peer_schools:
-        peer_match = match_school_in_performance_data(peer_name, perf_df)
+        peer_match = match_school_in_performance_data(peer_name, perf_df, division_name=division_name)
         if peer_match:
             peer_data = perf_df[
                 (perf_df['School_Name'] == peer_match) &
-                (perf_df['Division_Name'] == 'Loudoun County')
+                (perf_df['Division_Name'] == division_name)
             ]
             display_name = f"{peer_name} ({peer_dist:.1f} mi)"
             for _, row in peer_data.iterrows():

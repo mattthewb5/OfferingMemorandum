@@ -1,3 +1,38 @@
+# Fairfax Report Bug Fixes + Section Porting
+
+## Session: Fix Schools + Port Sections (2026-02-09)
+
+### Bug Fixes
+- [x] Bug 1: Expand abbreviated school names (Oak Hill → Oak Hill Elementary School)
+- [x] Bug 2: Include subject property schools in performance chart (was filtering to Loudoun only)
+- [x] Bug 3: Fix peer school label (Loudoun County → nearby peer schools)
+- [x] Bug 4: Fix Data Sources table (11 Loudoun refs → Fairfax equivalents)
+- [x] Bug 5: Fix footer (Loudoun County → Fairfax County Property Intelligence Platform)
+
+### Sections Ported
+- [x] Demographics: Uncommented with Fairfax FIPS 059 (needs Census API key at runtime)
+- [x] Transit: New display_transit_section() using FairfaxTransitAnalysis (works with parquet data)
+
+### Quality Validation
+- [x] Syntax: All files pass ast.parse()
+- [x] Loudoun protection: reports/loudoun_report.py has ZERO changes
+- [x] School name expansion: Oak Hill→Oak Hill Elementary School, Carson→Rachel Carson Middle School, Westfield→Westfield High School
+- [x] Performance matching: All 3 schools match VDOE data for Fairfax County
+- [x] Loudoun backward compat: Riverside High, Belmont Ridge Middle still match
+- [x] Transit module: Herndon Metro 2.5mi, Score 20/100 for test address
+
+### Remaining Phase 2 Sections (8 of 13)
+- [ ] Location Quality
+- [ ] Development Pressure (shows Insufficient_Data)
+- [ ] Infrastructure Activity
+- [ ] Property Valuation
+- [ ] Community/HOA
+- [ ] Economic Indicators
+- [ ] Healthcare
+- [ ] AI Analysis/Narrative
+
+---
+
 # Loudoun Report Integration - Complete
 
 ## Phase 1B: Critical Modules (Superseded)

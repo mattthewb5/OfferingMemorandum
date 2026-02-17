@@ -3592,44 +3592,126 @@ def display_medical_access_section(lat: float, lon: float):
             st.info("Healthcare data not available for this location.")
             return
 
+        # Get all nearby facilities
+        all_nearby = analyzer.get_facilities_near_point(lat, lon, radius_miles=10.0)
+        hospitals = all_nearby[all_nearby['facility_type'] == 'hospital'].copy()
+        urgent_care_nearby = analyzer.get_facilities_near_point(lat, lon, radius_miles=3.0)
+        urgent_care = urgent_care_nearby[urgent_care_nearby['facility_type'] == 'urgent_care'].copy()
+
         # Summary metrics
         breakdown = score.get('breakdown', {})
-        nearest_hosp = breakdown.get('nearest_hospital', {})
-        uc_info = breakdown.get('urgent_care_nearby', {})
-
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Access Score", f"{score.get('score', 0)}/100")
             st.caption(score.get('rating', ''))
         with col2:
-            st.metric("Hospitals Within 10 mi", score.get('hospitals_within_10mi', 0))
+            st.metric("Hospitals/ER", len(hospitals))
         with col3:
-            st.metric("Urgent Care Within 3 mi", uc_info.get('count_within_3mi', 0))
+            st.metric("Urgent Care (3 mi)", len(urgent_care))
+        with col4:
+            nearest_dist = breakdown.get('nearest_hospital', {}).get('distance_miles')
+            st.metric("Nearest Hospital", f"{nearest_dist:.1f} mi" if nearest_dist else "N/A")
 
-        # Nearest hospital details
-        if nearest_hosp:
-            st.markdown("### Nearest Hospital")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.markdown(f"**{nearest_hosp.get('name', 'N/A')}**")
-                st.markdown(f"Distance: **{nearest_hosp.get('distance_miles', 0):.1f} mi**")
-            with col2:
-                cms = nearest_hosp.get('cms_rating')
-                st.markdown(f"CMS Rating: **{cms}/5**" if cms else "CMS Rating: N/A")
-            with col3:
-                grade = nearest_hosp.get('leapfrog_grade', 'N/A')
-                st.markdown(f"Safety Grade: **{grade}**")
+        st.markdown("---")
 
-        # Nearby facilities table
-        nearby = analyzer.get_facilities_near_point(lat, lon, radius_miles=5.0)
-        if nearby is not None and len(nearby) > 0:
-            with st.expander(f"View All Nearby Facilities ({len(nearby)} within 5 mi)", expanded=False):
-                display_df = nearby[['name', 'facility_type', 'distance_miles', 'address', 'city']].copy()
-                display_df['facility_type'] = display_df['facility_type'].str.replace('_', ' ').str.title()
-                display_df['distance_miles'] = display_df['distance_miles'].round(2)
-                display_df.columns = ['Name', 'Type', 'Distance (mi)', 'Address', 'City']
+        # ── Hospitals & Emergency subsection ──
+        st.markdown("### 🏥 Hospitals & Emergency")
 
-                st.dataframe(display_df, use_container_width=True, hide_index=True)
+        # Split CMS-rated hospitals from others
+        cms_hospitals = hospitals[hospitals['cms_rating'].notna()].copy()
+        other_facilities = hospitals[hospitals['cms_rating'].isna()].copy()
+
+        if len(cms_hospitals) > 0:
+            for _, h in cms_hospitals.iterrows():
+                name = h['name']
+                dist = h['distance_miles']
+                cms = h.get('cms_rating')
+                leap = h.get('leapfrog_grade')
+                address = h.get('address', '')
+                city = h.get('city', '')
+                phone = h.get('phone', '')
+                emergency = h.get('emergency_services')
+                htype = h.get('hospital_type', '')
+                leap_notes = h.get('leapfrog_notes', '')
+
+                # Build star display
+                stars = ''
+                if cms and not pd.isna(cms):
+                    stars = '⭐' * int(float(cms))
+
+                # Leapfrog badge
+                leap_badge = ''
+                if leap and str(leap) != 'nan':
+                    leap_badge = f" | Safety: **{leap}**"
+
+                emergency_badge = " | 🚨 ER" if emergency == 'Yes' else ""
+
+                with st.container():
+                    col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+
+                    with col1:
+                        st.markdown(f"**{name}**")
+                        st.caption(f"📍 {address}, {city}" if address else htype or '')
+
+                    with col2:
+                        if stars:
+                            st.markdown(f"{stars} ({int(float(cms))}/5)")
+                        else:
+                            st.markdown("Not rated")
+
+                    with col3:
+                        if leap and str(leap) != 'nan':
+                            st.markdown(f"Safety: **{leap}**")
+                            if leap_notes and str(leap_notes) != 'nan':
+                                st.caption(leap_notes)
+                        else:
+                            st.markdown("—")
+
+                    with col4:
+                        st.markdown(f"**{dist:.1f} mi**")
+                        if emergency == 'Yes':
+                            st.caption("🚨 ER")
+
+                    st.divider()
+
+        if len(other_facilities) > 0:
+            with st.expander(f"View {len(other_facilities)} Other Facilities (ERs, Specialty)", expanded=False):
+                for _, h in other_facilities.iterrows():
+                    name = h['name']
+                    dist = h['distance_miles']
+                    htype = h.get('hospital_type', '')
+                    address = h.get('address', '')
+                    city = h.get('city', '')
+                    label = htype if htype and str(htype) != 'nan' else 'Facility'
+                    st.markdown(f"**{name}** — {dist:.1f} mi")
+                    st.caption(f"{label} | {address}, {city}" if address else label)
+
+        # ── Urgent Care subsection ──
+        st.markdown("### 🩺 Urgent Care Centers")
+
+        if len(urgent_care) > 0:
+            # Show 3 nearest directly
+            top_uc = urgent_care.head(3)
+            for _, uc in top_uc.iterrows():
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.markdown(f"**{uc['name']}**")
+                    addr = uc.get('address', '')
+                    city = uc.get('city', '')
+                    st.caption(f"📍 {addr}, {city}" if addr else '')
+                with col2:
+                    st.markdown(f"**{uc['distance_miles']:.1f} mi**")
+
+            # Rest in expander
+            if len(urgent_care) > 3:
+                remaining = urgent_care.iloc[3:]
+                with st.expander(f"View {len(remaining)} More Urgent Care Centers"):
+                    uc_display = remaining[['name', 'address', 'city', 'distance_miles']].copy()
+                    uc_display['distance_miles'] = uc_display['distance_miles'].round(2)
+                    uc_display.columns = ['Name', 'Address', 'City', 'Distance (mi)']
+                    st.dataframe(uc_display, use_container_width=True, hide_index=True)
+        else:
+            st.info("No urgent care centers found within 3 miles.")
 
         st.caption("Source: Fairfax County GIS, CMS Hospital Compare, Leapfrog Group")
 

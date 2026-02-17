@@ -1585,6 +1585,84 @@ def display_crime_section(lat: float, lon: float):
             else:
                 st.warning(f"⚠️ **Higher Crime** - {total_crimes} reported incidents. Exercise normal caution.")
 
+            # Incident details with map
+            with st.expander("📋 View Individual Incidents"):
+                incidents = crime_analyzer.get_crimes_near_point(lat, lon, radius_miles=2.0)
+
+                if len(incidents) > 0:
+                    # Build incident map
+                    try:
+                        import plotly.graph_objects as go
+
+                        color_map = {'violent': 'red', 'property': 'orange', 'other': 'blue'}
+
+                        fig = go.Figure()
+
+                        # Property marker
+                        fig.add_trace(go.Scattermapbox(
+                            lat=[lat], lon=[lon],
+                            mode='markers',
+                            marker=dict(size=15, color='green'),
+                            text=['Your Property'],
+                            name='Property',
+                            showlegend=True
+                        ))
+
+                        # Incident markers by category
+                        for category, color in color_map.items():
+                            cat_data = incidents[incidents['category'] == category]
+                            if cat_data.empty:
+                                continue
+                            hover_text = cat_data.apply(
+                                lambda row: f"{row['description']}<br>{row['address']}<br>{row['date'].strftime('%Y-%m-%d') if hasattr(row['date'], 'strftime') else row['date']}",
+                                axis=1
+                            )
+                            fig.add_trace(go.Scattermapbox(
+                                lat=cat_data['latitude'], lon=cat_data['longitude'],
+                                mode='markers',
+                                marker=dict(size=8, color=color),
+                                text=hover_text,
+                                name=f'{category.title()} ({len(cat_data)})',
+                                showlegend=True
+                            ))
+
+                        fig.update_layout(
+                            mapbox=dict(
+                                style='open-street-map',
+                                center=dict(lat=lat, lon=lon),
+                                zoom=12
+                            ),
+                            height=400,
+                            margin=dict(l=0, r=0, t=0, b=0),
+                            showlegend=True,
+                            legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
+                        )
+
+                        st.plotly_chart(fig, use_container_width=True)
+                    except Exception:
+                        pass  # Map is optional; table below still shows
+
+                    st.markdown(f"**{len(incidents)} geocoded incidents** within 2 miles")
+
+                    # Display table
+                    display_df = incidents[['date', 'description', 'address', 'distance_miles']].copy()
+                    display_df['date'] = pd.to_datetime(display_df['date']).dt.strftime('%Y-%m-%d')
+                    display_df['distance_miles'] = display_df['distance_miles'].round(2)
+
+                    st.dataframe(
+                        display_df,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            'date': 'Date',
+                            'description': 'Type',
+                            'address': 'Location',
+                            'distance_miles': st.column_config.NumberColumn('Distance (mi)', format="%.2f")
+                        }
+                    )
+                else:
+                    st.info("No geocoded incidents found within 2 miles.")
+
             # Geocoding coverage note
             geocoded_pct = safety_score.get('geocoded_percentage', 0)
             if geocoded_pct > 0 and geocoded_pct < 80:

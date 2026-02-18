@@ -1662,7 +1662,7 @@ def display_crime_section(lat: float, lon: float):
                             legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
                         )
 
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width='stretch')
                     except Exception:
                         pass  # Map is optional; table below still shows
 
@@ -1675,7 +1675,7 @@ def display_crime_section(lat: float, lon: float):
 
                     st.dataframe(
                         display_df,
-                        use_container_width=True,
+                        width='stretch',
                         hide_index=True,
                         column_config={
                             'date': 'Date',
@@ -2715,7 +2715,7 @@ def display_cell_towers_section(lat: float, lon: float):
                     lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "—"
                 )
 
-                st.dataframe(display_df, use_container_width=True, hide_index=True)
+                st.dataframe(display_df, width='stretch', hide_index=True)
 
         st.caption(f"📶 Source: FCC Antenna Structure Registration, Fairfax County")
 
@@ -3745,7 +3745,7 @@ def display_medical_access_section(lat: float, lon: float):
                     uc_display = remaining[['name', 'address', 'city', 'distance_miles']].copy()
                     uc_display['distance_miles'] = uc_display['distance_miles'].round(2)
                     uc_display.columns = ['Name', 'Address', 'City', 'Distance (mi)']
-                    st.dataframe(uc_display, use_container_width=True, hide_index=True)
+                    st.dataframe(uc_display, width='stretch', hide_index=True)
         else:
             st.info("No urgent care centers found within 3 miles.")
 
@@ -4183,7 +4183,7 @@ def display_development_section(lat: float, lon: float):
                     legend=dict(orientation='h', y=-0.15),
                     yaxis_title='Permits',
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
         # ── Full permit table ──
         with st.expander(f"📋 View All {len(permits_24mo):,} Permits (24 Months)"):
@@ -4199,7 +4199,7 @@ def display_development_section(lat: float, lon: float):
 
             show = tbl[display_cols].copy()
             show.columns = col_names
-            st.dataframe(show, use_container_width=True, hide_index=True)
+            st.dataframe(show, width='stretch', hide_index=True)
 
         st.caption(
             f"Source: Fairfax County Permit Portal (PLUS System), "

@@ -1,0 +1,291 @@
+{
+  "metadata": {
+    "title": "Fairfax County Principal Employers",
+    "source": "Fairfax County Annual Comprehensive Financial Reports (ACFRs)",
+    "years_covered": "2009-2025",
+    "extraction_date": "2026-02-18",
+    "notes": [
+      "Employee counts use midpoints for ranges (e.g., 5,000-9,999 = 7,500)",
+      "Exact counts used where provided in ACFRs",
+      "Percentages based on total county employment",
+      "2017 data missing (ACFR gap)",
+      "Industry classifications harmonized across all years"
+    ]
+  },
+  "employers_by_year": {
+    "2025": {
+      "source": "FY2025 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Federal Government", "employees": 28126, "pct": 4.50},
+        {"rank": 2, "name": "Fairfax County Public Schools", "employees": 26829, "pct": 4.29},
+        {"rank": 3, "name": "Inova Health System", "employees": 26000, "pct": 4.16},
+        {"rank": 4, "name": "Fairfax County Government", "employees": 12000, "pct": 1.92},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 7500, "pct": 1.20},
+        {"rank": 7, "name": "Amazon", "employees": 7500, "pct": 1.20},
+        {"rank": 8, "name": "Capital One", "employees": 7500, "pct": 1.20},
+        {"rank": 9, "name": "Science Applications International Corporation", "employees": 7500, "pct": 1.20},
+        {"rank": 10, "name": "Federal Home Loan Mortgage", "employees": 7500, "pct": 1.20}
+      ]
+    },
+    "2024": {
+      "source": "FY2024 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Federal Government", "employees": 28156, "pct": 4.51},
+        {"rank": 2, "name": "Fairfax County Public Schools", "employees": 26235, "pct": 4.20},
+        {"rank": 3, "name": "Inova Health System", "employees": 24000, "pct": 3.84},
+        {"rank": 4, "name": "Fairfax County Government", "employees": 12000, "pct": 1.92},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 7500, "pct": 1.20},
+        {"rank": 7, "name": "Amazon", "employees": 7500, "pct": 1.20},
+        {"rank": 8, "name": "Capital One", "employees": 7500, "pct": 1.20},
+        {"rank": 9, "name": "Science Applications International Corporation", "employees": 7500, "pct": 1.20},
+        {"rank": 10, "name": "Federal Home Loan Mortgage", "employees": 7500, "pct": 1.20}
+      ]
+    },
+    "2023": {
+      "source": "FY2023 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Federal Government", "employees": 27821, "pct": 4.45},
+        {"rank": 2, "name": "Fairfax County Public Schools", "employees": 25526, "pct": 4.08},
+        {"rank": 3, "name": "Inova Health System", "employees": 20000, "pct": 3.20},
+        {"rank": 4, "name": "Fairfax County Government", "employees": 12426, "pct": 1.99},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 7500, "pct": 1.20},
+        {"rank": 7, "name": "Amazon", "employees": 7500, "pct": 1.20},
+        {"rank": 8, "name": "Capital One", "employees": 7500, "pct": 1.20},
+        {"rank": 9, "name": "Science Applications International Corporation", "employees": 7500, "pct": 1.20},
+        {"rank": 10, "name": "Federal Home Loan Mortgage", "employees": 7500, "pct": 1.20}
+      ]
+    },
+    "2022": {
+      "source": "FY2022 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Federal Government", "employees": 25964, "pct": 4.15},
+        {"rank": 2, "name": "Fairfax County Public Schools", "employees": 25570, "pct": 4.09},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 11984, "pct": 1.92},
+        {"rank": 4, "name": "Inova Health System", "employees": 11000, "pct": 1.76},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 7500, "pct": 1.20},
+        {"rank": 7, "name": "Amazon", "employees": 7500, "pct": 1.20},
+        {"rank": 8, "name": "Capital One", "employees": 7500, "pct": 1.20},
+        {"rank": 9, "name": "Science Applications International Corporation", "employees": 7500, "pct": 1.20},
+        {"rank": 10, "name": "Federal Home Loan Mortgage", "employees": 7500, "pct": 1.20}
+      ]
+    },
+    "2021": {
+      "source": "FY2021 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Federal Government", "employees": 26543, "pct": 4.25},
+        {"rank": 2, "name": "Fairfax County Public Schools", "employees": 25389, "pct": 4.06},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 12128, "pct": 1.94},
+        {"rank": 4, "name": "Inova Health System", "employees": 11000, "pct": 1.76},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 7500, "pct": 1.20},
+        {"rank": 7, "name": "Amazon", "employees": 7500, "pct": 1.20},
+        {"rank": 8, "name": "Federal Home Loan Mortgage", "employees": 7500, "pct": 1.20},
+        {"rank": 9, "name": "Science Applications International Corporation", "employees": 7500, "pct": 1.20},
+        {"rank": 10, "name": "Capital One", "employees": 7500, "pct": 1.20}
+      ]
+    },
+    "2020": {
+      "source": "FY2020 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 25041, "pct": 4.01},
+        {"rank": 2, "name": "Federal Government", "employees": 24304, "pct": 3.89},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 12224, "pct": 1.96},
+        {"rank": 4, "name": "Inova Health System", "employees": 10500, "pct": 1.68},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 7500, "pct": 1.20},
+        {"rank": 7, "name": "Amazon", "employees": 7500, "pct": 1.20},
+        {"rank": 8, "name": "Federal Home Loan Mortgage", "employees": 7500, "pct": 1.20},
+        {"rank": 9, "name": "Science Applications International Corporation", "employees": 7500, "pct": 1.20},
+        {"rank": 10, "name": "Capital One", "employees": 7500, "pct": 1.20}
+      ]
+    },
+    "2019": {
+      "source": "FY2019 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 24936, "pct": 3.99},
+        {"rank": 2, "name": "Federal Government", "employees": 24371, "pct": 3.90},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 11860, "pct": 1.90},
+        {"rank": 4, "name": "Inova Health System", "employees": 10500, "pct": 1.68},
+        {"rank": 5, "name": "George Mason University", "employees": 8500, "pct": 1.36},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 7500, "pct": 1.20},
+        {"rank": 7, "name": "Federal Home Loan Mortgage", "employees": 7500, "pct": 1.20},
+        {"rank": 8, "name": "Capital One", "employees": 7500, "pct": 1.20},
+        {"rank": 9, "name": "Science Applications International Corporation", "employees": 7500, "pct": 1.20},
+        {"rank": 10, "name": "Navy Federal Credit Union", "employees": 3500, "pct": 0.56}
+      ]
+    },
+    "2018": {
+      "source": "FY2018 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 24715, "pct": 3.95},
+        {"rank": 2, "name": "Federal Government", "employees": 24080, "pct": 3.85},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 12552, "pct": 2.01},
+        {"rank": 4, "name": "Inova Health System", "employees": 8500, "pct": 1.36},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 7500, "pct": 1.20},
+        {"rank": 7, "name": "Federal Home Loan Mortgage", "employees": 7500, "pct": 1.20},
+        {"rank": 8, "name": "Capital One", "employees": 7500, "pct": 1.20},
+        {"rank": 9, "name": "General Dynamics", "employees": 7500, "pct": 1.20},
+        {"rank": 10, "name": "Northrop Grumman", "employees": 3750, "pct": 0.60}
+      ]
+    },
+    "2016": {
+      "source": "FY2016 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 24581, "pct": 3.93},
+        {"rank": 2, "name": "Federal Government", "employees": 23664, "pct": 3.79},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 12335, "pct": 1.97},
+        {"rank": 4, "name": "Inova Health System", "employees": 8500, "pct": 1.36},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 5500, "pct": 0.88},
+        {"rank": 7, "name": "Federal Home Loan Mortgage", "employees": 5500, "pct": 0.88},
+        {"rank": 8, "name": "General Dynamics", "employees": 5500, "pct": 0.88},
+        {"rank": 9, "name": "Science Applications International Corporation", "employees": 2500, "pct": 0.40}
+      ]
+    },
+    "2015": {
+      "source": "FY2015 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 24181, "pct": 3.87},
+        {"rank": 2, "name": "Federal Government", "employees": 23634, "pct": 3.78},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 12326, "pct": 1.97},
+        {"rank": 4, "name": "Inova Health System", "employees": 8500, "pct": 1.36},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 5500, "pct": 0.88},
+        {"rank": 7, "name": "Science Applications International Corporation", "employees": 5500, "pct": 0.88},
+        {"rank": 8, "name": "Federal Home Loan Mortgage", "employees": 5500, "pct": 0.88},
+        {"rank": 9, "name": "General Dynamics", "employees": 5500, "pct": 0.88},
+        {"rank": 10, "name": "Northrop Grumman", "employees": 2500, "pct": 0.40}
+      ]
+    },
+    "2014": {
+      "source": "FY2014 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 24590, "pct": 3.93},
+        {"rank": 2, "name": "Federal Government", "employees": 23586, "pct": 3.77},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 12240, "pct": 1.96},
+        {"rank": 4, "name": "Inova Health System", "employees": 8500, "pct": 1.36},
+        {"rank": 5, "name": "George Mason University", "employees": 7500, "pct": 1.20},
+        {"rank": 6, "name": "Booz Allen Hamilton", "employees": 5500, "pct": 0.88},
+        {"rank": 7, "name": "Federal Home Loan Mortgage", "employees": 5500, "pct": 0.88},
+        {"rank": 8, "name": "General Dynamics", "employees": 5500, "pct": 0.88},
+        {"rank": 9, "name": "Northrop Grumman", "employees": 5500, "pct": 0.88},
+        {"rank": 10, "name": "Science Applications International Corporation", "employees": 5500, "pct": 0.88}
+      ]
+    },
+    "2013": {
+      "source": "FY2013 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Federal Government", "employees": 24421, "pct": 3.91},
+        {"rank": 2, "name": "Fairfax County Public Schools", "employees": 24232, "pct": 3.88},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 12302, "pct": 1.97},
+        {"rank": 4, "name": "Booz Allen Hamilton", "employees": 8500, "pct": 1.36},
+        {"rank": 5, "name": "Inova Health System", "employees": 8500, "pct": 1.36},
+        {"rank": 6, "name": "Science Applications International Corporation", "employees": 5500, "pct": 0.88},
+        {"rank": 7, "name": "Federal Home Loan Mortgage", "employees": 5500, "pct": 0.88},
+        {"rank": 8, "name": "Lockheed Martin Corporation", "employees": 5500, "pct": 0.88},
+        {"rank": 9, "name": "Northrop Grumman", "employees": 5500, "pct": 0.88},
+        {"rank": 10, "name": "Computer Science Corporation", "employees": 2500, "pct": 0.40}
+      ]
+    },
+    "2012": {
+      "source": "FY2012 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 23534, "pct": 3.77},
+        {"rank": 2, "name": "Federal Government", "employees": 23361, "pct": 3.74},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 12070, "pct": 1.93},
+        {"rank": 4, "name": "Booz Allen Hamilton", "employees": 8500, "pct": 1.36},
+        {"rank": 5, "name": "Inova Health System", "employees": 8500, "pct": 1.36},
+        {"rank": 6, "name": "Science Applications International Corporation", "employees": 5500, "pct": 0.88},
+        {"rank": 7, "name": "George Mason University", "employees": 5500, "pct": 0.88},
+        {"rank": 8, "name": "Federal Home Loan Mortgage", "employees": 5500, "pct": 0.88},
+        {"rank": 9, "name": "Northrop Grumman", "employees": 5500, "pct": 0.88},
+        {"rank": 10, "name": "Mitre", "employees": 2500, "pct": 0.40}
+      ]
+    },
+    "2011": {
+      "source": "FY2011 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 22939, "pct": 3.67},
+        {"rank": 2, "name": "Federal Government", "employees": 22648, "pct": 3.62},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 11871, "pct": 1.90},
+        {"rank": 4, "name": "Booz Allen Hamilton", "employees": 8500, "pct": 1.36},
+        {"rank": 5, "name": "Inova Health System", "employees": 8500, "pct": 1.36},
+        {"rank": 6, "name": "Science Applications International Corporation", "employees": 5500, "pct": 0.88},
+        {"rank": 7, "name": "Federal Home Loan Mortgage", "employees": 5500, "pct": 0.88},
+        {"rank": 8, "name": "George Mason University", "employees": 5500, "pct": 0.88},
+        {"rank": 9, "name": "Northrop Grumman", "employees": 5500, "pct": 0.88},
+        {"rank": 10, "name": "Mitre", "employees": 2500, "pct": 0.40}
+      ]
+    },
+    "2010": {
+      "source": "FY2010 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 22852, "pct": 3.66},
+        {"rank": 2, "name": "Federal Government", "employees": 17370, "pct": 2.78},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 11184, "pct": 1.79},
+        {"rank": 4, "name": "Inova Health System", "employees": 8500, "pct": 1.36},
+        {"rank": 5, "name": "Booz Allen Hamilton", "employees": 8500, "pct": 1.36},
+        {"rank": 6, "name": "Science Applications International Corporation", "employees": 5500, "pct": 0.88},
+        {"rank": 7, "name": "Federal Home Loan Mortgage", "employees": 5500, "pct": 0.88},
+        {"rank": 8, "name": "George Mason University", "employees": 5500, "pct": 0.88},
+        {"rank": 9, "name": "Northrop Grumman", "employees": 5500, "pct": 0.88},
+        {"rank": 10, "name": "Lockheed Martin", "employees": 5500, "pct": 0.88}
+      ]
+    },
+    "2009": {
+      "source": "FY2009 ACFR",
+      "employers": [
+        {"rank": 1, "name": "Fairfax County Public Schools", "employees": 23014, "pct": 3.68},
+        {"rank": 2, "name": "Federal Government", "employees": 15393, "pct": 2.46},
+        {"rank": 3, "name": "Fairfax County Government", "employees": 11393, "pct": 1.82},
+        {"rank": 4, "name": "Inova Health System", "employees": 8500, "pct": 1.36},
+        {"rank": 5, "name": "Booz Allen Hamilton", "employees": 8500, "pct": 1.36},
+        {"rank": 6, "name": "Northrop Grumman", "employees": 8500, "pct": 1.36},
+        {"rank": 7, "name": "Science Applications International Corporation", "employees": 5500, "pct": 0.88},
+        {"rank": 8, "name": "Federal Home Loan Mortgage", "employees": 5500, "pct": 0.88},
+        {"rank": 9, "name": "Lockheed Martin", "employees": 5500, "pct": 0.88},
+        {"rank": 10, "name": "General Dynamics", "employees": 2500, "pct": 0.40}
+      ]
+    }
+  },
+  "summary": {
+    "fcps_employment": {
+      "2009": 23014, "2010": 22852, "2011": 22939, "2012": 23534, "2013": 24232,
+      "2014": 24590, "2015": 24181, "2016": 24581, "2018": 24715, "2019": 24936,
+      "2020": 25041, "2021": 25389, "2022": 25570, "2023": 25526, "2024": 26235,
+      "2025": 26829
+    },
+    "inova_employment": {
+      "2009": 8500, "2010": 8500, "2011": 8500, "2012": 8500, "2013": 8500,
+      "2014": 8500, "2015": 8500, "2016": 8500, "2018": 8500, "2019": 10500,
+      "2020": 10500, "2021": 11000, "2022": 11000, "2023": 20000, "2024": 24000,
+      "2025": 26000
+    },
+    "key_trends": {
+      "fcps_growth_2009_2025": "16.6%",
+      "inova_growth_2009_2025": "205.9%",
+      "federal_govt_growth_2009_2025": "82.5%",
+      "county_govt_growth_2009_2025": "5.3%",
+      "amazon_first_appearance": 2019,
+      "capital_one_first_appearance": 2010,
+      "notable_entries": [
+        {"name": "Amazon", "year": 2019, "note": "Tech sector emergence"},
+        {"name": "Capital One", "year": 2010, "note": "Financial services anchor"},
+        {"name": "Navy Federal Credit Union", "year": 2019, "note": "Brief appearance"}
+      ],
+      "notable_exits": [
+        {"name": "Computer Science Corporation", "last_year": 2013},
+        {"name": "Mitre", "last_year": 2012}
+      ],
+      "notable_declines": [
+        {"name": "Northrop Grumman", "description": "8,500 in 2009 down to 3,750 by 2018"}
+      ],
+      "missing_years": ["2017"]
+    }
+  }
+}

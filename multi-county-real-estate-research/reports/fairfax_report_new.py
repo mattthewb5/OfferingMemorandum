@@ -3538,7 +3538,7 @@ def display_economic_indicators_section():
             year = int(tab_years[i])
             with tab:
                 if year in employer_year_dfs:
-                    st.dataframe(employer_year_dfs[year], use_container_width=True, hide_index=True)
+                    st.dataframe(employer_year_dfs[year], width='stretch', hide_index=True)
                 else:
                     st.write("Data not available for this year.")
 
@@ -3556,7 +3556,7 @@ def display_economic_indicators_section():
                 )
                 st.dataframe(
                     employer_year_dfs[earlier_year],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                 )
             else:
@@ -4156,53 +4156,66 @@ def display_development_section(lat: float, lon: float):
         # ── Permit map — adaptive radius, new construction focus ──
         st.markdown("### Recent Construction Activity Map")
 
-        # Adaptive filtering: 12 months, new construction, expanding radius
+        # Adaptive filtering: new construction, expanding radius + time window
         new_construction_cats = ['residential_new', 'commercial_new']
         map_radius = 1.0
         map_permits = pd.DataFrame()
+        map_window_months = 12
 
+        def _filter_new_construction(permits_df, _lat, _lon):
+            """Filter to new construction and compute distances."""
+            if permits_df.empty:
+                return pd.DataFrame()
+            new_only = permits_df[
+                permits_df['permit_category'].isin(new_construction_cats)
+            ].copy()
+            if new_only.empty:
+                return new_only
+            if 'centroid_lat' in new_only.columns and 'centroid_lon' in new_only.columns:
+                new_only['_dist'] = new_only.apply(
+                    lambda r: haversine_distance(_lat, _lon, r['centroid_lat'], r['centroid_lon']),
+                    axis=1,
+                )
+            return new_only
+
+        def _pick_radius_tier(new_only):
+            """Return (filtered_df, radius) using expanding distance tiers."""
+            if new_only.empty or '_dist' not in new_only.columns:
+                return pd.DataFrame(), 2.0
+            within_1 = new_only[new_only['_dist'] <= 1.0]
+            if len(within_1) >= 5:
+                return within_1, 1.0
+            within_1_5 = new_only[new_only['_dist'] <= 1.5]
+            if len(within_1_5) >= 5:
+                return within_1_5, 1.5
+            return new_only[new_only['_dist'] <= 2.0], 2.0
+
+        # Try 12-month window first
         permits_12mo = analyzer.get_permits_near_point(
             lat, lon, radius_miles=2.0, months_back=12
         )
+        new_12 = _filter_new_construction(permits_12mo, lat, lon)
+        map_permits, map_radius = _pick_radius_tier(new_12)
 
-        if not permits_12mo.empty:
-            new_only = permits_12mo[
-                permits_12mo['permit_category'].isin(new_construction_cats)
-            ].copy()
-
-            if 'centroid_lat' in new_only.columns and 'centroid_lon' in new_only.columns:
-                new_only['_dist'] = new_only.apply(
-                    lambda r: haversine_distance(lat, lon, r['centroid_lat'], r['centroid_lon']),
-                    axis=1,
-                )
-
-                # Tier 1: 1 mile
-                within_1 = new_only[new_only['_dist'] <= 1.0]
-                if len(within_1) >= 5:
-                    map_permits = within_1
-                    map_radius = 1.0
-                else:
-                    # Tier 2: 1.5 miles
-                    within_1_5 = new_only[new_only['_dist'] <= 1.5]
-                    if len(within_1_5) >= 5:
-                        map_permits = within_1_5
-                        map_radius = 1.5
-                    else:
-                        # Tier 3: 2 miles (show everything we have)
-                        within_2 = new_only[new_only['_dist'] <= 2.0]
-                        map_permits = within_2
-                        map_radius = 2.0
+        # If < 5 results, expand to 24-month window
+        if len(map_permits) < 5:
+            permits_24mo = analyzer.get_permits_near_point(
+                lat, lon, radius_miles=2.0, months_back=24
+            )
+            new_24 = _filter_new_construction(permits_24mo, lat, lon)
+            map_permits, map_radius = _pick_radius_tier(new_24)
+            map_window_months = 24
 
         map_count = len(map_permits)
         st.caption(
             f"Showing {map_count:,} new construction permits within "
-            f"{map_radius} miles (last 12 months)"
+            f"{map_radius} miles (last {map_window_months} months)"
         )
 
         if map_count > 0 and PLOTLY_AVAILABLE:
             permit_fig = _create_permits_map_plotly(map_permits, lat, lon)
             if permit_fig:
-                st.plotly_chart(permit_fig, use_container_width=True)
+                st.plotly_chart(permit_fig, width='stretch')
 
             col1, col2, col3, col4 = st.columns(4)
             with col1:

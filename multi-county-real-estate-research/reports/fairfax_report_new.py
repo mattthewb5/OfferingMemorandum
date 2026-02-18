@@ -515,7 +515,7 @@ except Exception as e:
 # Economic Indicators
 ECONOMIC_INDICATORS_AVAILABLE = False
 try:
-    from core.economic_indicators import (
+    from core.fairfax_economic_indicators import (
         get_lfpr_data,
         get_industry_mix_data,
         fetch_bls_data,
@@ -3354,8 +3354,8 @@ def display_economic_indicators_section():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        lfpr = lfpr_data.get("loudoun")
-        delta = f"+{lfpr_data.get('loudoun_vs_usa')} vs USA" if lfpr_data.get('loudoun_vs_usa') else None
+        lfpr = lfpr_data.get("fairfax")
+        delta = f"+{lfpr_data.get('fairfax_vs_usa')} vs USA" if lfpr_data.get('fairfax_vs_usa') else None
         st.metric(
             label="Labor Force Participation",
             value=f"{lfpr:.1f}%" if lfpr else "N/A",
@@ -3405,13 +3405,13 @@ def display_economic_indicators_section():
             if industries:
                 # Prepare data for grouped horizontal bar chart
                 sectors = [ind["sector"] for ind in industries]
-                loudoun_vals = [ind["loudoun"] or 0 for ind in industries]
+                fairfax_vals = [ind["fairfax"] or 0 for ind in industries]
                 va_vals = [ind["virginia"] or 0 for ind in industries]
                 usa_vals = [ind["usa"] or 0 for ind in industries]
 
                 # Reverse for horizontal bars (top sector at top)
                 sectors.reverse()
-                loudoun_vals.reverse()
+                fairfax_vals.reverse()
                 va_vals.reverse()
                 usa_vals.reverse()
 
@@ -3419,11 +3419,11 @@ def display_economic_indicators_section():
 
                 fig.add_trace(go.Bar(
                     y=sectors,
-                    x=loudoun_vals,
+                    x=fairfax_vals,
                     name='Fairfax Co.',
                     orientation='h',
                     marker_color='#1f77b4',
-                    text=[f"{v:.1f}%" for v in loudoun_vals],
+                    text=[f"{v:.1f}%" for v in fairfax_vals],
                     textposition='outside',
                     textfont=dict(size=14, color='black')
                 ))
@@ -3512,15 +3512,17 @@ def display_economic_indicators_section():
 
     with st.expander("🏢 Major Employers"):
         # Trend highlights
+        # TODO: Replace FCPS trends with actual data from Fairfax major_employers.json when provided
         trends = get_employer_trends()
-        lcps = trends.get("lcps_growth", {})
+        fcps = trends.get("fcps_growth", {})
 
-        st.info(
-            f"📈 **Key Trends (2008-2025):** "
-            f"Loudoun County Public Schools +{lcps.get('pct_change', 0):.0f}% ({lcps.get('start_employees', 0):,} → {lcps.get('end_employees', 0):,}) | "
-            f"Amazon entered top 10 in 2020 | "
-            f"Verizon declined #3 → #8"
-        )
+        if fcps.get("start_employees", 0) > 0:
+            st.info(
+                f"📈 **Key Trends ({fcps.get('start_year', 2008)}-{fcps.get('end_year', 2025)}):** "
+                f"Fairfax County Public Schools {fcps.get('pct_change', 0):+.0f}% ({fcps.get('start_employees', 0):,} → {fcps.get('end_employees', 0):,})"
+            )
+        else:
+            st.info("📈 **Major Employers:** Data loading from Fairfax County ACFR")
 
         # Year tabs
         tab_years = ["2025", "2024", "2023", "2022", "2021"]
@@ -3539,14 +3541,14 @@ def display_economic_indicators_section():
             earlier_year = st.selectbox(
                 "Select year",
                 range(2020, 2007, -1),
-                key="earlier_year_select"
+                key="fairfax_earlier_year_select"
             )
             if earlier_year in employer_year_dfs:
                 st.dataframe(employer_year_dfs[earlier_year], width='stretch', hide_index=True)
             else:
                 st.info(f"No employer data available for {earlier_year}")
 
-        st.caption("Source: Loudoun County Annual Comprehensive Financial Reports (ACFR)")
+        st.caption("Source: Fairfax County Annual Comprehensive Financial Reports (ACFR)")
 
     # =========================================================================
     # DATA SOURCES & METHODOLOGY (Expander)
@@ -3569,36 +3571,37 @@ def display_economic_indicators_section():
 - Shows percentage of employed residents by industry sector
 
 **Major Employers**
-- Source: Loudoun County Annual Comprehensive Financial Report (ACFR)
+- Source: Fairfax County Annual Comprehensive Financial Report (ACFR)
 - Updated annually (fiscal year ending June 30)
 - Employee counts may be ranges; percentages based on total county employment
         """)
 
 
+# TODO: Update with Fairfax employer keywords when major_employers.json is provided
 def _infer_employer_industry(employer_name: str) -> str:
     """Infer industry category from employer name."""
     name_lower = employer_name.lower()
 
-    if "school" in name_lower or "lcps" in name_lower:
+    if "school" in name_lower or "fcps" in name_lower:
         return "Education"
-    elif "county of loudoun" in name_lower:
+    elif "fairfax county" in name_lower or "county of fairfax" in name_lower:
         return "Government"
     elif "homeland security" in name_lower or "postal" in name_lower:
         return "Federal Government"
     elif "hospital" in name_lower or "inova" in name_lower or "health" in name_lower:
         return "Healthcare"
+    elif "booz allen" in name_lower:
+        return "Defense/Consulting"
     elif "amazon" in name_lower:
         return "Technology/Logistics"
     elif "verizon" in name_lower:
         return "Telecommunications"
-    elif "united airlines" in name_lower or "swissport" in name_lower:
-        return "Aviation/Transportation"
-    elif "northrop" in name_lower or "raytheon" in name_lower or "rtx" in name_lower or "orbital" in name_lower:
+    elif "northrop" in name_lower or "raytheon" in name_lower or "rtx" in name_lower or "general dynamics" in name_lower or "leidos" in name_lower or "saic" in name_lower:
         return "Defense/Aerospace"
-    elif "walmart" in name_lower:
+    elif "walmart" in name_lower or "costco" in name_lower:
         return "Retail"
-    elif "dean" in name_lower or "dynalectric" in name_lower:
-        return "Construction/Engineering"
+    elif "capital one" in name_lower:
+        return "Financial Services"
     else:
         return "Other"
 
@@ -5247,9 +5250,9 @@ def render_report(address: str, lat: float, lon: float):
             )
             display_demographics_section(demographics_data, st)
 
-        # # Economic Indicators (LFPR, Industry Mix, Major Employers)
-        # if ECONOMIC_INDICATORS_AVAILABLE:
-        #     display_economic_indicators_section()
+        # Economic Indicators (LFPR, Industry Mix, Major Employers)
+        if ECONOMIC_INDICATORS_AVAILABLE:
+            display_economic_indicators_section()
 
         # Medical Access (rewired to Fairfax module)
         display_medical_access_section(lat, lon)

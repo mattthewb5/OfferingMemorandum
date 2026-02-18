@@ -3538,21 +3538,29 @@ def display_economic_indicators_section():
             year = int(tab_years[i])
             with tab:
                 if year in employer_year_dfs:
-                    st.dataframe(employer_year_dfs[year], width='stretch', hide_index=True)
+                    st.dataframe(employer_year_dfs[year], use_container_width=True, hide_index=True)
                 else:
                     st.write("Data not available for this year.")
 
-        # "Earlier" tab with dropdown
+        # "Earlier" tab — only show years that actually have data
         with tabs[-1]:
-            earlier_year = st.selectbox(
-                "Select year",
-                range(2020, 2007, -1),
-                key="fairfax_earlier_year_select"
+            earlier_years = sorted(
+                [y for y in employer_year_dfs if y <= 2020],
+                reverse=True,
             )
-            if earlier_year in employer_year_dfs:
-                st.dataframe(employer_year_dfs[earlier_year], width='stretch', hide_index=True)
+            if earlier_years:
+                earlier_year = st.selectbox(
+                    "Select year",
+                    earlier_years,
+                    key="fairfax_earlier_year_select",
+                )
+                st.dataframe(
+                    employer_year_dfs[earlier_year],
+                    use_container_width=True,
+                    hide_index=True,
+                )
             else:
-                st.info(f"No employer data available for {earlier_year}")
+                st.info("No earlier employer data available.")
 
         st.caption("Source: Fairfax County Annual Comprehensive Financial Reports (ACFR)")
 
@@ -3926,8 +3934,8 @@ Lower rates generally indicate fewer unnecessary C-sections, but individual medi
 # =============================================================================
 
 
-def _create_permits_map(permits_df, property_lat: float, property_lon: float):
-    """Create Folium map of recent permits, color-coded by category.
+def _create_permits_map_plotly(permits_df, property_lat: float, property_lon: float):
+    """Create Plotly scatter_mapbox of recent permits, color-coded by category.
 
     Colors:
         Green:  Residential New Construction
@@ -3935,21 +3943,8 @@ def _create_permits_map(permits_df, property_lat: float, property_lon: float):
         Orange: Residential Renovation
         Gray:   Commercial Renovation
     """
-    if not FOLIUM_AVAILABLE or permits_df.empty:
+    if not PLOTLY_AVAILABLE or permits_df.empty:
         return None
-
-    m = folium.Map(
-        location=[property_lat, property_lon],
-        zoom_start=13,
-        tiles='cartodbpositron'
-    )
-
-    # Property marker
-    folium.Marker(
-        location=[property_lat, property_lon],
-        popup='<b>Subject Property</b>',
-        icon=folium.Icon(color='red', icon='home', prefix='fa')
-    ).add_to(m)
 
     color_map = {
         'residential_new': '#22c55e',
@@ -3958,37 +3953,77 @@ def _create_permits_map(permits_df, property_lat: float, property_lon: float):
         'commercial_renovation': '#6b7280',
     }
 
-    for _, permit in permits_df.iterrows():
-        category = permit.get('permit_category', 'other')
-        color = color_map.get(category, '#6b7280')
+    label_map = {
+        'residential_new': 'Residential New',
+        'commercial_new': 'Commercial New',
+        'residential_renovation': 'Residential Reno',
+        'commercial_renovation': 'Commercial Reno',
+    }
 
-        issued = permit.get('issued_date')
-        date_str = issued.strftime('%Y-%m-%d') if pd.notna(issued) else 'N/A'
-        address = permit.get('address', 'Address not available')
-        link = permit.get('link_url', '')
+    # Prepare display data — all calculations before rendering
+    map_df = permits_df.copy()
+    map_df['category_label'] = map_df['permit_category'].map(label_map).fillna('Other')
+    map_df['display_date'] = map_df['issued_date'].apply(
+        lambda d: d.strftime('%Y-%m-%d') if pd.notna(d) else 'N/A'
+    )
+    map_df['display_address'] = map_df['address'].fillna('Address not available')
+    map_df['display_type'] = map_df['permit_type'].fillna('Unknown')
 
-        popup_html = (
-            f"<div style='width:220px'>"
-            f"<b>{permit.get('permit_type', 'Unknown')}</b><br>"
-            f"<i>{date_str}</i><br>"
-            f"{address}<br>"
-        )
-        if link and str(link) != 'nan':
-            popup_html += f"<br><a href='{link}' target='_blank'>View on Fairfax Portal</a>"
-        popup_html += "</div>"
+    # Build figure
+    fig = px.scatter_mapbox(
+        map_df,
+        lat='centroid_lat',
+        lon='centroid_lon',
+        color='category_label',
+        color_discrete_map={
+            'Residential New': '#22c55e',
+            'Commercial New': '#3b82f6',
+            'Residential Reno': '#f97316',
+            'Commercial Reno': '#6b7280',
+            'Other': '#9ca3af',
+        },
+        hover_data={
+            'display_type': True,
+            'display_date': True,
+            'display_address': True,
+            'centroid_lat': False,
+            'centroid_lon': False,
+            'category_label': False,
+        },
+        labels={
+            'display_type': 'Permit Type',
+            'display_date': 'Issued',
+            'display_address': 'Address',
+            'category_label': 'Category',
+        },
+        zoom=12,
+        height=500,
+        mapbox_style='open-street-map',
+    )
 
-        folium.CircleMarker(
-            location=[permit['centroid_lat'], permit['centroid_lon']],
-            radius=5,
-            popup=folium.Popup(popup_html, max_width=250),
-            color=color,
-            fill=True,
-            fillColor=color,
-            fillOpacity=0.7,
-            weight=1,
-        ).add_to(m)
+    # Add subject property marker
+    fig.add_trace(go.Scattermapbox(
+        lat=[property_lat],
+        lon=[property_lon],
+        mode='markers',
+        marker=dict(size=14, color='red', symbol='circle'),
+        name='Subject Property',
+        hovertext='Subject Property',
+        hoverinfo='text',
+        showlegend=True,
+    ))
 
-    return m
+    fig.update_layout(
+        margin={"r": 0, "t": 0, "l": 0, "b": 0},
+        showlegend=True,
+        legend=dict(
+            yanchor="top", y=0.99,
+            xanchor="left", x=0.01,
+            bgcolor="rgba(255,255,255,0.8)",
+        ),
+    )
+
+    return fig
 
 
 def display_development_section(lat: float, lon: float):
@@ -4118,14 +4153,56 @@ def display_development_section(lat: float, lon: float):
                     "Transit Station Area, and Tysons Corner Urban Center."
                 )
 
-        # ── Permit map (last 6 months) ──
+        # ── Permit map — adaptive radius, new construction focus ──
         st.markdown("### Recent Construction Activity Map")
-        st.caption(f"Showing {len(permits_6mo):,} permits from the last 6 months")
 
-        if len(permits_6mo) > 0 and FOLIUM_AVAILABLE:
-            permit_map = _create_permits_map(permits_6mo, lat, lon)
-            if permit_map:
-                st_folium(permit_map, width=None, height=450, returned_objects=[])
+        # Adaptive filtering: 12 months, new construction, expanding radius
+        new_construction_cats = ['residential_new', 'commercial_new']
+        map_radius = 1.0
+        map_permits = pd.DataFrame()
+
+        permits_12mo = analyzer.get_permits_near_point(
+            lat, lon, radius_miles=2.0, months_back=12
+        )
+
+        if not permits_12mo.empty:
+            new_only = permits_12mo[
+                permits_12mo['permit_category'].isin(new_construction_cats)
+            ].copy()
+
+            if 'centroid_lat' in new_only.columns and 'centroid_lon' in new_only.columns:
+                new_only['_dist'] = new_only.apply(
+                    lambda r: haversine_distance(lat, lon, r['centroid_lat'], r['centroid_lon']),
+                    axis=1,
+                )
+
+                # Tier 1: 1 mile
+                within_1 = new_only[new_only['_dist'] <= 1.0]
+                if len(within_1) >= 5:
+                    map_permits = within_1
+                    map_radius = 1.0
+                else:
+                    # Tier 2: 1.5 miles
+                    within_1_5 = new_only[new_only['_dist'] <= 1.5]
+                    if len(within_1_5) >= 5:
+                        map_permits = within_1_5
+                        map_radius = 1.5
+                    else:
+                        # Tier 3: 2 miles (show everything we have)
+                        within_2 = new_only[new_only['_dist'] <= 2.0]
+                        map_permits = within_2
+                        map_radius = 2.0
+
+        map_count = len(map_permits)
+        st.caption(
+            f"Showing {map_count:,} new construction permits within "
+            f"{map_radius} miles (last 12 months)"
+        )
+
+        if map_count > 0 and PLOTLY_AVAILABLE:
+            permit_fig = _create_permits_map_plotly(map_permits, lat, lon)
+            if permit_fig:
+                st.plotly_chart(permit_fig, use_container_width=True)
 
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -4136,10 +4213,13 @@ def display_development_section(lat: float, lon: float):
                 st.markdown("🟠 **Residential Reno**")
             with col4:
                 st.markdown("⚫ **Commercial Reno**")
-        elif not FOLIUM_AVAILABLE:
-            st.info("Map display requires the folium package.")
+        elif not PLOTLY_AVAILABLE:
+            st.info("Map display requires the plotly package.")
         else:
-            st.info(f"No permits issued in the last 6 months within {radius:.0f} miles.")
+            st.info(
+                f"No new construction permits in the last 12 months "
+                f"within {map_radius:.0f} miles."
+            )
 
         # ── Permit type breakdown ──
         st.markdown("### Permit Type Breakdown (24 Months)")

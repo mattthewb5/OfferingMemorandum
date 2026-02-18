@@ -3511,16 +3511,22 @@ def display_economic_indicators_section():
             employer_year_dfs[year] = format_employer_df(employers_list)
 
     with st.expander("🏢 Major Employers"):
-        # Trend highlights
-        # TODO: Replace FCPS trends with actual data from Fairfax major_employers.json when provided
+        # Trend highlights from ACFR data
         trends = get_employer_trends()
         fcps = trends.get("fcps_growth", {})
+        inova = trends.get("inova_growth", {})
 
         if fcps.get("start_employees", 0) > 0:
-            st.info(
-                f"📈 **Key Trends ({fcps.get('start_year', 2008)}-{fcps.get('end_year', 2025)}):** "
-                f"Fairfax County Public Schools {fcps.get('pct_change', 0):+.0f}% ({fcps.get('start_employees', 0):,} → {fcps.get('end_employees', 0):,})"
-            )
+            trend_parts = [
+                f"📈 **Key Trends ({fcps.get('start_year', 2009)}-{fcps.get('end_year', 2025)}):** "
+                f"FCPS {fcps.get('pct_change', 0):+.0f}% ({fcps.get('start_employees', 0):,} → {fcps.get('end_employees', 0):,})"
+            ]
+            if inova.get("start_employees", 0) > 0:
+                trend_parts.append(
+                    f"Inova Health {inova.get('pct_change', 0):+.0f}% ({inova.get('start_employees', 0):,} → {inova.get('end_employees', 0):,})"
+                )
+            trend_parts.append("Amazon entered top 10 in 2019")
+            st.info(" | ".join(trend_parts))
         else:
             st.info("📈 **Major Employers:** Data loading from Fairfax County ACFR")
 
@@ -3577,31 +3583,34 @@ def display_economic_indicators_section():
         """)
 
 
-# TODO: Update with Fairfax employer keywords when major_employers.json is provided
 def _infer_employer_industry(employer_name: str) -> str:
-    """Infer industry category from employer name."""
+    """Infer industry category from employer name for display table."""
     name_lower = employer_name.lower()
 
-    if "school" in name_lower or "fcps" in name_lower:
+    if "federal government" in name_lower:
+        return "Federal Government"
+    elif "school" in name_lower or "fcps" in name_lower:
+        return "Education"
+    elif "george mason" in name_lower or "university" in name_lower:
         return "Education"
     elif "fairfax county" in name_lower or "county of fairfax" in name_lower:
         return "Government"
-    elif "homeland security" in name_lower or "postal" in name_lower:
-        return "Federal Government"
-    elif "hospital" in name_lower or "inova" in name_lower or "health" in name_lower:
+    elif "inova" in name_lower or "health system" in name_lower or "hospital" in name_lower or "medical" in name_lower:
         return "Healthcare"
     elif "booz allen" in name_lower:
-        return "Defense/Consulting"
+        return "Professional Services"
+    elif "science applications" in name_lower or "saic" in name_lower or "leidos" in name_lower:
+        return "Professional Services"
     elif "amazon" in name_lower:
-        return "Technology/Logistics"
-    elif "verizon" in name_lower:
-        return "Telecommunications"
-    elif "northrop" in name_lower or "raytheon" in name_lower or "rtx" in name_lower or "general dynamics" in name_lower or "leidos" in name_lower or "saic" in name_lower:
-        return "Defense/Aerospace"
-    elif "walmart" in name_lower or "costco" in name_lower:
-        return "Retail"
-    elif "capital one" in name_lower:
+        return "Technology"
+    elif "computer science corporation" in name_lower or "mitre" in name_lower:
+        return "Technology"
+    elif "capital one" in name_lower or "navy federal" in name_lower:
         return "Financial Services"
+    elif "federal home loan" in name_lower or "freddie mac" in name_lower:
+        return "Financial Services"
+    elif "general dynamics" in name_lower or "northrop" in name_lower or "lockheed" in name_lower:
+        return "Defense"
     else:
         return "Other"
 

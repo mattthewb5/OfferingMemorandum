@@ -103,60 +103,75 @@ def get_employers_by_year(year: int) -> List[Dict[str, Any]]:
     return formatted
 
 
-# TODO: Update with Fairfax employer keywords when major_employers.json is provided
 def _infer_industry(employer_name: str) -> str:
     """Infer industry category from employer name."""
     name_lower = employer_name.lower()
 
-    if "school" in name_lower or "fcps" in name_lower:
+    if "federal government" in name_lower:
+        return "Federal Government"
+    elif "school" in name_lower or "fcps" in name_lower:
+        return "Education"
+    elif "george mason" in name_lower or "university" in name_lower:
         return "Education"
     elif "fairfax county" in name_lower or "county of fairfax" in name_lower:
         return "Government"
-    elif "homeland security" in name_lower or "postal" in name_lower:
-        return "Federal Government"
-    elif "hospital" in name_lower or "inova" in name_lower or "health" in name_lower:
+    elif "inova" in name_lower or "health system" in name_lower or "hospital" in name_lower or "medical" in name_lower:
         return "Healthcare"
     elif "booz allen" in name_lower:
-        return "Defense/Consulting"
+        return "Professional Services"
+    elif "science applications" in name_lower or "saic" in name_lower or "leidos" in name_lower:
+        return "Professional Services"
     elif "amazon" in name_lower:
-        return "Technology/Logistics"
-    elif "verizon" in name_lower:
-        return "Telecommunications"
-    elif "northrop" in name_lower or "raytheon" in name_lower or "rtx" in name_lower or "general dynamics" in name_lower or "leidos" in name_lower or "saic" in name_lower:
-        return "Defense/Aerospace"
-    elif "walmart" in name_lower or "costco" in name_lower:
-        return "Retail"
-    elif "capital one" in name_lower:
+        return "Technology"
+    elif "computer science corporation" in name_lower or "mitre" in name_lower:
+        return "Technology"
+    elif "capital one" in name_lower or "navy federal" in name_lower:
         return "Financial Services"
+    elif "federal home loan" in name_lower or "freddie mac" in name_lower:
+        return "Financial Services"
+    elif "general dynamics" in name_lower or "northrop" in name_lower or "lockheed" in name_lower:
+        return "Defense"
     else:
         return "Other"
 
 
-# TODO: Update with Fairfax-specific narrative when major_employers.json is provided
 def get_employer_trends() -> Dict[str, Any]:
     """
     Calculate key employer trends for highlights box.
 
     Returns:
-        Dictionary with FCPS growth, notable entries/exits, and declines.
+        Dictionary with FCPS growth, Inova growth, notable entries/exits.
     """
     data = load_major_employers()
     summary = data.get("summary", {})
     key_trends = summary.get("key_trends", {})
     fcps_employment = summary.get("fcps_employment", {})
+    inova_employment = summary.get("inova_employment", {})
 
-    # Calculate FCPS growth
-    start_employees = fcps_employment.get("2008", 0)
-    end_employees = fcps_employment.get("2025", 0)
-    pct_change = ((end_employees - start_employees) / start_employees) * 100 if start_employees else 0
+    # Calculate FCPS growth (data starts 2009)
+    fcps_start = fcps_employment.get("2009", 0)
+    fcps_end = fcps_employment.get("2025", 0)
+    fcps_pct = ((fcps_end - fcps_start) / fcps_start) * 100 if fcps_start else 0
+
+    # Calculate Inova growth (dramatic expansion)
+    inova_start = inova_employment.get("2009", 0)
+    inova_end = inova_employment.get("2025", 0)
+    inova_pct = ((inova_end - inova_start) / inova_start) * 100 if inova_start else 0
 
     return {
         "fcps_growth": {
-            "start_year": 2008,
-            "start_employees": start_employees,
+            "start_year": 2009,
+            "start_employees": fcps_start,
             "end_year": 2025,
-            "end_employees": end_employees,
-            "pct_change": round(pct_change, 1)
+            "end_employees": fcps_end,
+            "pct_change": round(fcps_pct, 1)
+        },
+        "inova_growth": {
+            "start_year": 2009,
+            "start_employees": inova_start,
+            "end_year": 2025,
+            "end_employees": inova_end,
+            "pct_change": round(inova_pct, 1)
         },
         "notable_entries": key_trends.get("notable_entries", []),
         "notable_exits": key_trends.get("notable_exits", []),

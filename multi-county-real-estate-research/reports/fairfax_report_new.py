@@ -4122,10 +4122,29 @@ def display_development_section(lat: float, lon: float):
         st.markdown("### Recent Construction Activity Map")
         st.caption(f"Showing {len(permits_6mo):,} permits from the last 6 months")
 
-        if len(permits_6mo) > 0 and FOLIUM_AVAILABLE:
-            permit_map = _create_permits_map(permits_6mo, lat, lon)
-            if permit_map:
-                st_folium(permit_map, width=None, height=450, returned_objects=[])
+        if len(permits_6mo) > 0 and PLOTLY_AVAILABLE:
+            map_df = permits_6mo.copy()
+            map_df['date'] = map_df['issued_date'].dt.strftime('%Y-%m-%d').fillna('N/A')
+
+            fig = px.scatter_map(
+                map_df,
+                lat='centroid_lat',
+                lon='centroid_lon',
+                color='permit_type',
+                hover_name='address',
+                hover_data={
+                    'permit_type': True,
+                    'date': True,
+                    'centroid_lat': False,
+                    'centroid_lon': False,
+                },
+                zoom=13,
+                height=500,
+                center={'lat': lat, 'lon': lon},
+                map_style='open-street-map',
+            )
+            fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+            st.plotly_chart(fig, width='stretch')
 
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -4136,8 +4155,8 @@ def display_development_section(lat: float, lon: float):
                 st.markdown("🟠 **Residential Reno**")
             with col4:
                 st.markdown("⚫ **Commercial Reno**")
-        elif not FOLIUM_AVAILABLE:
-            st.info("Map display requires the folium package.")
+        elif not PLOTLY_AVAILABLE:
+            st.info("Map display requires the plotly package.")
         else:
             st.info(f"No permits issued in the last 6 months within {radius:.0f} miles.")
 

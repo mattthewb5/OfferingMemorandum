@@ -4156,12 +4156,16 @@ def display_development_section(lat: float, lon: float):
                     'centroid_lat': False,
                     'centroid_lon': False,
                 },
-                zoom=13,
                 height=500,
-                center={'lat': lat, 'lon': lon},
                 map_style='open-street-map',
             )
-            fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+            fig.update_layout(
+                margin=dict(l=0, r=0, t=0, b=0),
+                map=dict(
+                    center=dict(lat=lat, lon=lon),
+                    zoom=12,
+                ),
+            )
             st.plotly_chart(fig, width='stretch')
             st.caption("Map shows new construction permits color-coded by type.")
         elif not PLOTLY_AVAILABLE:

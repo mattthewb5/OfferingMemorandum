@@ -4016,10 +4016,25 @@ def display_development_section(lat: float, lon: float):
                 lat, lon, radius_miles=radius, months_back=24
             )
 
-        # 6-month window for map
-        permits_6mo = analyzer.get_permits_near_point(
-            lat, lon, radius_miles=radius, months_back=6
+        # Adaptive time window for new construction map
+        NEW_CONSTRUCTION = ['residential_new', 'commercial_new']
+
+        permits_12mo = analyzer.get_permits_near_point(
+            lat, lon, radius_miles=radius, months_back=12
         )
+        new_construction_12mo = permits_12mo[
+            permits_12mo['permit_category'].isin(NEW_CONSTRUCTION)
+        ]
+
+        if len(new_construction_12mo) >= 5:
+            map_permits = new_construction_12mo
+            map_window = 12
+        else:
+            new_construction_24mo = permits_24mo[
+                permits_24mo['permit_category'].isin(NEW_CONSTRUCTION)
+            ]
+            map_permits = new_construction_24mo
+            map_window = 24
 
         # Development pressure (recalibrated)
         pressure = analyzer.calculate_development_pressure(
@@ -4118,12 +4133,15 @@ def display_development_section(lat: float, lon: float):
                     "Transit Station Area, and Tysons Corner Urban Center."
                 )
 
-        # ── Permit map (last 6 months) ──
-        st.markdown("### Recent Construction Activity Map")
-        st.caption(f"Showing {len(permits_6mo):,} permits from the last 6 months")
+        # ── Permit map (new construction) ──
+        st.markdown("### New Construction Activity Map")
+        st.caption(
+            f"Showing {len(map_permits):,} new construction permits "
+            f"(last {map_window} months, {radius:.0f}-mile radius)"
+        )
 
-        if len(permits_6mo) > 0 and PLOTLY_AVAILABLE:
-            map_df = permits_6mo.copy()
+        if len(map_permits) > 0 and PLOTLY_AVAILABLE:
+            map_df = map_permits.copy()
             map_df['date'] = map_df['issued_date'].dt.strftime('%Y-%m-%d').fillna('N/A')
 
             fig = px.scatter_map(
@@ -4145,20 +4163,14 @@ def display_development_section(lat: float, lon: float):
             )
             fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
             st.plotly_chart(fig, width='stretch')
-
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.markdown("🟢 **Residential New**")
-            with col2:
-                st.markdown("🔵 **Commercial New**")
-            with col3:
-                st.markdown("🟠 **Residential Reno**")
-            with col4:
-                st.markdown("⚫ **Commercial Reno**")
+            st.caption("Map shows new construction permits color-coded by type.")
         elif not PLOTLY_AVAILABLE:
             st.info("Map display requires the plotly package.")
         else:
-            st.info(f"No permits issued in the last 6 months within {radius:.0f} miles.")
+            st.info(
+                f"No new construction permits in the last {map_window} months "
+                f"within {radius:.0f} miles."
+            )
 
         # ── Permit type breakdown ──
         st.markdown("### Permit Type Breakdown (24 Months)")

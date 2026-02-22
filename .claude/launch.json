@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "autoVerify": true,
+  "configurations": [
+    {
+      "name": "streamlit-app",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "streamlit", "run", "unified_app.py", "--server.headless", "true"],
+      "port": 8501,
+      "cwd": "multi-county-real-estate-research",
+      "autoPort": true
+    }
+  ]
+}

@@ -492,6 +492,14 @@ try:
 except Exception:
     pass
 
+# Comparable sales
+COMPS_AVAILABLE = False
+try:
+    from core.fairfax_sales_analysis import get_nearby_sales, get_nearby_sales_summary
+    COMPS_AVAILABLE = True
+except Exception as e:
+    print(f"Comparable sales import failed: {e}")
+
 # Community lookup
 try:
     from core.loudoun_community_lookup import create_property_community_context, CommunityLookup
@@ -4419,6 +4427,70 @@ which may signal:
 
 
 # =============================================================================
+# SECTION: COMPARABLE SALES
+# =============================================================================
+
+def display_comparable_sales_section(lat: float, lon: float):
+    """Display comparable sales from Fairfax County Commissioner of Revenue data."""
+    st.markdown("## 🏠 Comparable Sales")
+
+    if not COMPS_AVAILABLE:
+        st.info("**Comparable sales data is not available.** Module could not be loaded.")
+        return
+
+    try:
+        radius = 0.5
+        summary = get_nearby_sales_summary(lat, lon, radius_miles=radius)
+
+        total = summary["total_count"]
+        if total == 0:
+            st.info(f"No comparable sales found within {radius} miles (last 5 years).")
+            st.caption("Source: Fairfax County Commissioner of Revenue")
+            return
+
+        st.markdown(f"**{total} sales within {radius} miles** (2020–2025)")
+
+        # Summary metrics row
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if summary["median_price"]:
+                st.metric("Median Price", f"${summary['median_price']:,.0f}")
+        with col2:
+            if summary["min_price"] and summary["max_price"]:
+                st.metric("Price Range", f"${summary['min_price']:,.0f} – ${summary['max_price']:,.0f}")
+        with col3:
+            if summary["most_recent_date"]:
+                st.metric("Most Recent Sale", summary["most_recent_date"])
+
+        # Top 10 closest sales table
+        sales = summary["sales"][:10]
+        if sales:
+            st.markdown("### Closest Sales")
+            table_data = []
+            for s in sales:
+                table_data.append({
+                    "Parcel ID": s["parid"],
+                    "Sale Price": f"${s['sale_price']:,.0f}",
+                    "Sale Date": s["sale_date"] or "N/A",
+                    "Distance": f"{s['distance_miles']:.2f} mi",
+                })
+
+            st.dataframe(
+                pd.DataFrame(table_data),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+        st.caption("Source: Fairfax County Commissioner of Revenue")
+
+    except Exception as e:
+        st.error(f"Could not load comparable sales: {e}")
+        import traceback
+        with st.expander("Error Details"):
+            st.code(traceback.format_exc())
+
+
+# =============================================================================
 # SECTION: PROPERTY VALUATION
 # =============================================================================
 
@@ -5306,6 +5378,9 @@ def render_report(address: str, lat: float, lon: float):
 
         # # Valuation (now includes MLS sqft lookup)
         # display_valuation_section(address, lat, lon, sqft_result)
+
+        # Comparable Sales (local parquet data)
+        display_comparable_sales_section(lat, lon)
 
         # # AI Analysis - pass all pre-computed data including demographics
         # display_ai_analysis(

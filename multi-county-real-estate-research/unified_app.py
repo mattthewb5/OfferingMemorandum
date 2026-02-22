@@ -182,45 +182,54 @@ def main():
     if analyze_button:
         if not address:
             st.warning("⚠️ Please enter an address to analyze")
-            return
+        else:
+            # Progress indicator
+            with st.spinner("Analyzing property..."):
 
-        # Progress indicator
-        with st.spinner("Analyzing property..."):
+                # Step 1: Geocode address
+                try:
+                    lat, lon = geocode_address(address)
+                    st.session_state['coords'] = (lat, lon)
+                except GeocodingError as e:
+                    st.error(f"📍 Geocoding failed: {e}")
+                    st.info("Try entering a simpler address like 'Leesburg' or 'Vienna'")
+                    st.session_state.pop('report_generated', None)
+                    lat, lon = None, None
 
-            # Step 1: Geocode address
-            try:
-                lat, lon = geocode_address(address)
-                st.session_state['coords'] = (lat, lon)
-            except GeocodingError as e:
-                st.error(f"📍 Geocoding failed: {e}")
-                st.info("Try entering a simpler address like 'Leesburg' or 'Vienna'")
-                return
+                # Step 2: Detect county (or use override)
+                if lat is not None:
+                    if manual_county != "Auto-detect":
+                        county = manual_county
+                    else:
+                        county = detect_county(lat, lon)
 
-            # Step 2: Detect county (or use override)
-            if manual_county != "Auto-detect":
-                county = manual_county
-                st.info(f"🎯 Using manually selected county: **{COUNTY_DISPLAY_NAMES.get(county, county)}**")
-            else:
-                county = detect_county(lat, lon)
+                        if county == 'unknown':
+                            st.error("📍 Unable to determine county for this location")
+                            st.info(f"Coordinates: ({lat:.6f}, {lon:.6f})")
+                            st.info("Try selecting a county manually in Advanced Options")
+                            st.session_state.pop('report_generated', None)
+                            county = None
 
-                if county == 'unknown':
-                    st.error("📍 Unable to determine county for this location")
-                    st.info(f"Coordinates: ({lat:.6f}, {lon:.6f})")
-                    st.info("Try selecting a county manually in Advanced Options")
-                    return
+                    # Store in session state for persistent rendering
+                    if county:
+                        st.session_state['county'] = county
+                        st.session_state['address'] = address
+                        st.session_state['report_generated'] = True
 
-                st.success(f"🎯 Detected county: **{COUNTY_DISPLAY_NAMES.get(county, county)}**")
+    # ========== REPORT RENDERING (persists across reruns) ==========
+    # Render the report whenever session state has valid data.
+    # This ensures widgets inside the report (e.g., selectboxes in tabs)
+    # remain in the widget tree across Streamlit reruns triggered by
+    # widget interactions, preventing orphaned-key session resets.
+    if st.session_state.get('report_generated'):
+        county = st.session_state.get('county')
+        stored_address = st.session_state.get('address')
+        coords = st.session_state.get('coords')
 
-            # Store in session state
-            st.session_state['county'] = county
-            st.session_state['address'] = address
-
-            # Step 3: Render report
+        if county and stored_address and coords:
+            st.success(f"🎯 Detected county: **{COUNTY_DISPLAY_NAMES.get(county, county)}**")
             st.markdown("---")
-            success = _render_county_report(county, address, lat, lon)
-
-            if success:
-                st.session_state['report_generated'] = True
+            _render_county_report(county, stored_address, coords[0], coords[1])
 
     # ========== FOOTER ==========
     st.markdown("---")

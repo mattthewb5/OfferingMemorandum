@@ -515,7 +515,7 @@ except Exception as e:
 # Economic Indicators
 ECONOMIC_INDICATORS_AVAILABLE = False
 try:
-    from core.economic_indicators import (
+    from core.fairfax_economic_indicators import (
         get_lfpr_data,
         get_industry_mix_data,
         fetch_bls_data,
@@ -1662,7 +1662,7 @@ def display_crime_section(lat: float, lon: float):
                             legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
                         )
 
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width='stretch')
                     except Exception:
                         pass  # Map is optional; table below still shows
 
@@ -1675,7 +1675,7 @@ def display_crime_section(lat: float, lon: float):
 
                     st.dataframe(
                         display_df,
-                        use_container_width=True,
+                        width='stretch',
                         hide_index=True,
                         column_config={
                             'date': 'Date',
@@ -2715,7 +2715,7 @@ def display_cell_towers_section(lat: float, lon: float):
                     lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "—"
                 )
 
-                st.dataframe(display_df, use_container_width=True, hide_index=True)
+                st.dataframe(display_df, width='stretch', hide_index=True)
 
         st.caption(f"📶 Source: FCC Antenna Structure Registration, Fairfax County")
 
@@ -3354,8 +3354,8 @@ def display_economic_indicators_section():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        lfpr = lfpr_data.get("loudoun")
-        delta = f"+{lfpr_data.get('loudoun_vs_usa')} vs USA" if lfpr_data.get('loudoun_vs_usa') else None
+        lfpr = lfpr_data.get("fairfax")
+        delta = f"+{lfpr_data.get('fairfax_vs_usa')} vs USA" if lfpr_data.get('fairfax_vs_usa') else None
         st.metric(
             label="Labor Force Participation",
             value=f"{lfpr:.1f}%" if lfpr else "N/A",
@@ -3405,13 +3405,13 @@ def display_economic_indicators_section():
             if industries:
                 # Prepare data for grouped horizontal bar chart
                 sectors = [ind["sector"] for ind in industries]
-                loudoun_vals = [ind["loudoun"] or 0 for ind in industries]
+                fairfax_vals = [ind["fairfax"] or 0 for ind in industries]
                 va_vals = [ind["virginia"] or 0 for ind in industries]
                 usa_vals = [ind["usa"] or 0 for ind in industries]
 
                 # Reverse for horizontal bars (top sector at top)
                 sectors.reverse()
-                loudoun_vals.reverse()
+                fairfax_vals.reverse()
                 va_vals.reverse()
                 usa_vals.reverse()
 
@@ -3419,11 +3419,11 @@ def display_economic_indicators_section():
 
                 fig.add_trace(go.Bar(
                     y=sectors,
-                    x=loudoun_vals,
+                    x=fairfax_vals,
                     name='Fairfax Co.',
                     orientation='h',
                     marker_color='#1f77b4',
-                    text=[f"{v:.1f}%" for v in loudoun_vals],
+                    text=[f"{v:.1f}%" for v in fairfax_vals],
                     textposition='outside',
                     textfont=dict(size=14, color='black')
                 ))
@@ -3511,16 +3511,24 @@ def display_economic_indicators_section():
             employer_year_dfs[year] = format_employer_df(employers_list)
 
     with st.expander("🏢 Major Employers"):
-        # Trend highlights
+        # Trend highlights from ACFR data
         trends = get_employer_trends()
-        lcps = trends.get("lcps_growth", {})
+        fcps = trends.get("fcps_growth", {})
+        inova = trends.get("inova_growth", {})
 
-        st.info(
-            f"📈 **Key Trends (2008-2025):** "
-            f"Loudoun County Public Schools +{lcps.get('pct_change', 0):.0f}% ({lcps.get('start_employees', 0):,} → {lcps.get('end_employees', 0):,}) | "
-            f"Amazon entered top 10 in 2020 | "
-            f"Verizon declined #3 → #8"
-        )
+        if fcps.get("start_employees", 0) > 0:
+            trend_parts = [
+                f"📈 **Key Trends ({fcps.get('start_year', 2009)}-{fcps.get('end_year', 2025)}):** "
+                f"FCPS {fcps.get('pct_change', 0):+.0f}% ({fcps.get('start_employees', 0):,} → {fcps.get('end_employees', 0):,})"
+            ]
+            if inova.get("start_employees", 0) > 0:
+                trend_parts.append(
+                    f"Inova Health {inova.get('pct_change', 0):+.0f}% ({inova.get('start_employees', 0):,} → {inova.get('end_employees', 0):,})"
+                )
+            trend_parts.append("Amazon entered top 10 in 2019")
+            st.info(" | ".join(trend_parts))
+        else:
+            st.info("📈 **Major Employers:** Data loading from Fairfax County ACFR")
 
         # Year tabs
         tab_years = ["2025", "2024", "2023", "2022", "2021"]
@@ -3539,14 +3547,14 @@ def display_economic_indicators_section():
             earlier_year = st.selectbox(
                 "Select year",
                 range(2020, 2007, -1),
-                key="earlier_year_select"
+                key="fairfax_earlier_year_select"
             )
             if earlier_year in employer_year_dfs:
                 st.dataframe(employer_year_dfs[earlier_year], width='stretch', hide_index=True)
             else:
                 st.info(f"No employer data available for {earlier_year}")
 
-        st.caption("Source: Loudoun County Annual Comprehensive Financial Reports (ACFR)")
+        st.caption("Source: Fairfax County Annual Comprehensive Financial Reports (ACFR)")
 
     # =========================================================================
     # DATA SOURCES & METHODOLOGY (Expander)
@@ -3569,36 +3577,40 @@ def display_economic_indicators_section():
 - Shows percentage of employed residents by industry sector
 
 **Major Employers**
-- Source: Loudoun County Annual Comprehensive Financial Report (ACFR)
+- Source: Fairfax County Annual Comprehensive Financial Report (ACFR)
 - Updated annually (fiscal year ending June 30)
 - Employee counts may be ranges; percentages based on total county employment
         """)
 
 
 def _infer_employer_industry(employer_name: str) -> str:
-    """Infer industry category from employer name."""
+    """Infer industry category from employer name for display table."""
     name_lower = employer_name.lower()
 
-    if "school" in name_lower or "lcps" in name_lower:
-        return "Education"
-    elif "county of loudoun" in name_lower:
-        return "Government"
-    elif "homeland security" in name_lower or "postal" in name_lower:
+    if "federal government" in name_lower:
         return "Federal Government"
-    elif "hospital" in name_lower or "inova" in name_lower or "health" in name_lower:
+    elif "school" in name_lower or "fcps" in name_lower:
+        return "Education"
+    elif "george mason" in name_lower or "university" in name_lower:
+        return "Education"
+    elif "fairfax county" in name_lower or "county of fairfax" in name_lower:
+        return "Government"
+    elif "inova" in name_lower or "health system" in name_lower or "hospital" in name_lower or "medical" in name_lower:
         return "Healthcare"
+    elif "booz allen" in name_lower:
+        return "Professional Services"
+    elif "science applications" in name_lower or "saic" in name_lower or "leidos" in name_lower:
+        return "Professional Services"
     elif "amazon" in name_lower:
-        return "Technology/Logistics"
-    elif "verizon" in name_lower:
-        return "Telecommunications"
-    elif "united airlines" in name_lower or "swissport" in name_lower:
-        return "Aviation/Transportation"
-    elif "northrop" in name_lower or "raytheon" in name_lower or "rtx" in name_lower or "orbital" in name_lower:
-        return "Defense/Aerospace"
-    elif "walmart" in name_lower:
-        return "Retail"
-    elif "dean" in name_lower or "dynalectric" in name_lower:
-        return "Construction/Engineering"
+        return "Technology"
+    elif "computer science corporation" in name_lower or "mitre" in name_lower:
+        return "Technology"
+    elif "capital one" in name_lower or "navy federal" in name_lower:
+        return "Financial Services"
+    elif "federal home loan" in name_lower or "freddie mac" in name_lower:
+        return "Financial Services"
+    elif "general dynamics" in name_lower or "northrop" in name_lower or "lockheed" in name_lower:
+        return "Defense"
     else:
         return "Other"
 
@@ -3733,7 +3745,7 @@ def display_medical_access_section(lat: float, lon: float):
                     uc_display = remaining[['name', 'address', 'city', 'distance_miles']].copy()
                     uc_display['distance_miles'] = uc_display['distance_miles'].round(2)
                     uc_display.columns = ['Name', 'Address', 'City', 'Distance (mi)']
-                    st.dataframe(uc_display, use_container_width=True, hide_index=True)
+                    st.dataframe(uc_display, width='stretch', hide_index=True)
         else:
             st.info("No urgent care centers found within 3 miles.")
 
@@ -4004,10 +4016,25 @@ def display_development_section(lat: float, lon: float):
                 lat, lon, radius_miles=radius, months_back=24
             )
 
-        # 6-month window for map
-        permits_6mo = analyzer.get_permits_near_point(
-            lat, lon, radius_miles=radius, months_back=6
+        # Adaptive time window for new construction map
+        NEW_CONSTRUCTION = ['residential_new', 'commercial_new']
+
+        permits_12mo = analyzer.get_permits_near_point(
+            lat, lon, radius_miles=radius, months_back=12
         )
+        new_construction_12mo = permits_12mo[
+            permits_12mo['permit_category'].isin(NEW_CONSTRUCTION)
+        ]
+
+        if len(new_construction_12mo) >= 5:
+            map_permits = new_construction_12mo
+            map_window = 12
+        else:
+            new_construction_24mo = permits_24mo[
+                permits_24mo['permit_category'].isin(NEW_CONSTRUCTION)
+            ]
+            map_permits = new_construction_24mo
+            map_window = 24
 
         # Development pressure (recalibrated)
         pressure = analyzer.calculate_development_pressure(
@@ -4106,28 +4133,48 @@ def display_development_section(lat: float, lon: float):
                     "Transit Station Area, and Tysons Corner Urban Center."
                 )
 
-        # ── Permit map (last 6 months) ──
-        st.markdown("### Recent Construction Activity Map")
-        st.caption(f"Showing {len(permits_6mo):,} permits from the last 6 months")
+        # ── Permit map (new construction) ──
+        st.markdown("### New Construction Activity Map")
+        st.caption(
+            f"Showing {len(map_permits):,} new construction permits "
+            f"(last {map_window} months, {radius:.0f}-mile radius)"
+        )
 
-        if len(permits_6mo) > 0 and FOLIUM_AVAILABLE:
-            permit_map = _create_permits_map(permits_6mo, lat, lon)
-            if permit_map:
-                st_folium(permit_map, width=None, height=450, returned_objects=[])
+        if len(map_permits) > 0 and PLOTLY_AVAILABLE:
+            map_df = map_permits.copy()
+            map_df['date'] = map_df['issued_date'].dt.strftime('%Y-%m-%d').fillna('N/A')
 
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.markdown("🟢 **Residential New**")
-            with col2:
-                st.markdown("🔵 **Commercial New**")
-            with col3:
-                st.markdown("🟠 **Residential Reno**")
-            with col4:
-                st.markdown("⚫ **Commercial Reno**")
-        elif not FOLIUM_AVAILABLE:
-            st.info("Map display requires the folium package.")
+            fig = px.scatter_map(
+                map_df,
+                lat='centroid_lat',
+                lon='centroid_lon',
+                color='permit_type',
+                hover_name='address',
+                hover_data={
+                    'permit_type': True,
+                    'date': True,
+                    'centroid_lat': False,
+                    'centroid_lon': False,
+                },
+                height=500,
+                map_style='open-street-map',
+            )
+            fig.update_layout(
+                margin=dict(l=0, r=0, t=0, b=0),
+                map=dict(
+                    center=dict(lat=lat, lon=lon),
+                    zoom=12,
+                ),
+            )
+            st.plotly_chart(fig, width='stretch')
+            st.caption("Map shows new construction permits color-coded by type.")
+        elif not PLOTLY_AVAILABLE:
+            st.info("Map display requires the plotly package.")
         else:
-            st.info(f"No permits issued in the last 6 months within {radius:.0f} miles.")
+            st.info(
+                f"No new construction permits in the last {map_window} months "
+                f"within {radius:.0f} miles."
+            )
 
         # ── Permit type breakdown ──
         st.markdown("### Permit Type Breakdown (24 Months)")
@@ -4171,7 +4218,7 @@ def display_development_section(lat: float, lon: float):
                     legend=dict(orientation='h', y=-0.15),
                     yaxis_title='Permits',
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
         # ── Full permit table ──
         with st.expander(f"📋 View All {len(permits_24mo):,} Permits (24 Months)"):
@@ -4187,7 +4234,7 @@ def display_development_section(lat: float, lon: float):
 
             show = tbl[display_cols].copy()
             show.columns = col_names
-            st.dataframe(show, use_container_width=True, hide_index=True)
+            st.dataframe(show, width='stretch', hide_index=True)
 
         st.caption(
             f"Source: Fairfax County Permit Portal (PLUS System), "
@@ -5247,9 +5294,9 @@ def render_report(address: str, lat: float, lon: float):
             )
             display_demographics_section(demographics_data, st)
 
-        # # Economic Indicators (LFPR, Industry Mix, Major Employers)
-        # if ECONOMIC_INDICATORS_AVAILABLE:
-        #     display_economic_indicators_section()
+        # Economic Indicators (LFPR, Industry Mix, Major Employers)
+        if ECONOMIC_INDICATORS_AVAILABLE:
+            display_economic_indicators_section()
 
         # Medical Access (rewired to Fairfax module)
         display_medical_access_section(lat, lon)

@@ -98,6 +98,10 @@ TEST_ADDRESSES = {
     'burke': (38.7934, -77.2714),
     'springfield': (38.7893, -77.1872),
     'herndon': (38.9696, -77.3861),
+    '13172 ruby lace ct': (38.918914, -77.401634),
+    '13172 ruby lace ct, herndon': (38.918914, -77.401634),
+    '13172 ruby lace ct, herndon, va 20170': (38.918914, -77.401634),
+    '13172 ruby lace ct, herndon va 20170': (38.918914, -77.401634),
     'tysons': (38.9187, -77.2311),
     'falls church': (38.8823, -77.1711),
 

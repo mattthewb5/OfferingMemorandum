@@ -5122,6 +5122,108 @@ def display_footer():
 
 
 # =============================================================================
+# SECTION: COMPARABLE SALES (LOCAL PARQUET DATA)
+# =============================================================================
+
+def display_comparable_sales_section(lat: float, lon: float):
+    """Display comparable sales from local Fairfax County parquet data."""
+    st.markdown("## 💰 Comparable Sales")
+
+    try:
+        from core.fairfax_sales_analysis import get_nearby_sales
+
+        comps = get_nearby_sales(lat, lon, radius_miles=0.5, limit=10)
+
+        if not comps:
+            # Try wider radius
+            comps = get_nearby_sales(lat, lon, radius_miles=1.0, limit=10)
+
+        if not comps:
+            st.info("No comparable sales found within 1 mile of this property.")
+            st.markdown("---")
+            return
+
+        st.markdown(f"**{len(comps)} comparable sales** found within 0.5 miles (Fairfax County Commissioner of Revenue, 2020-2025)")
+
+        # Build display data with quality scoring
+        display_data = []
+        for comp in comps:
+            # Sale recency score
+            sale_date_str = comp.get('sale_date', '')
+            display_date = sale_date_str or '—'
+            recency_score = 1
+            if sale_date_str:
+                try:
+                    sale_date = datetime.strptime(sale_date_str, '%Y-%m-%d')
+                    display_date = sale_date.strftime('%b %Y')
+                    months_ago = (datetime.now() - sale_date).days / 30
+                    if months_ago <= 6:
+                        recency_score = 3
+                    elif months_ago <= 12:
+                        recency_score = 2
+                except Exception:
+                    pass
+
+            # Distance score
+            dist = comp.get('distance_miles', 99)
+            if dist < 0.1:
+                dist_score = 3
+            elif dist < 0.25:
+                dist_score = 2
+            else:
+                dist_score = 1
+
+            avg_score = (recency_score + dist_score) / 2
+            if avg_score >= 2.5:
+                quality_label = "Excellent"
+            elif avg_score >= 1.8:
+                quality_label = "Good"
+            else:
+                quality_label = "Fair"
+
+            display_data.append({
+                'Address': comp.get('address', comp.get('parid', 'N/A')),
+                'Price': f"${comp.get('sale_price', 0):,.0f}",
+                'Sale Date': display_date,
+                'Distance': f"{dist:.2f} mi",
+                'Sale Type': comp.get('sale_type', '—'),
+                'Quality': quality_label,
+                '_sort_score': avg_score,
+            })
+
+        # Sort by quality
+        display_data.sort(key=lambda x: x['_sort_score'], reverse=True)
+        for row in display_data:
+            del row['_sort_score']
+
+        df = pd.DataFrame(display_data)
+
+        def style_quality(val):
+            if val == 'Excellent':
+                return 'background-color: #d4edda; color: #155724'
+            elif val == 'Good':
+                return 'background-color: #fff3cd; color: #856404'
+            else:
+                return 'background-color: #f8d7da; color: #721c24'
+
+        styled_df = df.style.applymap(style_quality, subset=['Quality'])
+        st.dataframe(
+            styled_df,
+            use_container_width=True,
+            hide_index=True,
+            height=min(400, 50 + len(display_data) * 35)
+        )
+
+        st.caption("**Quality Score:** Based on distance (<0.1mi best) and sale recency (<6 months best)")
+        st.caption("*Source: Fairfax County Commissioner of Revenue — Sales records 2020–2025*")
+
+    except Exception as e:
+        st.error(f"Comparable sales error: {e}")
+
+    st.markdown("---")
+
+
+# =============================================================================
 # MAIN REPORT ENTRY POINT
 # =============================================================================
 
@@ -5304,7 +5406,10 @@ def render_report(address: str, lat: float, lon: float):
         # Development Activity & Building Permits
         display_development_section(lat, lon)
 
-        # # Valuation (now includes MLS sqft lookup)
+        # Comparable Sales (local parquet data — no API key required)
+        display_comparable_sales_section(lat, lon)
+
+        # # Valuation (now includes MLS sqft lookup) — requires ATTOM API key
         # display_valuation_section(address, lat, lon, sqft_result)
 
         # # AI Analysis - pass all pre-computed data including demographics

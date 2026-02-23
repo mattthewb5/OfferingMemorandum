@@ -21,6 +21,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# Claude Code
+.claude/
+
 # Data (keep structure, ignore large downloads)
 # Uncomment these if you don't want to commit data files
 # data/performance/*.csv

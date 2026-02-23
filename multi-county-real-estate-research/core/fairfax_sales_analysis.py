@@ -26,7 +26,7 @@ from typing import List, Dict, Optional
 
 SCRIPT_DIR = Path(__file__).parent
 BASE_DIR = SCRIPT_DIR.parent
-DATA_DIR = BASE_DIR / "multi-county-real-estate-research" / "data" / "fairfax"
+DATA_DIR = BASE_DIR / "data" / "fairfax"
 
 SALES_PATH = DATA_DIR / "sales" / "processed" / "sales_2020_2025.parquet"
 ADDRESS_PATH = DATA_DIR / "address_points" / "processed" / "address_points.parquet"

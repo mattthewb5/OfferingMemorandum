@@ -4975,14 +4975,9 @@ def display_ai_analysis(
         metadata = result.get('metadata', {})
         api_error = metadata.get('error', '')
 
-        st.warning("AI narrative temporarily unavailable. Please try again.")
-
-        # Show error details in expander for debugging
-        with st.expander("Error Details"):
-            if api_error:
-                st.text(f"API Error: {api_error}")
-            if error_msg and error_msg != api_error:
-                st.text(f"Error: {error_msg}")
+        st.info("🤖 AI Property Analysis temporarily unavailable.")
+        # Log error server-side only, don't expose to users
+        print(f"[AI Narrative Error] {error_msg} | API: {api_error}")
 
         # Retry button
         if st.button("🔄 Retry Narrative Generation", key="retry_narrative"):
@@ -5484,7 +5479,15 @@ def display_ai_analysis_section(address: str, lat: float, lon: float, data: Dict
         from core.api_config import get_api_key
         api_key = get_api_key('ANTHROPIC_API_KEY')
         if not api_key:
-            st.info("AI analysis requires an Anthropic API key. Configure `ANTHROPIC_API_KEY` in `.env`.")
+            st.info("🤖 AI Property Analysis temporarily unavailable.")
+            print("[AI Narrative] ANTHROPIC_API_KEY not configured in .env")
+            st.markdown("---")
+            return
+
+        # Validate key format
+        if not api_key.startswith('sk-ant-'):
+            st.info("🤖 AI Property Analysis temporarily unavailable.")
+            print(f"[AI Narrative] API key format invalid (expected sk-ant-... prefix)")
             st.markdown("---")
             return
 
@@ -5521,8 +5524,12 @@ Coordinates: {lat}, {lon} (Fairfax County, Virginia)"""
         st.markdown(response.content[0].text)
         st.caption("🤖 AI-generated analysis")
 
+    except anthropic.AuthenticationError:
+        st.info("🤖 AI Property Analysis temporarily unavailable.")
+        print("[AI Narrative] API key authentication failed - check ANTHROPIC_API_KEY in .env")
     except Exception as e:
-        st.info(f"AI analysis unavailable: {e}")
+        st.info("🤖 AI Property Analysis temporarily unavailable.")
+        print(f"[AI Narrative Error] {e}")
 
     st.markdown("---")
 

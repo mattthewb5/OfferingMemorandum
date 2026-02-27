@@ -4521,61 +4521,10 @@ This indicates {"active" if total_permits > 20 else "moderate" if total_permits 
                 st.caption(zone_description)
             st.caption("Source: Fairfax County GIS, 2025")
 
-        # Development Pressure (based on building permits)
-        # Only show section if meaningful permit data is available
-        try:
-            permits_analyzer = FairfaxPermitsAnalysis()
-            dev_pressure = permits_analyzer.calculate_development_pressure(lat, lon, radius_miles=1.0, months_back=24)
-            score = dev_pressure.get('score', 0)
-            trend = dev_pressure.get('trend', 'stable')
+        # NOTE: Development Pressure is displayed in the Development & Infrastructure section
+        # (display_development_section) to avoid duplicate/contradictory scores.
 
-            # Skip entire section if data is insufficient
-            if trend != 'insufficient_data' and (score > 0 or dev_pressure.get('total_permits', 0) > 0):
-                with st.expander("🔮 Development Pressure", expanded=False):
-                    # Display score with color
-                    if score < 25:
-                        color = "🟢"
-                        level = "Low"
-                    elif score < 50:
-                        color = "🟡"
-                        level = "Moderate"
-                    elif score < 75:
-                        color = "🟠"
-                        level = "High"
-                    else:
-                        color = "🔴"
-                        level = "Very High"
-
-                    st.markdown(f"{color} **Development Pressure:** {score}/100 ({level})")
-                    st.markdown(f"**Trend:** {trend.title()}")
-
-                    # Show current status
-                    st.markdown("**Current Status:**")
-                    st.markdown(f"• Zoned: {zone_code} ({zone_type_desc})")
-
-                    # Score breakdown
-                    breakdown = dev_pressure.get('breakdown', {})
-                    if breakdown:
-                        st.markdown("**Score Factors:**")
-                        for factor, value in breakdown.items():
-                            st.markdown(f"• {factor.replace('_', ' ').title()}: {value}")
-
-                    st.markdown("""
----
-**What This Means:**
-
-Development pressure is calculated from building permit activity within 1 mile
-over the past 24 months. Higher scores indicate more construction activity,
-which may signal:
-
-- **High pressure (60+):** Active development area with significant new construction
-- **Moderate (30-59):** Healthy development activity, typical suburban growth
-- **Low (0-29):** Established, stable neighborhood with minimal new construction
-""")
-        except Exception:
-            pass  # Silently skip if permits data unavailable
-
-        # Comparative Context        st.markdown("### 📊 Comparative Context")
+        st.markdown("### 📊 Comparative Context")
 
         st.markdown("""
 **High-Scoring Areas in Fairfax County (75-100 points):**
@@ -4586,18 +4535,6 @@ due to active mixed-use development, Metro access, and commercial investment.
 Established residential neighborhoods in Great Falls, Clifton, and Burke typically
 have minimal development pressure — valued for their stability and mature tree canopy.
 """)
-
-        try:
-            dev_pressure = permits_analyzer.calculate_development_pressure(lat, lon, radius_miles=1.0, months_back=24)
-            dev_score = dev_pressure.get('score', 0)
-            if dev_score >= 60:
-                st.markdown(f"**This Property:** Development score of {dev_score}/100 indicates an **active growth area**.")
-            elif dev_score >= 30:
-                st.markdown(f"**This Property:** Development score of {dev_score}/100 indicates **moderate activity** — typical suburban Fairfax.")
-            else:
-                st.markdown(f"**This Property:** Development score of {dev_score}/100 indicates a **stable, established neighborhood**.")
-        except Exception:
-            pass
 
     except Exception as e:
         st.warning(f"Zoning analysis error: {str(e)}")

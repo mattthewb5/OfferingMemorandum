@@ -4165,6 +4165,33 @@ def display_development_section(lat: float, lon: float):
                 pass
             hospitals_group.add_to(m)
 
+            # Electric/Gas lines layer
+            utilities_group = folium.FeatureGroup(name='⚡ Electric/Gas Lines', show=True)
+            try:
+                import geopandas as _ugpd
+                _util_path = os.path.join(DATA_DIR, 'utilities', 'processed', 'utility_lines.parquet')
+                _util_gdf = _ugpd.read_parquet(_util_path)
+                for _, _urow in _util_gdf.iterrows():
+                    _utype = _urow.get('utility_type', '')
+                    _geom = _urow.geometry
+                    if _geom is None:
+                        continue
+                    _coords = [[c[1], c[0]] for c in _geom.coords]
+                    if _utype == 'electric':
+                        folium.PolyLine(
+                            _coords, color='#FFD700', weight=2, opacity=0.7,
+                            tooltip=f"Electric Line ({_urow.get('operator', 'Unknown')})"
+                        ).add_to(utilities_group)
+                    elif _utype == 'gas':
+                        folium.PolyLine(
+                            _coords, color='#FF6B35', weight=2, opacity=0.6,
+                            dash_array='5',
+                            tooltip=f"Gas Line ({_urow.get('operator', 'Unknown')})"
+                        ).add_to(utilities_group)
+            except Exception:
+                pass
+            utilities_group.add_to(m)
+
             # Crime incidents layer (default OFF — user opts in)
             crime_group = folium.FeatureGroup(name='🚨 Crime Incidents', show=False)
             try:

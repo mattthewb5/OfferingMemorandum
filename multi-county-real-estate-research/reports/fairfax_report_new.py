@@ -1944,6 +1944,101 @@ def _compute_location_score(traffic_data, flood_data, parks_data, metro_data, no
     return max(1.0, min(10.0, round(score * 2) / 2))  # round to nearest 0.5
 
 
+def display_emergency_services_section(lat: float, lon: float):
+    """Display fire/police station proximity and ISO fire protection rating."""
+    st.markdown("## 🚒 Emergency Services")
+
+    try:
+        from core.fairfax_emergency_services_analysis import FairfaxEmergencyServicesAnalysis
+        esa = FairfaxEmergencyServicesAnalysis()
+
+        # Gather data
+        fire = esa.get_nearest_fire_station(lat, lon)
+        police = esa.get_nearest_police_station(lat, lon)
+        iso = esa.assess_fire_protection_iso(lat, lon)
+        response = esa.get_response_time_estimates(lat, lon)
+        coverage = esa.get_emergency_services_coverage(lat, lon)
+
+        # ── Top-level metrics ──
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            fire_dist = fire.get('distance_miles')
+            st.metric("Nearest Fire Station", f"{fire_dist:.1f} mi" if fire_dist else "N/A")
+        with col2:
+            police_dist = police.get('distance_miles')
+            st.metric("Nearest Police Station", f"{police_dist:.1f} mi" if police_dist else "N/A")
+        with col3:
+            iso_rating = iso.get('rating', 'N/A')
+            iso_class = iso.get('iso_class_range', '')
+            st.metric("ISO Fire Rating", f"{iso_rating}")
+        with col4:
+            fire_resp = response.get('fire_response', {})
+            est_min = fire_resp.get('estimated_minutes')
+            st.metric("Est. Fire Response", f"~{est_min:.0f} min" if est_min else "N/A")
+
+        # ── Fire Station Details ──
+        with st.expander("🚒 Fire Station Details"):
+            if fire.get('station_name') and not fire.get('error'):
+                st.markdown(f"**{fire.get('station_full_name') or fire.get('station_name')}**")
+                if fire.get('address'):
+                    st.markdown(f"- Address: {fire['address']}")
+                st.markdown(f"- Distance: {fire.get('distance_miles', 0):.1f} miles")
+                drive = fire.get('drive_time_minutes')
+                if drive:
+                    st.markdown(f"- Est. Drive Time: ~{drive} min")
+            else:
+                st.markdown("Fire station data not available.")
+
+            # ISO assessment
+            st.markdown("---")
+            st.markdown("**ISO Fire Protection Classification**")
+            if iso.get('rating') and not iso.get('error'):
+                st.markdown(f"- Rating: **{iso['rating']}** (Class {iso.get('iso_class_range', 'N/A')})")
+                st.markdown(f"- Status: {iso.get('iso_threshold_status', 'N/A').title()} 5-mile threshold")
+                if iso.get('insurance_impact'):
+                    st.markdown(f"- Insurance Impact: {iso['insurance_impact']}")
+            st.caption("ISO ratings affect homeowner insurance premiums. Properties within 5 miles of a fire station typically receive better rates.")
+
+        # ── Police Station Details ──
+        with st.expander("👮 Police Station Details"):
+            if police.get('station_name') and not police.get('error'):
+                st.markdown(f"**{police['station_name']}**")
+                if police.get('address'):
+                    st.markdown(f"- Address: {police['address']}")
+                st.markdown(f"- Distance: {police.get('distance_miles', 0):.1f} miles")
+                if police.get('station_type'):
+                    st.markdown(f"- Type: {police['station_type']}")
+                if police.get('phone'):
+                    st.markdown(f"- Phone: {police['phone']}")
+            else:
+                st.markdown("Police station data not available.")
+
+            # Coverage summary
+            fire_count = coverage.get('fire_count', 0)
+            police_count = coverage.get('police_count', 0)
+            if fire_count or police_count:
+                st.markdown("---")
+                st.markdown(f"**Coverage (within 5 mi):** {fire_count} fire station(s), {police_count} police station(s)")
+
+        # ── Response time estimates ──
+        with st.expander("⏱️ Response Time Estimates"):
+            fire_resp = response.get('fire_response', {})
+            police_resp = response.get('police_response', {})
+            if fire_resp.get('estimated_minutes'):
+                st.markdown(f"- **Fire:** ~{fire_resp['estimated_minutes']:.0f} min from {fire_resp.get('station_name', 'nearest station')} ({fire_resp.get('distance_miles', 0):.1f} mi)")
+            if police_resp.get('estimated_minutes'):
+                st.markdown(f"- **Police:** ~{police_resp['estimated_minutes']:.0f} min from {police_resp.get('station_name', 'nearest station')} ({police_resp.get('distance_miles', 0):.1f} mi)")
+            note = response.get('note', '')
+            if note:
+                st.caption(note)
+            st.caption("Estimates based on average emergency vehicle speed of 20 mph. Actual times vary by time of day and traffic.")
+
+    except Exception as e:
+        st.info("Emergency services data is currently unavailable.")
+        import logging
+        logging.warning(f"Emergency services section error: {e}")
+
+
 def display_location_quality_section(lat: float, lon: float, address: str):
     """Display unified Location Quality section.
 
@@ -4291,6 +4386,40 @@ def display_development_section(lat: float, lon: float):
                 pass
             utilities_group.add_to(m)
 
+            # Fire & Police stations layer
+            emergency_group = folium.FeatureGroup(name='🚒 Fire & Police Stations', show=False)
+            try:
+                _es_dir = os.path.join(DATA_DIR, 'emergency_services', 'processed')
+                _fire_df = pd.read_parquet(os.path.join(_es_dir, 'fire_stations.parquet'))
+                for _, _fs in _fire_df.iterrows():
+                    _fs_lat = _fs.get('latitude')
+                    _fs_lon = _fs.get('longitude')
+                    if pd.notna(_fs_lat) and pd.notna(_fs_lon):
+                        _fs_dist = haversine_distance(lat, lon, _fs_lat, _fs_lon)
+                        if _fs_dist <= 5.0:
+                            folium.Marker(
+                                [_fs_lat, _fs_lon],
+                                icon=folium.Icon(color='red', icon='fire-extinguisher', prefix='fa'),
+                                popup=f"🚒 {_fs.get('station_name', 'Fire Station')}<br>{_fs.get('address', '')}<br>{_fs_dist:.1f} mi",
+                                tooltip=f"{_fs.get('station_name', 'Fire Station')} ({_fs_dist:.1f} mi)"
+                            ).add_to(emergency_group)
+                _police_df = pd.read_parquet(os.path.join(_es_dir, 'police_stations.parquet'))
+                for _, _ps in _police_df.iterrows():
+                    _ps_lat = _ps.get('latitude')
+                    _ps_lon = _ps.get('longitude')
+                    if pd.notna(_ps_lat) and pd.notna(_ps_lon):
+                        _ps_dist = haversine_distance(lat, lon, _ps_lat, _ps_lon)
+                        if _ps_dist <= 5.0:
+                            folium.Marker(
+                                [_ps_lat, _ps_lon],
+                                icon=folium.Icon(color='darkblue', icon='shield', prefix='fa'),
+                                popup=f"👮 {_ps.get('station_name', 'Police Station')}<br>{_ps.get('address', '')}<br>{_ps_dist:.1f} mi",
+                                tooltip=f"{_ps.get('station_name', 'Police Station')} ({_ps_dist:.1f} mi)"
+                            ).add_to(emergency_group)
+            except Exception:
+                pass
+            emergency_group.add_to(m)
+
             # Crime incidents layer (default OFF — user opts in)
             crime_group = folium.FeatureGroup(name='🚨 Crime Incidents', show=False)
             try:
@@ -5712,6 +5841,9 @@ def render_report(address: str, lat: float, lon: float):
 
         # 2. Crime & Safety
         display_crime_section(lat, lon)
+
+        # 2b. Emergency Services (fire/police stations, ISO rating)
+        display_emergency_services_section(lat, lon)
 
         # 3. Location Quality (unified — replaces traffic, emergency services)
         display_location_quality_section(lat, lon, address)

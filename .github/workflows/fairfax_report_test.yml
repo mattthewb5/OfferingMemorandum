@@ -1,0 +1,35 @@
+name: Fairfax Report Tests
+on:
+  push:
+    paths: ['multi-county-real-estate-research/reports/fairfax_report_new.py', 'multi-county-real-estate-research/core/fairfax_*.py']
+  pull_request:
+    paths: ['multi-county-real-estate-research/reports/fairfax_report_new.py', 'multi-county-real-estate-research/core/fairfax_*.py']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: multi-county-real-estate-research
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Syntax check
+        run: python -c "import ast; ast.parse(open('reports/fairfax_report_new.py').read())"
+      - name: No Loudoun text leak
+        run: |
+          if grep -n "Loudoun County Public Schools\|LCPS Boundaries\|Loudoun County ACFR\|loudoun_report" reports/fairfax_report_new.py; then
+            echo "FAIL: Loudoun text found in Fairfax report"
+            exit 1
+          fi
+      - name: Athens protection check
+        run: |
+          if git diff origin/main --name-only | grep "streamlit_app.py\|athens/"; then
+            echo "FAIL: Athens files modified"
+            exit 1
+          fi
+      - name: Run unit tests
+        run: python -m pytest tests/test_fairfax_report.py -v

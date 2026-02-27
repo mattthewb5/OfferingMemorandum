@@ -3662,8 +3662,8 @@ def _display_maternity_content(lat: float, lon: float):
     hospitals_sorted = sorted(hospitals, key=lambda x: x['distance_miles'])
 
     # Summary at top
-    fairfax_hospitals = [h for h in hospitals_sorted if h.get('in_fairfax_county', not h.get('in_loudoun_county', False))]
-    nearby_other = [h for h in hospitals_sorted if not h.get('in_fairfax_county', not h.get('in_loudoun_county', False))]
+    fairfax_hospitals = [h for h in hospitals_sorted if h.get('in_fairfax_county', False)]
+    nearby_other = [h for h in hospitals_sorted if not h.get('in_fairfax_county', False)]
 
     st.markdown(f"""
 **{len(fairfax_hospitals)} birthing hospitals in Fairfax County** and **{len(nearby_other)} nearby in adjacent counties**.
@@ -3677,7 +3677,7 @@ All hospitals shown have labor & delivery units, NICUs, and are rated by CMS and
 
         distance = hospital['distance_miles']
         name = hospital.get('name', 'Unknown Hospital')
-        county_badge = "📍 Fairfax" if hospital.get('in_fairfax_county', not hospital.get('in_loudoun_county', False)) else "📍 Adjacent County"
+        county_badge = "📍 Fairfax" if hospital.get('in_fairfax_county', False) else "📍 Adjacent County"
 
         stars = format_star_rating(quality.get('cms_overall_rating'))
         safety_grade = quality.get('leapfrog_safety_grade', 'N/A')

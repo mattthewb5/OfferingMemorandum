@@ -4309,6 +4309,31 @@ which may signal:
         except Exception:
             pass  # Silently skip if permits data unavailable
 
+        # Comparative Context (matches Loudoun)
+        st.markdown("### 📊 Comparative Context")
+
+        st.markdown("""
+**High-Scoring Areas in Fairfax County (75-100 points):**
+Areas near Tysons Corner, Reston Town Center, and the Dulles Corridor tend to score highest
+due to active mixed-use development, Metro access, and commercial investment.
+
+**Low-Scoring Areas in Fairfax County (0-25 points):**
+Established residential neighborhoods in Great Falls, Clifton, and Burke typically
+have minimal development pressure — valued for their stability and mature tree canopy.
+""")
+
+        try:
+            dev_pressure = permits_analyzer.calculate_development_pressure(lat, lon, radius_miles=1.0, months_back=24)
+            dev_score = dev_pressure.get('score', 0)
+            if dev_score >= 60:
+                st.markdown(f"**This Property:** Development score of {dev_score}/100 indicates an **active growth area**.")
+            elif dev_score >= 30:
+                st.markdown(f"**This Property:** Development score of {dev_score}/100 indicates **moderate activity** — typical suburban Fairfax.")
+            else:
+                st.markdown(f"**This Property:** Development score of {dev_score}/100 indicates a **stable, established neighborhood**.")
+        except Exception:
+            pass
+
     except Exception as e:
         st.warning(f"Zoning analysis error: {str(e)}")
         import traceback

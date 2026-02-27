@@ -4134,11 +4134,10 @@ def display_development_section(lat: float, lon: float):
             st.metric("Trend", f"{trend_icon} {trend.title()}")
             st.caption("12-month comparison")
 
-        if radius > 2.0:
+        if radius > 1.0:
             st.caption(
                 f"ℹ️ Search radius expanded to {radius:.0f} miles "
-                f"(fewer than 20 permits within 2 miles — property is near "
-                f"the county boundary)."
+                f"(fewer than 20 permits within 1 mile)."
             )
 
         # ── Development narrative ──

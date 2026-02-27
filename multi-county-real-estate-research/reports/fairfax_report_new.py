@@ -4165,6 +4165,42 @@ def display_development_section(lat: float, lon: float):
                 pass
             hospitals_group.add_to(m)
 
+            # Crime incidents layer (default OFF — user opts in)
+            crime_group = folium.FeatureGroup(name='🚨 Crime Incidents', show=False)
+            try:
+                from core.fairfax_crime_analysis import FairfaxCrimeAnalysis
+                crime_analyzer = FairfaxCrimeAnalysis()
+                crimes_nearby = crime_analyzer.get_crimes_near_point(lat, lon, radius_miles=2.0)
+                if crimes_nearby is not None and len(crimes_nearby) > 0:
+                    CRIME_COLORS = {
+                        'theft': '#FF8C00', 'larceny': '#FF8C00',
+                        'burglary': '#FF4500', 'assault': '#DC143C',
+                        'vandalism': '#9370DB', 'vehicle': '#4682B4',
+                        'robbery': '#DC143C',
+                    }
+                    for _, crime in crimes_nearby.iterrows():
+                        c_lat = crime.get('latitude', crime.get('lat'))
+                        c_lon = crime.get('longitude', crime.get('lon'))
+                        if pd.notna(c_lat) and pd.notna(c_lon):
+                            offense = str(crime.get('offense_category', crime.get('offense', 'other'))).lower()
+                            color = '#808080'
+                            for key, clr in CRIME_COLORS.items():
+                                if key in offense:
+                                    color = clr
+                                    break
+                            folium.CircleMarker(
+                                location=[c_lat, c_lon],
+                                radius=5,
+                                color=color,
+                                fill=True,
+                                fill_opacity=0.6,
+                                popup=f"{crime.get('offense_description', crime.get('offense', 'Incident'))}<br>{crime.get('date', '')}",
+                                tooltip=crime.get('offense_category', crime.get('offense', 'Incident'))
+                            ).add_to(crime_group)
+            except Exception:
+                pass
+            crime_group.add_to(m)
+
             # Layer control
             folium.LayerControl(position='topright', collapsed=False).add_to(m)
 

@@ -1765,24 +1765,36 @@ def _compute_location_score(traffic_data, flood_data, parks_data, metro_data, no
     """Compute location quality score out of 10."""
     score = 5.0  # baseline
 
-    # Road type component
+    # Road type component (property's own street)
     road_suffix, _ = _classify_road_type(address)
     road_scores = {
-        "CUL-DE-SAC": 2, "COURT": 2, "PLACE": 1, "LANE": 1,
-        "WAY": 1, "DRIVE": 0.5, "AVENUE": 0, "ROAD": 0,
-        "BOULEVARD": -0.5, "PARKWAY": -0.5, "HIGHWAY": -1,
+        "CUL-DE-SAC": 2.0, "COURT": 2.0, "PLACE": 1.5, "LANE": 1.0,
+        "WAY": 1.0, "DRIVE": 0.5, "AVENUE": 0, "ROAD": 0,
+        "BOULEVARD": -0.5, "PARKWAY": -0.5, "HIGHWAY": -1.0,
     }
     score += road_scores.get(road_suffix, 0)
 
-    # Highway access distance
+    # Highway access distance — use ADT-filtered highway, not raw nearest road
     if traffic_data:
-        nearest_dist = traffic_data.get('nearest_distance_miles', 5)
-        if nearest_dist < 1:
-            score += 1
-        elif nearest_dist < 3:
-            score += 1.5
-        elif nearest_dist < 5:
-            score += 1
+        nearby = traffic_data.get('nearby', [])
+        nearby_dicts = [r for r in nearby if isinstance(r, dict)]
+        # Find nearest highway (ADT >= 40,000)
+        highways = [r for r in nearby_dicts if (r.get('adt') or 0) >= 40000]
+        if highways:
+            hw_dist = min(r.get('distance_miles', 99) for r in highways)
+        else:
+            # Fallback to nearest major road (ADT >= 10,000)
+            majors = [r for r in nearby_dicts if (r.get('adt') or 0) >= 10000]
+            hw_dist = min(r.get('distance_miles', 99) for r in majors) if majors else 10
+
+        if hw_dist < 1:
+            score += 0.5      # too close is noisy
+        elif hw_dist < 3:
+            score += 1.5      # sweet spot
+        elif hw_dist < 5:
+            score += 1.0
+        else:
+            score += 0.5
     else:
         score += 0.5
 
@@ -1924,20 +1936,41 @@ def display_location_quality_section(lat: float, lon: float, address: str):
         road_suffix, road_desc = _classify_road_type(address)
         st.markdown(f"🛣️ **Road Type:** {road_desc}")
 
-        # Highway Access (nearest high-traffic road from VDOT data)
+        # Highway Access — filter by ADT threshold, then sort by distance
         nearby = traffic_data.get('nearby', [])
-        if nearby and isinstance(nearby, list) and len(nearby) > 0:
-            nearest_road = nearby[0] if isinstance(nearby[0], dict) else {}
-            road_name = nearest_road.get('road_name', 'N/A')
-            road_dist = nearest_road.get('distance_miles', 0)
-            road_adt = nearest_road.get('adt', 0)
-            hw_icon = "🟢" if road_dist > 1.0 else ("🟡" if road_dist > 0.5 else "🔴")
-            adt_str = f" • ~{road_adt:,} vehicles/day" if road_adt else ""
-            st.markdown(f"🚗 **Highway Access:** {hw_icon} {road_name} ({road_dist:.1f} mi){adt_str}")
+        nearby_dicts = [r for r in nearby if isinstance(r, dict)]
 
-            # Second road if available
-            if len(nearby) > 1:
-                r2 = nearby[1] if isinstance(nearby[1], dict) else {}
+        # Highway: ADT >= 40,000 (interstates, primary state routes)
+        highways = sorted(
+            [r for r in nearby_dicts if (r.get('adt') or 0) >= 40000],
+            key=lambda r: r.get('distance_miles', 99)
+        )
+        # Major road: ADT >= 10,000 (county parkways, secondary routes)
+        major_roads = sorted(
+            [r for r in nearby_dicts if 10000 <= (r.get('adt') or 0) < 40000],
+            key=lambda r: r.get('distance_miles', 99)
+        )
+
+        if highways:
+            hw = highways[0]
+            hw_name = hw.get('road_name', 'N/A')
+            hw_dist = hw.get('distance_miles', 0)
+            hw_adt = hw.get('adt', 0)
+            hw_icon = "🟢" if hw_dist > 1.0 else ("🟡" if hw_dist > 0.5 else "🔴")
+            adt_str = f" • ~{hw_adt:,} vehicles/day" if hw_adt else ""
+            st.markdown(f"🚗 **Highway Access:** {hw_icon} {hw_name} ({hw_dist:.1f} mi){adt_str}")
+        elif major_roads:
+            mr = major_roads[0]
+            mr_name = mr.get('road_name', 'N/A')
+            mr_dist = mr.get('distance_miles', 0)
+            mr_adt = mr.get('adt', 0)
+            hw_icon = "🟢" if mr_dist > 1.0 else ("🟡" if mr_dist > 0.5 else "🔴")
+            adt_str = f" • ~{mr_adt:,} vehicles/day" if mr_adt else ""
+            st.markdown(f"🚗 **Highway Access:** {hw_icon} {mr_name} ({mr_dist:.1f} mi){adt_str}")
+
+        if major_roads:
+            r2 = major_roads[0] if not highways else (major_roads[0] if major_roads else None)
+            if r2 and (not highways or r2.get('road_name') != highways[0].get('road_name')):
                 r2_name = r2.get('road_name', '')
                 r2_dist = r2.get('distance_miles', 0)
                 r2_adt = r2.get('adt', 0)
@@ -1997,15 +2030,26 @@ def display_location_quality_section(lat: float, lon: float, address: str):
 
     # Road Access Details
     with st.expander("ℹ️ Road Access Details"):
-        if nearby and isinstance(nearby, list) and len(nearby) > 0:
-            r = nearby[0] if isinstance(nearby[0], dict) else {}
-            st.markdown(f"**Nearest Major Road:** {r.get('road_name', 'N/A')}")
+        if highways:
+            hw = highways[0]
+            st.markdown(f"**Nearest Highway (≥40K ADT):** {hw.get('road_name', 'N/A')}")
+            if hw.get('adt'):
+                st.markdown(f"- Average Daily Traffic: {hw['adt']:,} vehicles/day")
+            st.markdown(f"- Distance: {hw.get('distance_miles', 0):.1f} miles")
+        if major_roads:
+            mr = major_roads[0]
+            st.markdown(f"**Nearest Major Road (≥10K ADT):** {mr.get('road_name', 'N/A')}")
+            if mr.get('adt'):
+                st.markdown(f"- Average Daily Traffic: {mr['adt']:,} vehicles/day")
+            st.markdown(f"- Distance: {mr.get('distance_miles', 0):.1f} miles")
+        if not highways and not major_roads and nearby_dicts:
+            r = nearby_dicts[0]
+            st.markdown(f"**Nearest Road:** {r.get('road_name', 'N/A')}")
             if r.get('adt'):
                 st.markdown(f"- Average Daily Traffic: {r['adt']:,} vehicles/day")
             st.markdown(f"- Distance: {r.get('distance_miles', 0):.1f} miles")
-            st.markdown(f"- Traffic Level: {r.get('traffic_level', 'N/A')}")
         st.markdown("")
-        st.markdown("**Travel Time Destinations (Fairfax):**")
+        st.markdown("**Travel Times:**")
         for dest in FAIRFAX_TRAVEL_DESTINATIONS:
             st.markdown(f"• {dest}")
         st.caption("Data: VDOT Traffic Volume Database")

@@ -4492,6 +4492,43 @@ def display_development_section(lat: float, lon: float):
                 pass
             trails_group.add_to(m)
 
+            # Bus routes layer
+            bus_group = folium.FeatureGroup(name='🚌 Bus Routes', show=False)
+            try:
+                import geopandas as _bgpd
+                from shapely.geometry import MultiLineString as _BusMLS
+                _bus_path = os.path.join(DATA_DIR, 'transit', 'processed', 'bus_routes.parquet')
+                _bus_gdf = _bgpd.read_parquet(_bus_path)
+                # Filter to routes whose geometry is within ~5mi of property
+                _bus_gdf['_clat'] = _bus_gdf.geometry.centroid.y
+                _bus_gdf['_clon'] = _bus_gdf.geometry.centroid.x
+                _bus_near = _bus_gdf[
+                    _bus_gdf.apply(lambda r: haversine_distance(lat, lon, r['_clat'], r['_clon']) <= 5.0, axis=1)
+                ]
+                _bus_colors = {
+                    'Local': '#2196F3', 'Express': '#FF5722', 'Circulator': '#4CAF50',
+                    'MetroExtra': '#9C27B0', 'Regional': '#FF9800',
+                }
+                for _, _br in _bus_near.iterrows():
+                    _bnum = _br.get('route_number', '')
+                    _bname = _br.get('route_name', '')
+                    _btype = _br.get('service_type', 'Local')
+                    _bcolor = _bus_colors.get(_btype, '#2196F3')
+                    _btooltip = f"Route {_bnum}: {_bname} ({_btype})"
+                    _bgeom = _br.geometry
+                    if isinstance(_bgeom, _BusMLS):
+                        for _bpart in _bgeom.geoms:
+                            _bc = [[p[1], p[0]] for p in _bpart.coords]
+                            folium.PolyLine(_bc, color=_bcolor, weight=2, opacity=0.6,
+                                            tooltip=_btooltip).add_to(bus_group)
+                    else:
+                        _bc = [[p[1], p[0]] for p in _bgeom.coords]
+                        folium.PolyLine(_bc, color=_bcolor, weight=2, opacity=0.6,
+                                        tooltip=_btooltip).add_to(bus_group)
+            except Exception:
+                pass
+            bus_group.add_to(m)
+
             # Layer control
             folium.LayerControl(position='topright', collapsed=False).add_to(m)
 

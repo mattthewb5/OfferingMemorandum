@@ -1752,13 +1752,40 @@ FAIRFAX_TRAVEL_DESTINATIONS = [
 ]
 
 
-def _classify_road_type(address: str) -> Tuple[str, str]:
-    """Classify road type from address suffix."""
+def _classify_road_type(address: str, traffic_data=None) -> Tuple[str, str]:
+    """Classify road type from address suffix, validated against ADT data."""
     addr_upper = address.upper().strip()
+
+    # Try suffix matching first
+    matched_suffix = None
     for suffix, desc in ROAD_TYPES.items():
         if addr_upper.endswith(suffix) or f" {suffix} " in addr_upper or f" {suffix}," in addr_upper:
-            return suffix, desc
-    return "ROAD", "Collector/Arterial (Moderate traffic)"
+            matched_suffix = suffix
+            break
+
+    # If we have ADT data for the property's own street, use it to validate/override
+    if traffic_data:
+        nearby = traffic_data.get('nearby', [])
+        nearby_dicts = [r for r in nearby if isinstance(r, dict)]
+        # Find the closest road (likely the property's own street)
+        if nearby_dicts:
+            own_road = nearby_dicts[0]
+            adt = own_road.get('adt') or 0
+            if adt < 5000:
+                # Low traffic = local street regardless of suffix
+                if matched_suffix and matched_suffix in ("ROAD", "AVENUE", "DRIVE"):
+                    return matched_suffix, ROAD_TYPES.get(matched_suffix, "Local Street (Low traffic)")
+                return matched_suffix or "LOCAL", "Local Street (Low traffic)"
+            elif adt >= 40000:
+                return matched_suffix or "HIGHWAY", "Highway Frontage (High traffic)"
+            elif adt >= 15000:
+                return matched_suffix or "BOULEVARD", "Arterial Road (Higher traffic)"
+
+    if matched_suffix:
+        return matched_suffix, ROAD_TYPES[matched_suffix]
+
+    # Fallback: unknown suffix → local street (not collector/arterial)
+    return "LOCAL", "Local Street"
 
 
 def _compute_location_score(traffic_data, flood_data, parks_data, metro_data, noise_dist, address):
@@ -1766,10 +1793,10 @@ def _compute_location_score(traffic_data, flood_data, parks_data, metro_data, no
     score = 5.0  # baseline
 
     # Road type component (property's own street)
-    road_suffix, _ = _classify_road_type(address)
+    road_suffix, _ = _classify_road_type(address, traffic_data)
     road_scores = {
         "CUL-DE-SAC": 2.0, "COURT": 2.0, "PLACE": 1.5, "LANE": 1.0,
-        "WAY": 1.0, "DRIVE": 0.5, "AVENUE": 0, "ROAD": 0,
+        "WAY": 1.0, "LOCAL": 1.0, "DRIVE": 0.5, "AVENUE": 0, "ROAD": 0,
         "BOULEVARD": -0.5, "PARKWAY": -0.5, "HIGHWAY": -1.0,
     }
     score += road_scores.get(road_suffix, 0)
@@ -1933,7 +1960,7 @@ def display_location_quality_section(lat: float, lon: float, address: str):
         st.markdown("**Key Location Features:**")
 
         # Road Type
-        road_suffix, road_desc = _classify_road_type(address)
+        road_suffix, road_desc = _classify_road_type(address, traffic_data)
         st.markdown(f"🛣️ **Road Type:** {road_desc}")
 
         # Highway Access — filter by ADT threshold, then sort by distance

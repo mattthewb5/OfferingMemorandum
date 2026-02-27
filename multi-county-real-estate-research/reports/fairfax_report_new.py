@@ -5518,7 +5518,84 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
     st.markdown("### Current Value Estimates")
     st.info("Configure ATTOM and RentCast API keys to enable current value estimates, valuation projections, and investment analysis.")
 
+    # Historical Sales Trends (county-wide from parquet files)
+    _display_historical_sales_trends()
+
     st.markdown("---")
+
+
+def _display_historical_sales_trends():
+    """Display Fairfax County historical median sale price trend chart."""
+    try:
+        sales_dir = os.path.join(DATA_DIR, 'sales', 'processed')
+        frames = []
+        for fname in ['sales_pre2010.parquet', 'sales_2010_2014.parquet', 'sales_2015_2019.parquet']:
+            fpath = os.path.join(sales_dir, fname)
+            if os.path.exists(fpath):
+                frames.append(pd.read_parquet(fpath))
+
+        if not frames:
+            return
+
+        all_sales = pd.concat(frames, ignore_index=True)
+        # Filter to valid verified sales with reasonable prices
+        valid = all_sales[
+            (all_sales['SALE_TYPE'].str.contains('valid', case=False, na=False)) &
+            (all_sales['SALE_PRICE'] > 50000) &
+            (all_sales['SALE_PRICE'] < 5000000) &
+            (all_sales['SALE_YEAR'] >= 2000)
+        ].copy()
+
+        if len(valid) < 100:
+            return
+
+        yearly = valid.groupby('SALE_YEAR').agg(
+            median_price=('SALE_PRICE', 'median'),
+            count=('SALE_PRICE', 'count')
+        ).reset_index()
+        yearly = yearly[yearly['count'] >= 50]  # Only show years with enough data
+
+        if len(yearly) < 5:
+            return
+
+        with st.expander("📈 Fairfax County Historical Sales Trends (2000-2019)", expanded=False):
+            import plotly.graph_objects as go
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=yearly['SALE_YEAR'],
+                y=yearly['median_price'],
+                mode='lines+markers',
+                name='Median Sale Price',
+                line=dict(color='#1f77b4', width=2),
+                marker=dict(size=6),
+                hovertemplate='%{x}: $%{y:,.0f}<br>(%{customdata:,} sales)<extra></extra>',
+                customdata=yearly['count'],
+            ))
+            fig.update_layout(
+                title='Fairfax County Median Sale Price by Year',
+                xaxis_title='Year',
+                yaxis_title='Median Sale Price ($)',
+                yaxis=dict(tickformat='$,.0f'),
+                height=350,
+                margin=dict(l=60, r=20, t=40, b=40),
+                showlegend=False,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Key stats
+            first_yr = yearly.iloc[0]
+            last_yr = yearly.iloc[-1]
+            pct_change = ((last_yr['median_price'] - first_yr['median_price']) / first_yr['median_price']) * 100
+            peak = yearly.loc[yearly['median_price'].idxmax()]
+
+            st.markdown(f"- **{int(first_yr['SALE_YEAR'])}:** ${first_yr['median_price']:,.0f} median → **{int(last_yr['SALE_YEAR'])}:** ${last_yr['median_price']:,.0f} median ({pct_change:+.0f}%)")
+            st.markdown(f"- **Peak Year:** {int(peak['SALE_YEAR'])} (${peak['median_price']:,.0f} median)")
+            st.markdown(f"- **Total sales analyzed:** {int(yearly['count'].sum()):,} verified transactions")
+            st.caption("Source: Fairfax County Commissioner of Revenue — Sales Records 2000-2019")
+
+    except Exception:
+        pass  # Non-critical feature
 
 
 def _display_value_api_prompt():

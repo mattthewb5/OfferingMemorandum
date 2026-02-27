@@ -394,18 +394,19 @@ from core.fairfax_transit_analysis import FairfaxTransitAnalysis
 from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 # from core.mls_sqft_lookup import get_mls_sqft  # DISABLED - not on this branch
 from core.api_config import get_api_key
-from core.loudoun_school_performance import (
+# Shared school performance analysis (VDOE data used by all VA counties)
+from core.loudoun_school_performance import (  # noqa: E402 — shared module, not county-specific
     load_performance_data as load_performance_with_state_avg,
-    load_school_coordinates as _load_loudoun_school_coordinates,
+    load_school_coordinates as _shared_load_school_coordinates,
     find_peer_schools,
-    create_performance_chart as _loudoun_create_performance_chart,
+    create_performance_chart as _shared_create_performance_chart,
     normalize_school_name,
-    match_school_in_performance_data as _loudoun_match_school_in_performance_data
+    match_school_in_performance_data as _shared_match_school_in_performance_data
 )
 
 # Fairfax wrappers: override county filter to 'Fairfax County'
 def create_performance_chart(subject_school, peer_schools, metric_name, metric_col, school_type, perf_df):
-    return _loudoun_create_performance_chart(
+    return _shared_create_performance_chart(
         subject_school, peer_schools, metric_name, metric_col, school_type, perf_df,
         division_name='Fairfax County'
     )
@@ -431,7 +432,7 @@ def _schools_have_data(subject_school, peer_schools, metric_col, perf_df):
     return False
 
 def match_school_in_performance_data(school_name, perf_df):
-    return _loudoun_match_school_in_performance_data(
+    return _shared_match_school_in_performance_data(
         school_name, perf_df, division_name='Fairfax County'
     )
 
@@ -463,10 +464,11 @@ def load_school_coordinates() -> 'pd.DataFrame':
         return df[['School_Name', 'School_Type', 'Latitude', 'Longitude']].reset_index(drop=True)
     except Exception as e:
         print(f"Error loading Fairfax school coordinates: {e}")
-        return _load_loudoun_school_coordinates()  # Fallback
-from core.loudoun_places_analysis import analyze_neighborhood
-from core.loudoun_traffic_volume import LoudounTrafficVolumeAnalyzer
-from core.loudoun_narrative_generator import compile_narrative_data, generate_property_narrative
+        return _shared_load_school_coordinates()  # Fallback to shared loader
+# Shared modules (Google Places, traffic, narrative — used across counties)
+from core.loudoun_places_analysis import analyze_neighborhood  # noqa — shared Google Places module
+from core.loudoun_traffic_volume import LoudounTrafficVolumeAnalyzer as TrafficVolumeAnalyzer  # noqa — shared
+from core.loudoun_narrative_generator import compile_narrative_data, generate_property_narrative  # noqa — shared
 
 # Data handling
 import pandas as pd
@@ -486,9 +488,9 @@ try:
 except Exception:
     pass
 
-# Community lookup
+# Community lookup (shared module — Fairfax uses FairfaxSubdivisionsAnalysis primarily)
 try:
-    from core.loudoun_community_lookup import create_property_community_context, CommunityLookup
+    from core.loudoun_community_lookup import create_property_community_context, CommunityLookup  # noqa — shared
     from core.community_spatial_lookup import lookup_community
     COMMUNITY_LOOKUP_AVAILABLE = True
     SPATIAL_LOOKUP_AVAILABLE = True
@@ -649,7 +651,7 @@ def format_time_since_sale(date_str: str) -> str:
 @st.cache_data
 def load_permits_data() -> pd.DataFrame:
     """Load and cache building permits data."""
-    permits_path = os.path.join(PERMITS_DIR, 'loudoun_permits_with_infrastructure.csv')
+    permits_path = os.path.join(PERMITS_DIR, 'fairfax_permits_with_infrastructure.csv')
     try:
         df = pd.read_csv(permits_path, encoding='latin-1')
         # Clean coordinates
@@ -820,7 +822,7 @@ def load_cell_towers() -> pd.DataFrame:
         DataFrame with columns: tower_id, tower_name, structure_type, height_ft,
         latitude, longitude, entity_name, carrier_category, attribution_level, etc.
     """
-    towers_path = os.path.join(CELL_TOWERS_DIR, 'loudoun_towers_enhanced.csv')
+    towers_path = os.path.join(CELL_TOWERS_DIR, 'fairfax_towers_enhanced.csv')
     try:
         df = pd.read_csv(towers_path)
         # Validate required columns
@@ -1040,7 +1042,8 @@ def check_flood_zone(lat: float, lon: float) -> Dict[str, Any]:
         - success: True/False
         - error: Error message if any
     """
-    ENDPOINT = "https://logis.loudoun.gov/gis/rest/services/COL/FEMAFlood/MapServer/5/query"
+    # NOTE: Legacy function — Fairfax flood data is loaded via core.fairfax_flood_analysis
+    ENDPOINT = "https://www.fairfaxcounty.gov/gis/rest/services/FEMA/FEMAFlood/MapServer/0/query"
 
     params = {
         'geometry': f'{lon},{lat}',
@@ -2942,7 +2945,7 @@ def create_development_map(lat: float, lon: float, nearby_permits: pd.DataFrame)
     school_layer = folium.FeatureGroup(name='🏫 Schools')
 
     try:
-        schools_path = os.path.join(DATA_DIR, 'loudoun_school_coordinates.csv')
+        schools_path = os.path.join(DATA_DIR, 'fairfax_school_coordinates.csv')
         schools_df = pd.read_csv(schools_path)
 
         for _, school in schools_df.iterrows():
@@ -2974,47 +2977,34 @@ def create_development_map(lat: float, lon: float, nearby_permits: pd.DataFrame)
 
     school_layer.add_to(m)
 
-    # === MASTER-PLANNED COMMUNITIES LAYER ===
-    communities_layer = folium.FeatureGroup(name='🏘️ Master-Planned Communities')
+    # === COMMUNITIES / SUBDIVISIONS LAYER ===
+    communities_layer = folium.FeatureGroup(name='🏘️ Nearby Subdivisions')
 
     try:
-        from core.loudoun_community_lookup import CommunityLookup
-        lookup = CommunityLookup()
+        from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
+        _sub_map = FairfaxSubdivisionsAnalysis()
+        _nearby_subs = _sub_map.get_nearby_subdivisions(lat, lon, radius_miles=5.0, limit=15)
 
-        for comm_key in lookup.list_communities():
-            comm_data = lookup.get_community_by_key(comm_key)
-            summary = lookup.get_community_summary(comm_key)
+        for _ns in (_nearby_subs or []):
+            _ns_lat = _ns.get('latitude')
+            _ns_lon = _ns.get('longitude')
+            if not _ns_lat or not _ns_lon:
+                continue
+            name = _ns.get('subdivision_name', 'Subdivision')
+            dist = _ns.get('distance_miles', 0)
 
-            if comm_data and 'latitude' in comm_data and 'longitude' in comm_data:
-                clat = comm_data['latitude']
-                clon = comm_data['longitude']
-                name = summary.get('display_name', comm_key) if summary else comm_key
-                homes = summary.get('total_homes', 0) if summary else 0
-                gated = summary.get('gated', False) if summary else False
-                hoa = summary.get('monthly_fee', 0) if summary else 0
+            popup_parts = [f"<b>🏘️ {name}</b>"]
+            popup_parts.append(f"<br><i>{dist:.1f} mi from property</i>")
+            popup_html = "".join(popup_parts)
 
-                # Calculate distance to property
-                dist = haversine_distance(lat, lon, clat, clon)
-
-                # Build popup
-                popup_parts = [f"<b>🏘️ {name}</b>"]
-                if homes:
-                    popup_parts.append(f"<br>{homes:,} homes")
-                if gated:
-                    popup_parts.append(" • Gated")
-                if hoa:
-                    popup_parts.append(f"<br>HOA: ${hoa:.0f}/mo")
-                popup_parts.append(f"<br><i>{dist:.1f} mi from property</i>")
-                popup_html = "".join(popup_parts)
-
-                folium.Marker(
-                    [clat, clon],
-                    popup=folium.Popup(popup_html, max_width=200),
-                    icon=folium.Icon(color='cadetblue', icon='home', prefix='fa'),
-                    tooltip=f"{name} ({dist:.1f} mi)"
-                ).add_to(communities_layer)
+            folium.Marker(
+                [_ns_lat, _ns_lon],
+                popup=folium.Popup(popup_html, max_width=200),
+                icon=folium.Icon(color='cadetblue', icon='home', prefix='fa'),
+                tooltip=f"{name} ({dist:.1f} mi)"
+            ).add_to(communities_layer)
     except Exception:
-        pass  # Silently skip if community data unavailable
+        pass  # Silently skip if subdivision data unavailable
 
     communities_layer.add_to(m)
 
@@ -3188,7 +3178,7 @@ def load_healthcare_facilities() -> List[Dict[str, Any]]:
 
     Returns list of facilities with parsed properties and coordinates.
     """
-    geojson_path = os.path.join(HEALTHCARE_DIR, 'Loudoun_Hospitals_and_Urgent_Care (1).geojson')
+    geojson_path = os.path.join(HEALTHCARE_DIR, 'Fairfax_Hospitals_and_Urgent_Care.geojson')
     try:
         with open(geojson_path, 'r') as f:
             data = json.load(f)

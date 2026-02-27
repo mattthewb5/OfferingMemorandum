@@ -3523,10 +3523,32 @@ def display_medical_access_section(lat: float, lon: float):
         else:
             st.info("No urgent care centers found within 3 miles.")
 
-        st.caption("Source: Fairfax County GIS, CMS Hospital Compare, Leapfrog Group")
+        # ── Pharmacies subsection ──
+        st.markdown("### 💊 Pharmacies")
+        st.info("Pharmacy data requires Google Places API. Configure `GOOGLE_PLACES_API_KEY` in `.env`.")
+
+        # ── Maternity subsection ──
+        st.markdown("### 🍼 Maternity & Birthing Hospitals")
+        try:
+            _display_maternity_content(lat, lon)
+        except Exception:
+            st.info("Maternity hospital data not available.")
+
+        # Healthcare access summary
+        access_score = score.get('score', 0)
+        if access_score >= 80:
+            st.success("✅ **Excellent Healthcare Access** — Fairfax County ranks among the best in Virginia for healthcare infrastructure.")
+        elif access_score >= 60:
+            st.success("✅ **Good Healthcare Access** — Multiple hospitals and urgent care options nearby.")
+        else:
+            st.info("ℹ️ **Moderate Healthcare Access** — Consider proximity to major medical centers.")
+
+        st.caption("Data: Fairfax County GIS, Leapfrog Group, CMS Hospital Compare")
 
     except Exception as e:
         st.warning(f"Medical access analysis unavailable: {e}")
+
+    st.markdown("---")
 
 
 def _display_maternity_content(lat: float, lon: float):
@@ -3556,11 +3578,11 @@ def _display_maternity_content(lat: float, lon: float):
     hospitals_sorted = sorted(hospitals, key=lambda x: x['distance_miles'])
 
     # Summary at top
-    loudoun_hospitals = [h for h in hospitals_sorted if h.get('in_loudoun_county')]
-    nearby_hospitals = [h for h in hospitals_sorted if not h.get('in_loudoun_county')]
+    fairfax_hospitals = [h for h in hospitals_sorted if h.get('in_fairfax_county', not h.get('in_loudoun_county', False))]
+    nearby_other = [h for h in hospitals_sorted if not h.get('in_fairfax_county', not h.get('in_loudoun_county', False))]
 
     st.markdown(f"""
-**{len(loudoun_hospitals)} birthing hospitals in Loudoun County** and **{len(nearby_hospitals)} nearby in Fairfax County**.
+**{len(fairfax_hospitals)} birthing hospitals in Fairfax County** and **{len(nearby_other)} nearby in adjacent counties**.
 All hospitals shown have labor & delivery units, NICUs, and are rated by CMS and Leapfrog for safety.
     """)
 
@@ -3571,7 +3593,7 @@ All hospitals shown have labor & delivery units, NICUs, and are rated by CMS and
 
         distance = hospital['distance_miles']
         name = hospital.get('name', 'Unknown Hospital')
-        county_badge = "📍 Loudoun" if hospital.get('in_loudoun_county') else "📍 Fairfax"
+        county_badge = "📍 Fairfax" if hospital.get('in_fairfax_county', not hospital.get('in_loudoun_county', False)) else "📍 Adjacent County"
 
         stars = format_star_rating(quality.get('cms_overall_rating'))
         safety_grade = quality.get('leapfrog_safety_grade', 'N/A')

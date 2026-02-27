@@ -1313,71 +1313,76 @@ def display_schools_section(lat: float, lon: float):
                     help="2024-25 Virginia SOL pass rates - percentage of students passing state standardized tests"
                 )
 
-    # Performance charts
-    # PHASE 1 FIX: Fairfax data is summary format (no yearly trends)
-    # Loudoun code expects year-by-year data for line charts, but Fairfax only has summary statistics
-    # TODO Phase 2: Build Fairfax-specific charts using summary data columns:
-    #   - school_name, recent_reading_pass_rate, recent_math_pass_rate
-    #
-    # if PLOTLY_AVAILABLE and not performance_df.empty:
-    #     st.markdown("### School Performance Trends")
-    #
-    #     tab1, tab2 = st.tabs(["Reading Proficiency", "Math Proficiency"])
-    #
-    #     with tab1:
-    #         # Get trend data for assigned schools
-    #         chart_data = []
-    #         for level, school in assignments.items():
-    #             if school:
-    #                 # Use match function to get exact school name from performance data
-    #                 matched_name = match_school_in_performance_data(school, performance_df)
-    #                 if matched_name:
-    #                     school_data = performance_df[
-    #                         performance_df['School_Name'] == matched_name
-    #                     ]
-    #                     for _, row in school_data.iterrows():
-    #                         chart_data.append({
-    #                             'School': school,
-    #                             'Year': row['Year'],
-    #                             'Reading Pass Rate': row.get('Reading_Pass_Rate', 0)
-    #                         })
-    #
-    #         if chart_data:
-    #             chart_df = pd.DataFrame(chart_data)
-    #             fig = px.line(chart_df, x='Year', y='Reading Pass Rate', color='School',
-    #                          title='Reading Proficiency Trends',
-    #                          markers=True)
-    #             fig.update_layout(yaxis_range=[0, 100])
-    #             st.plotly_chart(fig, width='stretch')
-    #         else:
-    #             st.info("School performance trend data not available for assigned schools.")
-    #
-    #     with tab2:
-    #         chart_data = []
-    #         for level, school in assignments.items():
-    #             if school:
-    #                 # Use match function to get exact school name from performance data
-    #                 matched_name = match_school_in_performance_data(school, performance_df)
-    #                 if matched_name:
-    #                     school_data = performance_df[
-    #                         performance_df['School_Name'] == matched_name
-    #                     ]
-    #                     for _, row in school_data.iterrows():
-    #                         chart_data.append({
-    #                             'School': school,
-    #                             'Year': row['Year'],
-    #                             'Math Pass Rate': row.get('Math_Pass_Rate', 0)
-    #                         })
-    #
-    #         if chart_data:
-    #             chart_df = pd.DataFrame(chart_data)
-    #             fig = px.line(chart_df, x='Year', y='Math Pass Rate', color='School',
-    #                          title='Math Proficiency Trends',
-    #                          markers=True)
-    #             fig.update_layout(yaxis_range=[0, 100])
-    #             st.plotly_chart(fig, width='stretch')
-    #         else:
-    #             st.info("School performance trend data not available for assigned schools.")
+    # Inline Performance Trend Charts (matches Loudoun pattern — visible without expander)
+    try:
+        import altair as alt
+        from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
+        perf_analyzer = FairfaxSchoolPerformanceAnalysis()
+
+        # Collect trend data for all assigned schools
+        reading_data = []
+        math_data = []
+        for _level_key in ('elementary', 'middle', 'high'):
+            school_name = assignments.get(_level_key)
+            if not school_name:
+                continue
+            trends = perf_analyzer.get_school_trends(school_name, years=5)
+            if not trends.get('found'):
+                # Try short name variants
+                for lw in ('Elementary School', 'Middle School', 'High School'):
+                    if school_name.endswith(lw):
+                        short = school_name[:-len(lw)].strip()
+                        last = short.split()[-1] if short.split() else short
+                        level_word = lw.replace(' School', '')
+                        trends = perf_analyzer.get_school_trends(f"{last} {level_word}", years=5)
+                        if trends.get('found'):
+                            break
+            if not trends.get('found'):
+                continue
+            yearly = trends.get('yearly_data', [])
+            for yr_row in yearly:
+                year = yr_row.get('year')
+                if year:
+                    r_rate = yr_row.get('reading_pass_rate')
+                    m_rate = yr_row.get('math_pass_rate')
+                    if r_rate is not None:
+                        reading_data.append({'School': school_name, 'Year': str(year), 'Pass Rate': float(r_rate)})
+                    if m_rate is not None:
+                        math_data.append({'School': school_name, 'Year': str(year), 'Pass Rate': float(m_rate)})
+
+        if reading_data or math_data:
+            st.subheader("School Performance Trends")
+            tab_read, tab_math = st.tabs(["Reading Proficiency", "Math Proficiency"])
+
+            with tab_read:
+                if reading_data:
+                    rdf = pd.DataFrame(reading_data)
+                    chart = alt.Chart(rdf).mark_line(point=True).encode(
+                        x=alt.X('Year:N', title='Year'),
+                        y=alt.Y('Pass Rate:Q', title='Pass Rate (%)', scale=alt.Scale(domain=[0, 100])),
+                        color=alt.Color('School:N', title='School'),
+                        tooltip=['School', 'Year', 'Pass Rate']
+                    ).properties(title='Reading Proficiency Trends', height=300)
+                    st.altair_chart(chart, use_container_width=True)
+                else:
+                    st.info("Reading trend data not available for assigned schools.")
+
+            with tab_math:
+                if math_data:
+                    mdf = pd.DataFrame(math_data)
+                    chart = alt.Chart(mdf).mark_line(point=True).encode(
+                        x=alt.X('Year:N', title='Year'),
+                        y=alt.Y('Pass Rate:Q', title='Pass Rate (%)', scale=alt.Scale(domain=[0, 100])),
+                        color=alt.Color('School:N', title='School'),
+                        tooltip=['School', 'Year', 'Pass Rate']
+                    ).properties(title='Math Proficiency Trends', height=300)
+                    st.altair_chart(chart, use_container_width=True)
+                else:
+                    st.info("Math trend data not available for assigned schools.")
+        else:
+            st.caption("Performance trend data not yet available for assigned schools.")
+    except Exception as e:
+        st.caption(f"Performance trends unavailable: {e}")
 
     # School Performance Comparison with State Average and Peer Schools
     if PLOTLY_AVAILABLE:

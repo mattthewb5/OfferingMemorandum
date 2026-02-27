@@ -5136,6 +5136,9 @@ def display_valuation_section(address: str, lat: float, lon: float, sqft_result:
     except Exception as e:
         st.error(f"Valuation error: {e}")
 
+    # Historical Sales Trends (always shown, regardless of API availability)
+    _display_historical_sales_trends()
+
     st.markdown("---")
 
 
@@ -5499,6 +5502,7 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
         if not comps:
             st.info("No recorded sales found in county records (2020-2025).")
             _display_value_api_prompt()
+            _display_historical_sales_trends()
             st.markdown("---")
             return
 
@@ -5656,8 +5660,9 @@ def _display_historical_sales_trends():
             st.markdown(f"- **Total sales analyzed:** {int(yearly['count'].sum()):,} verified transactions")
             st.caption("Source: Fairfax County Commissioner of Revenue — Sales Records 2000-2019")
 
-    except Exception:
-        pass  # Non-critical feature
+    except Exception as e:
+        import logging
+        logging.warning(f"Historical sales trend chart failed: {e}")
 
 
 def _display_value_api_prompt():

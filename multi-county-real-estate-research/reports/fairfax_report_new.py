@@ -5221,39 +5221,36 @@ def display_subdivisions_section(lat: float, lon: float):
 # =============================================================================
 
 def display_footer():
-    """Display data sources and footer."""
+    """Display data sources and footer (matches Loudoun pattern)."""
     st.markdown("## 📊 Data Sources")
-
-    # Dynamic valuation source based on ATTOM availability
-    valuation_source = "ATTOM Data Solutions, RentCast API" if ATTOM_CLIENT else "RentCast API"
 
     st.markdown(f"""
 | Category | Source |
 |----------|--------|
-| Property Valuation | {valuation_source} |
+| Property Valuation | ATTOM Data Solutions, RentCast API |
 | Area Demographics | U.S. Census Bureau - American Community Survey 2019-2023 |
 | Monthly Unemployment | Bureau of Labor Statistics - Local Area Unemployment Statistics |
 | Labor Force Participation | U.S. Census Bureau - ACS 5-Year Estimates |
 | Industry Employment | U.S. Census Bureau - ACS 5-Year Estimates |
 | Major Employers | Fairfax County ACFR (2008-2025) |
-| Schools | Fairfax County Public Schools (FCPS) / Fairfax County GIS |
+| Schools | Fairfax County Public Schools (FCPS) Boundaries |
 | School Performance | Virginia Department of Education - SOL 5-Year Trends |
-| Building Permits | Fairfax County Permit Portal |
+| Building Permits | Fairfax County Open Data (updated weekly) |
 | Traffic Volume | VDOT Bidirectional Traffic Volume Database |
-| Metro Access | WMATA Metro Stations / Fairfax County GIS |
-| Power Infrastructure | Fairfax County Power Infrastructure (GIS) |
-| Cell Towers | Fairfax County Telecom Towers (GIS) + FCC Registration Database |
+| Metro Access | WMATA Station Data / Fairfax County GIS |
+| Power Infrastructure | Fairfax County Major Power Lines (GIS) |
+| Cell Towers | Fairfax County GIS + FCC Registration Database |
 | Medical Facilities | Fairfax County GIS, CMS Hospital Compare, Leapfrog Group |
 | Pharmacies | Google Places API |
 | Neighborhood Amenities | Google Places API (Real-time) |
 | Travel Times | Google Distance Matrix API |
-| Parks & Recreation | Google Places API |
+| Parks & Recreation | Fairfax County GIS Parks |
 | GIS Data | Fairfax County Official Shapefiles |
-| Road Network | Fairfax County Roadway Centerlines GIS |
+| Road Network | Fairfax Street Centerline GIS |
 | Zoning | Fairfax County Zoning Districts (GIS) |
-| Airport Zones | Fairfax County Airport Overlay Districts |
-| Flood Zones | FEMA Flood Insurance Rate Map (via Fairfax County GIS) |
-| Community Data | NewCo Private Research, RentCast API |
+| Airport Zones | Fairfax County Noise Overlay Districts |
+| Flood Zones | FEMA Flood Insurance Rate Map (via Fairfax GIS) |
+| Community Data | FairfaxSubdivisionsAnalysis, RentCast API |
 
 **Analysis Date:** {datetime.now().strftime('%B %d, %Y')}
 

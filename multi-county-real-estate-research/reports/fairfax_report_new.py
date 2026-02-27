@@ -5268,10 +5268,51 @@ def display_footer():
 # SECTION: COMPARABLE SALES (LOCAL PARQUET DATA)
 # =============================================================================
 
-def display_comparable_sales_section(lat: float, lon: float):
-    """Display comparable sales from local Fairfax County parquet data."""
-    st.markdown("## 💰 Comparable Sales")
+def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
+    """Display property value analysis (matches Loudoun pattern).
 
+    Uses full valuation orchestrator when API keys are configured,
+    falls back to local parquet comparable sales data otherwise.
+    """
+    # If full valuation pipeline is available, delegate to display_valuation_section
+    if VALUATION_AVAILABLE:
+        display_valuation_section(address, lat, lon, sqft_result=None)
+        return
+
+    st.markdown("## 💰 Property Value Analysis")
+
+    # Property Details subsection — from Fairfax tax records parquet
+    st.markdown("### Property Details")
+    prop_size = "N/A"
+    year_built = "N/A"
+    property_type = "N/A"
+    try:
+        from core.fairfax_sales_analysis import get_nearby_sales
+        # Look for the subject property itself (very tight radius)
+        subject = get_nearby_sales(lat, lon, radius_miles=0.05, limit=1)
+        if subject:
+            s = subject[0]
+            if s.get('sqft'):
+                prop_size = f"{int(s['sqft']):,} sqft"
+            if s.get('year_built'):
+                year_built = str(int(s['year_built']))
+            if s.get('property_type'):
+                property_type = s['property_type']
+    except Exception:
+        pass
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("📐 Property Size", prop_size)
+    with c2:
+        st.metric("🏠 Year Built", year_built)
+    with c3:
+        st.metric("🏘️ Property Type", property_type)
+    if prop_size == "N/A":
+        st.caption("Property details unavailable — configure ATTOM API for full data")
+
+    # Sales History subsection
+    st.markdown("### 📊 Sales History")
     try:
         from core.fairfax_sales_analysis import get_nearby_sales
 
@@ -5282,7 +5323,8 @@ def display_comparable_sales_section(lat: float, lon: float):
             comps = get_nearby_sales(lat, lon, radius_miles=1.0, limit=10)
 
         if not comps:
-            st.info("No comparable sales found within 1 mile of this property.")
+            st.info("No recorded sales found in county records (2020-2025).")
+            _display_value_api_prompt()
             st.markdown("---")
             return
 
@@ -5291,7 +5333,6 @@ def display_comparable_sales_section(lat: float, lon: float):
         # Build display data with quality scoring
         display_data = []
         for comp in comps:
-            # Sale recency score
             sale_date_str = comp.get('sale_date', '')
             display_date = sale_date_str or '—'
             recency_score = 1
@@ -5307,7 +5348,6 @@ def display_comparable_sales_section(lat: float, lon: float):
                 except Exception:
                     pass
 
-            # Distance score
             dist = comp.get('distance_miles', 99)
             if dist < 0.1:
                 dist_score = 3
@@ -5334,7 +5374,6 @@ def display_comparable_sales_section(lat: float, lon: float):
                 '_sort_score': avg_score,
             })
 
-        # Sort by quality
         display_data.sort(key=lambda x: x['_sort_score'], reverse=True)
         for row in display_data:
             del row['_sort_score']
@@ -5363,7 +5402,17 @@ def display_comparable_sales_section(lat: float, lon: float):
     except Exception as e:
         st.error(f"Comparable sales error: {e}")
 
+    # Current Value Estimates — requires API
+    st.markdown("### Current Value Estimates")
+    st.info("Configure ATTOM and RentCast API keys to enable current value estimates, valuation projections, and investment analysis.")
+
     st.markdown("---")
+
+
+def _display_value_api_prompt():
+    """Show API configuration prompt for full valuation features."""
+    st.markdown("### Current Value Estimates")
+    st.info("Configure ATTOM and RentCast API keys to enable current value estimates, valuation projections, and investment analysis.")
 
 
 # =============================================================================
@@ -5762,7 +5811,7 @@ def render_report(address: str, lat: float, lon: float):
         display_zoning_section(address, lat, lon)
 
         # 12. Property Value Analysis
-        display_comparable_sales_section(lat, lon)
+        display_comparable_sales_section(lat, lon, address)
 
         # 13. AI Property Analysis
         display_ai_analysis_section(address, lat, lon, data)

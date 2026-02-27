@@ -1,3 +1,47 @@
+# Phase 1A: Wire 3 Missing Modules (2026-02-27)
+
+Scope: Add traffic, emergency services, and subdivisions sections to `fairfax_report_new.py`.
+All changes confined to one file only. No Loudoun modules modified.
+
+## Implementation Checklist
+
+### Prep
+- [x] Verify module API signatures (FairfaxTrafficAnalysis, FairfaxEmergencyServicesAnalysis, FairfaxSubdivisionsAnalysis)
+- [x] Read existing section patterns in fairfax_report_new.py for UI consistency
+
+### Section 1: Traffic (`display_traffic_section`)
+- [x] Write `display_traffic_section(lat, lon)` using `FairfaxTrafficAnalysis`
+- [x] Lazy import inside function
+- [x] try/except with graceful degradation
+- [x] Display: traffic exposure score (4-col metrics), nearby roads table, analysis narrative
+- [x] Wire into `render_report()` after `display_transit_section()`
+
+### Section 2: Emergency Services (`display_emergency_services_section`)
+- [x] Write `display_emergency_services_section(lat, lon)` using `FairfaxEmergencyServicesAnalysis`
+- [x] Lazy import inside function
+- [x] try/except with graceful degradation
+- [x] Display: nearest fire/police (metrics), ISO fire protection rating, insurance context
+- [x] Wire into `render_report()` after traffic section
+
+### Section 3: Subdivisions (`display_subdivisions_section`)
+- [x] Write `display_subdivisions_section(lat, lon)` using `FairfaxSubdivisionsAnalysis`
+- [x] Lazy import inside function
+- [x] try/except with graceful degradation
+- [x] Display: subdivision name (if found), nearby subdivisions table
+- [x] Wire into `render_report()` after emergency services section
+
+### Loudoun Text Fixes (active code paths only)
+- [x] Line 4578: "Loudoun County Commissioner of Revenue" → "Fairfax County"
+- [x] Line 5457: docstring "Loudoun County" → "Fairfax County"
+- [x] Line 5672: Router comment "loudoun_report" → "fairfax_report_new"
+
+### Validation
+- [x] Syntax check: `python -c "import ast; ast.parse(open(...).read())"` — PASSED
+- [x] Confirm Loudoun report unaffected (zero changes to Loudoun module files)
+- [x] Only 2 files modified: fairfax_report_new.py, tasks/todo.md
+
+---
+
 # Fairfax Report Bug Fixes + Section Porting
 
 ## Session: Fix Schools + Port Sections (2026-02-09)

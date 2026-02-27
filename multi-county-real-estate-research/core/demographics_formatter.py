@@ -372,7 +372,7 @@ def format_demographics_table(demographics: Dict[str, Any]) -> str:
 
     # Build the table
     lines = [
-        "| Metric | 1-Mile | 3-Mile | Loudoun Co. | 3-Mile vs County |",
+        "| Metric | 1-Mile | 3-Mile | Fairfax Co. | 3-Mile vs County |",
         "|--------|--------|--------|-------------|------------------|",
         "| **POPULATION** |||||",
         f"| Total Population | {fmt_num(data_1mi.get('population', {}).get('total'))} | {fmt_num(data_3mi.get('population', {}).get('total'))} | 427,082 | - |",

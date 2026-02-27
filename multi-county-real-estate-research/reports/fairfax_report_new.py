@@ -2,38 +2,32 @@
 Fairfax County Property Intelligence Report
 ============================================
 
-Ported from Loudoun County report structure (4,970 lines) to ensure
-consistent UX and professional quality across all counties.
-
 Architecture:
 - Uses Fairfax class-based analysis modules (core/fairfax_*.py)
-- Maintains Loudoun's proven display patterns and formatting
+- Consistent UX and professional quality across all counties
 - Comprehensive error handling and graceful degradation
 
 Sections:
 1. Schools Analysis - Assigned schools with performance trends
-2. Location Quality - Roads, airports, flood zones, parks, Metro
-3. Cell Tower Coverage - FCC tower data and RF analysis
-4. Neighborhood Amenities - Convenience scoring
-5. Community/HOA - Subdivision context
-6. Demographics - Census Bureau data, charts
-7. Economic Indicators - BLS unemployment, LFPR, industry mix
-8. Medical Access - Hospitals, urgent care facilities
-9. Development Infrastructure - Building permits, tech infrastructure
-10. Zoning - Land use and overlay districts
-11. Property Valuation - ATTOM/RentCast triangulation
-12. AI Analysis - Claude API narrative generation
-13. Data Sources Footer
+2. Crime & Safety - Safety score, incident breakdown, map layer
+3. Location Quality - Roads, airports, flood zones, parks, Metro
+4. Cell Tower Coverage - FCC tower data and RF analysis
+5. Neighborhood Amenities - Convenience scoring
+6. Community/HOA - Subdivision context
+7. Demographics - Census Bureau data, charts
+8. Economic Indicators - BLS unemployment, LFPR, industry mix
+9. Medical Access - Hospitals, urgent care, maternity facilities
+10. Development Infrastructure - Building permits, tech infrastructure
+11. Zoning - Land use and overlay districts
+12. Property Valuation - ATTOM/RentCast triangulation
+13. AI Analysis - Claude API narrative generation
+14. Data Sources Footer
 
-Data Advantages vs Loudoun:
-- 148,594 road segments (5x more than Loudoun)
-- 32 Metro stations (8x more than Loudoun)
-- Natural gas utility data (unique to Fairfax)
+Data Highlights:
+- 148,594 road segments with ADT data
+- 32 Metro stations across Silver, Orange, Blue, Yellow lines
+- Natural gas utility data
 - Public crime data API with daily updates
-
-Status: Phase 1 - Porting Schools, Crime, Zoning sections
-Ported: 2026-02-03
-Template: loudoun_report.py (4,970 lines)
 """
 
 import streamlit as st
@@ -409,7 +403,7 @@ from core.loudoun_school_performance import (
     match_school_in_performance_data as _loudoun_match_school_in_performance_data
 )
 
-# Fairfax wrappers: override county filter from 'Loudoun County' to 'Fairfax County'
+# Fairfax wrappers: override county filter to 'Fairfax County'
 def create_performance_chart(subject_school, peer_schools, metric_name, metric_col, school_type, perf_df):
     return _loudoun_create_performance_chart(
         subject_school, peer_schools, metric_name, metric_col, school_type, perf_df,
@@ -445,7 +439,7 @@ def match_school_in_performance_data(school_name, perf_df):
 def load_school_coordinates() -> 'pd.DataFrame':
     """Load Fairfax school coordinates from the facilities parquet.
 
-    Returns a DataFrame with columns matching the Loudoun format
+    Returns a DataFrame with columns matching the standard format
     (School_Name, School_Type, Latitude, Longitude) so find_peer_schools()
     works unchanged.
     """
@@ -783,7 +777,7 @@ def expand_road_name(name: str) -> str:
     Examples:
     - "SULLY RD" -> "Sully Road"
     - "LEESBURG PIKE" -> "Leesburg Pike"
-    - "LOUDOUN COUNTY PKWY" -> "Loudoun County Parkway"
+    - "FAIRFAX COUNTY PKWY" -> "Fairfax County Parkway"
     - "DULLES TOLL RD" -> "Dulles Toll Road"
     """
     if not name:
@@ -1313,7 +1307,7 @@ def display_schools_section(lat: float, lon: float):
                     help="2024-25 Virginia SOL pass rates - percentage of students passing state standardized tests"
                 )
 
-    # Inline Performance Trend Charts (matches Loudoun pattern — visible without expander)
+    # Inline Performance Trend Charts (visible without expander)
     try:
         import altair as alt
         from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
@@ -1712,7 +1706,7 @@ def display_crime_section(lat: float, lon: float):
 
 
 # =============================================================================
-# SECTION: LOCATION QUALITY (Unified — matches Loudoun pattern)
+# SECTION: LOCATION QUALITY (Unified)
 # =============================================================================
 
 # Road type classifier (from spec)
@@ -1768,7 +1762,7 @@ def _classify_road_type(address: str) -> Tuple[str, str]:
 
 
 def _compute_location_score(traffic_data, flood_data, parks_data, metro_data, noise_dist, address):
-    """Compute location quality score out of 10 (mirrors Loudoun)."""
+    """Compute location quality score out of 10."""
     score = 5.0  # baseline
 
     # Road type component
@@ -1856,7 +1850,7 @@ def _compute_location_score(traffic_data, flood_data, parks_data, metro_data, no
 
 
 def display_location_quality_section(lat: float, lon: float, address: str):
-    """Display unified Location Quality section (matches Loudoun pattern).
+    """Display unified Location Quality section.
 
     Uses Fairfax-specific modules for traffic, flood, parks, transit, utilities.
     Replaces separate traffic, emergency services sections."""
@@ -2433,7 +2427,7 @@ def display_community_section(valuation_data: Dict[str, Any], lat: float = None,
 # =============================================================================
 
 def display_cell_towers_section(lat: float, lon: float):
-    """Display cell tower coverage matching Loudoun layout."""
+    """Display cell tower coverage."""
     st.markdown("## 📡 Cell Tower Coverage")
 
     try:
@@ -2449,8 +2443,7 @@ def display_cell_towers_section(lat: float, lon: float):
 
         towers_2mi = coverage.get('towers_within_2mi', 0)
 
-        # Large count metric (matches Loudoun)
-        st.markdown("**Cell Towers Within 2 Miles**")
+        # Large count metric        st.markdown("**Cell Towers Within 2 Miles**")
         st.markdown(f"### {towers_2mi}")
 
         # Nearest Tower subsection
@@ -3804,7 +3797,7 @@ def _create_permits_map(permits_df, property_lat: float, property_lon: float):
 
 
 def display_development_section(lat: float, lon: float):
-    """Display neighborhood development and infrastructure (matches Loudoun pattern)."""
+    """Display neighborhood development and infrastructure."""
     st.markdown("## 📊 Neighborhood Development & Infrastructure")
 
     try:
@@ -3945,7 +3938,7 @@ def display_development_section(lat: float, lon: float):
                     "Transit Station Area, and Tysons Corner Urban Center."
                 )
 
-        # ── Development Activity Map (Leaflet via Folium — matches Loudoun) ──
+        # ── Development Activity Map (Leaflet via Folium) ──
         st.markdown("### Development Activity Map")
         st.markdown("🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other Construction")
 
@@ -4325,8 +4318,7 @@ which may signal:
         except Exception:
             pass  # Silently skip if permits data unavailable
 
-        # Comparative Context (matches Loudoun)
-        st.markdown("### 📊 Comparative Context")
+        # Comparative Context        st.markdown("### 📊 Comparative Context")
 
         st.markdown("""
 **High-Scoring Areas in Fairfax County (75-100 points):**
@@ -5021,7 +5013,7 @@ def display_transit_section(lat: float, lon: float):
 # =============================================================================
 
 def display_footer():
-    """Display data sources and footer (matches Loudoun pattern)."""
+    """Display data sources and footer."""
     st.markdown("## 📊 Data Sources")
 
     st.markdown(f"""
@@ -5066,7 +5058,7 @@ def display_footer():
 # =============================================================================
 
 def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
-    """Display property value analysis (matches Loudoun pattern).
+    """Display property value analysis.
 
     Uses full valuation orchestrator when API keys are configured,
     falls back to local parquet comparable sales data otherwise.
@@ -5213,7 +5205,7 @@ def _display_value_api_prompt():
 
 
 # =============================================================================
-# SECTION: DISCOVER YOUR NEIGHBORHOOD (NEW — matches Loudoun pattern)
+# SECTION: DISCOVER YOUR NEIGHBORHOOD (NEW)
 # =============================================================================
 
 def display_neighborhood_section(lat: float, lon: float):
@@ -5324,8 +5316,7 @@ def display_neighborhood_section(lat: float, lon: float):
 
 
 # =============================================================================
-# SECTION: COMMUNITY & AMENITIES (matches Loudoun pattern)
-# =============================================================================
+# SECTION: COMMUNITY & AMENITIES# =============================================================================
 
 def display_community_amenities_section(lat: float, lon: float):
     """Display community and amenities information using Fairfax subdivision data."""
@@ -5372,7 +5363,7 @@ def display_community_amenities_section(lat: float, lon: float):
 
 
 # =============================================================================
-# SECTION: AREA DEMOGRAPHICS (Fairfax — matches Loudoun pattern with Altair)
+# SECTION: AREA DEMOGRAPHICS (Fairfax with Altair)
 # =============================================================================
 
 def display_demographics_section_fairfax(lat: float, lon: float, address: str):
@@ -5393,8 +5384,7 @@ def display_demographics_section_fairfax(lat: float, lon: float, address: str):
 
 
 # =============================================================================
-# SECTION: AI PROPERTY ANALYSIS (matches Loudoun pattern)
-# =============================================================================
+# SECTION: AI PROPERTY ANALYSIS# =============================================================================
 
 def display_ai_analysis_section(address: str, lat: float, lon: float, data: Dict = None):
     """Display AI property analysis using Claude API."""
@@ -5480,7 +5470,7 @@ def render_report(address: str, lat: float, lon: float):
 
         # Note: Data fetching for Location Quality, Cell Towers, Neighborhood,
         # Development, etc. is now done inline within each display_*_section()
-        # function rather than pre-computed here. This matches the Loudoun pattern.
+        # function rather than pre-computed here.
         status.text("⏳ Loading property details...")
         progress.progress(70)
         sqft_result = None  # Disabled - use ATTOM/tax records fallback
@@ -5507,14 +5497,15 @@ def render_report(address: str, lat: float, lon: float):
         progress.empty()
         status.empty()
 
-        # Display all sections — order matches Loudoun spec exactly
+        # Display all sections in order
         st.success(f"✓ Analysis complete for: **{address}**")
         st.markdown("---")
 
         # 1. School Assignments + Performance Trends (inline charts)
         display_schools_section(lat, lon)
 
-        # 2. School Performance vs State & Peers (expander) — inside display_schools_section
+        # 2. Crime & Safety
+        display_crime_section(lat, lon)
 
         # 3. Location Quality (unified — replaces traffic, emergency services)
         display_location_quality_section(lat, lon, address)

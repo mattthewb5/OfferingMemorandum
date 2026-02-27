@@ -2831,12 +2831,14 @@ def create_development_map(lat: float, lon: float, nearby_permits: pd.DataFrame)
                     coords, color=color, weight=4, opacity=0.8,
                     tooltip=f"{line_name} Line"
                 ).add_to(metro_layer)
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.warning(f"Metro lines parquet rendering failed: {e}")
         # Fallback: connect stations with straight lines
         track_coords = [[s['lat'], s['lon']] for s in FAIRFAX_METRO_STATIONS]
         folium.PolyLine(
             track_coords, weight=4, color='#003DA5', opacity=0.8,
-            dash_array='10', tooltip='Metro Lines'
+            dash_array='10', tooltip='Metro Lines (approx.)'
         ).add_to(metro_layer)
 
     metro_layer.add_to(m)
@@ -4213,8 +4215,9 @@ def display_development_section(lat: float, lon: float):
                         _c = [[p[1], p[0]] for p in _g.coords]
                         folium.PolyLine(_c, color=_clr, weight=3, opacity=0.8,
                                         tooltip=f"{_ln} Line").add_to(metro_group)
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.warning(f"Zoning map metro lines rendering failed: {e}")
             metro_group.add_to(m)
 
             # Cell towers layer (150ft+)

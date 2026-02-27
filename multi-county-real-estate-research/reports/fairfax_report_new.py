@@ -4575,7 +4575,7 @@ def display_valuation_section(address: str, lat: float, lon: float, sqft_result:
 
                 # Source attribution
                 data_range = sales_history.get('data_range', '2020-2025')
-                source = sales_history.get('source', 'Loudoun County Commissioner of Revenue')
+                source = sales_history.get('source', 'Fairfax County Commissioner of Revenue')
                 st.caption(f"**Source:** {source} • Showing sales from {data_range}")
 
         else:
@@ -5074,6 +5074,224 @@ def display_transit_section(lat: float, lon: float):
 
 
 # =============================================================================
+# SECTION: TRAFFIC & ROAD NETWORK
+# =============================================================================
+
+def display_traffic_section(lat: float, lon: float):
+    """Display traffic exposure and nearby road analysis for Fairfax County properties."""
+    st.markdown("## 🚗 Traffic & Road Network")
+
+    try:
+        from core.fairfax_traffic_analysis import FairfaxTrafficAnalysis
+        traffic = FairfaxTrafficAnalysis()
+
+        # Traffic exposure score (inverted: lower traffic = higher score = better)
+        exposure = traffic.calculate_traffic_exposure_score(lat, lon)
+        score = exposure.get('score', 0)
+        rating = exposure.get('rating', 'Unknown')
+
+        # Nearby roads
+        nearby_roads = traffic.get_nearby_traffic(lat, lon, radius_miles=0.5)
+
+        # ── 4-column metrics ──
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            color = {'Excellent': '🟢', 'Good': '🟢', 'Fair': '🟡', 'Poor': '🔴'}.get(rating, '')
+            st.metric("Traffic Exposure", f"{score}/100")
+            st.caption(f"{color} {rating}")
+        with col2:
+            if nearby_roads:
+                nearest = nearby_roads[0]
+                st.metric("Nearest Road", nearest['road_name'][:22])
+                st.caption(f"{nearest['distance_miles']:.2f} mi away")
+            else:
+                st.metric("Nearest Road", "None nearby")
+                st.caption("No VDOT data within 0.5 mi")
+        with col3:
+            if nearby_roads:
+                adt = nearby_roads[0]['adt']
+                st.metric("Daily Traffic (ADT)", f"{adt:,}")
+                st.caption(nearby_roads[0].get('traffic_level', ''))
+            else:
+                st.metric("Daily Traffic (ADT)", "N/A")
+        with col4:
+            high_count = exposure.get('high_traffic_roads_nearby', 0)
+            st.metric("High-Traffic Roads", str(high_count))
+            st.caption("Within 0.5 mi (>30K ADT)")
+
+        # ── Analysis narrative ──
+        analysis = exposure.get('analysis', '')
+        if analysis:
+            if score >= 70:
+                st.success(f"**{analysis}**")
+            elif score >= 40:
+                st.info(f"**{analysis}**")
+            else:
+                st.warning(f"**{analysis}**")
+
+        # ── Road table in expander ──
+        if nearby_roads and len(nearby_roads) > 1:
+            with st.expander(f"All Roads Within 0.5 Miles ({len(nearby_roads)} roads)"):
+                table_data = []
+                for road in nearby_roads[:15]:
+                    table_data.append({
+                        'Road': road.get('road_name', 'Unknown'),
+                        'Route': road.get('route_name', '') or '-',
+                        'Distance': f"{road.get('distance_miles', 0):.2f} mi",
+                        'Daily Traffic': f"{road.get('adt', 0):,}",
+                        'Level': road.get('traffic_level', 'N/A')
+                    })
+                st.dataframe(
+                    pd.DataFrame(table_data),
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+        st.caption(
+            "Source: Virginia DOT (VDOT) traffic counts | "
+            "ADT = Average Daily Traffic | "
+            "Score: higher = less traffic exposure (better for residential)"
+        )
+
+    except FileNotFoundError:
+        st.info("Traffic volume data not available.")
+    except Exception as e:
+        st.warning(f"Traffic analysis unavailable: {e}")
+
+    st.markdown("---")
+
+
+# =============================================================================
+# SECTION: EMERGENCY SERVICES
+# =============================================================================
+
+def display_emergency_services_section(lat: float, lon: float):
+    """Display nearest fire/police stations and ISO fire protection assessment."""
+    st.markdown("## 🚒 Emergency Services")
+
+    try:
+        from core.fairfax_emergency_services_analysis import FairfaxEmergencyServicesAnalysis
+        analyzer = FairfaxEmergencyServicesAnalysis()
+
+        nearest_fire = analyzer.get_nearest_fire_station(lat, lon)
+        nearest_police = analyzer.get_nearest_police_station(lat, lon)
+        iso_assessment = analyzer.assess_fire_protection_iso(lat, lon)
+
+        # ── 4-column metrics ──
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            fire_name = nearest_fire.get('station_name') or 'N/A'
+            st.metric("Nearest Fire Station", fire_name[:22])
+            fire_dist = nearest_fire.get('distance_miles')
+            if fire_dist is not None:
+                st.caption(f"{fire_dist:.1f} mi · ~{nearest_fire.get('drive_time_minutes', '?')} min response")
+        with col2:
+            police_name = nearest_police.get('station_name') or 'N/A'
+            st.metric("Nearest Police", police_name[:22])
+            police_dist = nearest_police.get('distance_miles')
+            if police_dist is not None:
+                st.caption(f"{police_dist:.1f} mi · ~{nearest_police.get('drive_time_minutes', '?')} min response")
+        with col3:
+            iso_rating = iso_assessment.get('rating', 'N/A')
+            color = {'Excellent': '🟢', 'Very Good': '🟢', 'Good': '🟡', 'Limited': '🔴'}.get(iso_rating, '')
+            st.metric("Fire Protection", f"{color} {iso_rating}")
+            iso_class = iso_assessment.get('iso_class_range', '')
+            if iso_class:
+                st.caption(f"ISO Class {iso_class}")
+        with col4:
+            insurance = iso_assessment.get('insurance_impact', '')
+            st.metric("Insurance Impact", iso_rating)
+            if insurance:
+                st.caption(insurance[:40])
+
+        # ── ISO context ──
+        with st.expander("What is ISO Fire Protection Class?"):
+            st.markdown(
+                "**ISO Public Protection Classification (PPC)** is used by ~75% of U.S. insurance "
+                "companies to set homeowners insurance rates. Classes range from 1 (best) to 10 (worst).\n\n"
+                "**Key threshold:** Properties more than 5 road miles from a fire station automatically "
+                "receive ISO Class 10 (highest premiums). Distance to the nearest fire station is a "
+                "primary factor in your classification.\n\n"
+                f"This property is **{iso_assessment.get('iso_threshold_status', 'within')}** "
+                f"the 5-mile ISO threshold."
+            )
+
+        st.caption(
+            "Source: Fairfax County GIS (fire stations, police stations) | "
+            "Response times estimated at 20 mph average"
+        )
+
+    except FileNotFoundError:
+        st.info("Emergency services data not available.")
+    except Exception as e:
+        st.warning(f"Emergency services analysis unavailable: {e}")
+
+    st.markdown("---")
+
+
+# =============================================================================
+# SECTION: SUBDIVISIONS
+# =============================================================================
+
+def display_subdivisions_section(lat: float, lon: float):
+    """Display subdivision information for the property location."""
+    st.markdown("## 🏘️ Subdivision")
+
+    try:
+        from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
+        analyzer = FairfaxSubdivisionsAnalysis()
+
+        subdivision = analyzer.get_subdivision(lat, lon)
+
+        if subdivision.get('found'):
+            name = subdivision.get('subdivision_name', 'Unknown')
+            st.markdown(f"📍 This property is in **{name}**")
+
+            # Show details in compact layout
+            details = []
+            if subdivision.get('section'):
+                details.append(f"**Section:** {subdivision['section']}")
+            if subdivision.get('phase'):
+                details.append(f"**Phase:** {subdivision['phase']}")
+            if subdivision.get('block'):
+                details.append(f"**Block:** {subdivision['block']}")
+            if subdivision.get('record_date'):
+                details.append(f"**Recorded:** {subdivision['record_date']}")
+
+            if details:
+                st.markdown(" · ".join(details))
+        else:
+            st.info("This property is not within a recorded subdivision boundary.")
+
+        # Nearby subdivisions
+        nearby = analyzer.get_nearby_subdivisions(lat, lon, radius_miles=1.0, limit=8)
+        if nearby:
+            with st.expander(f"Nearby Subdivisions ({len(nearby)} within 1 mile)"):
+                table_data = []
+                for sub in nearby:
+                    table_data.append({
+                        'Subdivision': sub.get('subdivision_name', 'Unknown'),
+                        'Distance': f"{sub.get('distance_miles', 0):.2f} mi",
+                        'Section': sub.get('section') or '-',
+                        'Recorded': sub.get('record_date') or '-'
+                    })
+                st.dataframe(
+                    pd.DataFrame(table_data),
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+        st.caption("Source: Fairfax County GIS — Subdivision boundaries")
+
+    except FileNotFoundError:
+        st.info("Subdivision data not available.")
+    except Exception as e:
+        st.warning(f"Subdivision analysis unavailable: {e}")
+
+    st.markdown("---")
+
+
+# =============================================================================
 # SECTION: FOOTER
 # =============================================================================
 
@@ -5236,7 +5454,7 @@ def render_report(address: str, lat: float, lon: float):
         lat: Property latitude
         lon: Property longitude
 
-    This function orchestrates the complete Loudoun County analysis,
+    This function orchestrates the complete Fairfax County analysis,
     calling all 13 display sections in sequence.
     """
 
@@ -5364,6 +5582,15 @@ def render_report(address: str, lat: float, lon: float):
         # Transit & Transportation (Fairfax-specific module)
         display_transit_section(lat, lon)
 
+        # Traffic & Road Network (VDOT traffic volumes)
+        display_traffic_section(lat, lon)
+
+        # Emergency Services (fire/police proximity, ISO rating)
+        display_emergency_services_section(lat, lon)
+
+        # Subdivision Information
+        display_subdivisions_section(lat, lon)
+
         # =========================================================================
         # END OF PHASE 1 SECTIONS
         # =========================================================================
@@ -5442,7 +5669,7 @@ def render_report(address: str, lat: float, lon: float):
 # - main() - handled by unified_app.py
 #
 # This module is now called via:
-#     from reports.loudoun_report import render_report
+#     from reports.fairfax_report_new import render_report
 #     render_report(address, lat, lon)
 #
 # See unified_app.py for the main entry point.

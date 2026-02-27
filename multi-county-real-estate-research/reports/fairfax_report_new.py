@@ -2237,7 +2237,9 @@ Mortgage lenders do not require flood insurance.
                 walk = metro_data.get('walk_time_minutes')
                 st.metric("Walk Time", f"~{walk} min" if walk and walk < 60 else "Drive recommended")
 
-            st.markdown(metro_data.get('message', ''))
+            metro_msg = metro_data.get('message') or ''
+            if metro_msg:
+                st.markdown(metro_msg)
         else:
             st.markdown("Metro station data not available.")
 

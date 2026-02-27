@@ -2433,49 +2433,68 @@ def display_community_section(valuation_data: Dict[str, Any], lat: float = None,
 # =============================================================================
 
 def display_cell_towers_section(lat: float, lon: float):
-    """Display cell tower coverage for a Fairfax County property."""
+    """Display cell tower coverage matching Loudoun layout."""
     st.markdown("## 📡 Cell Tower Coverage")
 
     try:
         from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
         analyzer = FairfaxCellTowersAnalysis()
         coverage = analyzer.calculate_coverage_score(lat, lon)
+        nearby_towers = analyzer.get_nearest_towers(lat, lon, limit=20)
 
         if not coverage:
             st.info("Cell tower data not available for this location.")
+            st.markdown("---")
             return
 
-        # Summary metrics
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Coverage Score", f"{coverage.get('score', 0)}/100")
-        with col2:
-            st.metric("Rating", coverage.get('rating', 'N/A'))
-        with col3:
-            st.metric("Towers Within 2 mi", coverage.get('towers_within_2mi', 0))
+        towers_2mi = coverage.get('towers_within_2mi', 0)
 
-        # Nearest tower
-        nearest = coverage.get('nearest_tower_miles')
-        if nearest:
-            st.markdown(f"**Nearest tower:** {nearest:.2f} mi ({nearest * 5280:,.0f} ft)")
+        # Large count metric (matches Loudoun)
+        st.markdown("**Cell Towers Within 2 Miles**")
+        st.markdown(f"### {towers_2mi}")
 
-        # Nearby towers table
-        nearby = analyzer.get_towers_near_point(lat, lon, radius_miles=2.0)
-        if nearby is not None and len(nearby) > 0:
-            with st.expander(f"View All Nearby Towers ({len(nearby)} within 2 mi)", expanded=False):
-                display_df = nearby[['structure_type_desc', 'distance_miles', 'height_feet', 'city']].copy()
-                display_df.columns = ['Type', 'Distance (mi)', 'Height (ft)', 'City']
-                display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")
-                display_df['Height (ft)'] = display_df['Height (ft)'].apply(
-                    lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "—"
-                )
+        # Nearest Tower subsection
+        if nearby_towers and len(nearby_towers) > 0:
+            t = nearby_towers[0]
+            t_name = t.get('owner', t.get('carrier_category', 'Unknown'))
+            t_height = t.get('height_feet', 0)
+            t_dist = t.get('distance_miles', 0)
+            t_type = t.get('structure_type_desc', t.get('structure_type', 'Unknown'))
+            t_feet = t_dist * 5280
 
-                st.dataframe(display_df, width='stretch', hide_index=True)
+            st.markdown("**Nearest Tower**")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"**{t_name}**")
+                st.markdown(f"Distance: {t_dist:.2f} mi ({t_feet:,.0f} ft)")
+            with col2:
+                st.markdown(f"Height: {t_height:.0f} ft" if t_height else "Height: Unknown")
+                st.markdown(f"Type: {t_type}")
 
-        st.caption(f"📶 Source: FCC Antenna Structure Registration, Fairfax County")
+        # Table in expander
+        all_nearby = analyzer.get_towers_near_point(lat, lon, radius_miles=2.0)
+        if all_nearby is not None and len(all_nearby) > 0:
+            with st.expander(f"View All Nearby Towers ({len(all_nearby)} within 2 mi)", expanded=False):
+                cols = [c for c in ['owner', 'distance_miles', 'structure_type_desc', 'height_feet', 'city'] if c in all_nearby.columns]
+                display_df = all_nearby[cols].copy()
+                col_map = {'owner': 'Tower Name', 'distance_miles': 'Distance (mi)',
+                           'structure_type_desc': 'Type', 'height_feet': 'Height (ft)', 'city': 'City'}
+                display_df = display_df.rename(columns=col_map)
+                if 'Distance (mi)' in display_df.columns:
+                    display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")
+                if 'Height (ft)' in display_df.columns:
+                    display_df['Height (ft)'] = display_df['Height (ft)'].apply(
+                        lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "Unknown"
+                    )
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+        st.caption(f"📶 {towers_2mi} cell towers within 2 miles of this property.")
+        st.caption("Source: FCC Antenna Structure Registration, Fairfax County GIS")
 
     except Exception as e:
         st.warning(f"Cell tower analysis unavailable: {e}")
+
+    st.markdown("---")
 
 
 def analyze_development(lat: float, lon: float, radius_miles: float = 2.0) -> Dict[str, Any]:

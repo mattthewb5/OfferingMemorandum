@@ -3788,8 +3788,8 @@ def _create_permits_map(permits_df, property_lat: float, property_lon: float):
 
 
 def display_development_section(lat: float, lon: float):
-    """Display neighborhood development activity and building permits."""
-    st.markdown("## 🏗 Neighborhood Development Activity")
+    """Display neighborhood development and infrastructure (matches Loudoun pattern)."""
+    st.markdown("## 📊 Neighborhood Development & Infrastructure")
 
     try:
         from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
@@ -3929,48 +3929,152 @@ def display_development_section(lat: float, lon: float):
                     "Transit Station Area, and Tysons Corner Urban Center."
                 )
 
-        # ── Permit map (new construction) ──
-        st.markdown("### New Construction Activity Map")
-        st.caption(
-            f"Showing {len(map_permits):,} new construction permits "
-            f"(last {map_window} months, {radius:.0f}-mile radius)"
-        )
+        # ── Development Activity Map (Leaflet via Folium — matches Loudoun) ──
+        st.markdown("### Development Activity Map")
+        st.markdown("🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other Construction")
 
-        if len(map_permits) > 0 and PLOTLY_AVAILABLE:
+        if FOLIUM_AVAILABLE and len(map_permits) > 0:
+            import folium
+            from streamlit_folium import st_folium
+
+            m = folium.Map(location=[lat, lon], zoom_start=13, tiles='OpenStreetMap')
+
+            # 2-mile radius circle
+            folium.Circle(
+                location=[lat, lon], radius=3218,
+                color='blue', fill=True, fill_opacity=0.05, weight=1,
+                tooltip="2-mile radius"
+            ).add_to(m)
+
+            # Property marker
+            folium.Marker(
+                [lat, lon],
+                popup="<b>Subject Property</b>",
+                icon=folium.Icon(color='red', icon='home', prefix='fa'),
+                tooltip="Subject Property"
+            ).add_to(m)
+
+            # Permits layer
+            permits_group = folium.FeatureGroup(name='🏗️ Major Projects', show=True)
+            PERMIT_COLORS = {
+                'data_center': 'red', 'fiber': 'orange', 'infrastructure': 'purple',
+                'commercial_new': 'green', 'residential_new': 'green', 'other': 'gray',
+            }
+            for _, row in map_permits.iterrows():
+                p_lat = row.get('centroid_lat')
+                p_lon = row.get('centroid_lon')
+                if pd.notna(p_lat) and pd.notna(p_lon):
+                    cat = row.get('permit_category', 'other')
+                    color = PERMIT_COLORS.get(cat, 'gray')
+                    addr = row.get('address', '')
+                    ptype = row.get('permit_type', '')
+                    folium.CircleMarker(
+                        location=[p_lat, p_lon], radius=5,
+                        color=color, fill=True, fillColor=color, fillOpacity=0.6,
+                        popup=f"<b>{addr}</b><br>{ptype}",
+                        tooltip=ptype
+                    ).add_to(permits_group)
+            permits_group.add_to(m)
+
+            # Schools layer
+            schools_group = folium.FeatureGroup(name='🏫 Schools', show=True)
+            try:
+                coords_df = load_school_coordinates()
+                if coords_df is not None and len(coords_df) > 0:
+                    for _, s in coords_df.iterrows():
+                        s_lat = s.get('Latitude')
+                        s_lon = s.get('Longitude')
+                        if pd.notna(s_lat) and pd.notna(s_lon):
+                            s_dist = haversine_distance(lat, lon, s_lat, s_lon)
+                            if s_dist <= 2.5:
+                                s_type = s.get('School_Type', '')
+                                s_color = {'Elem': 'green', 'Middle': 'orange', 'High': 'red'}.get(s_type, 'blue')
+                                folium.Marker(
+                                    [s_lat, s_lon],
+                                    icon=folium.Icon(color=s_color, icon='graduation-cap', prefix='fa'),
+                                    popup=s.get('School_Name', ''),
+                                    tooltip=s.get('School_Name', '')
+                                ).add_to(schools_group)
+            except Exception:
+                pass
+            schools_group.add_to(m)
+
+            # Metro stations layer
+            metro_group = folium.FeatureGroup(name='🚇 Metro', show=True)
+            for station in FAIRFAX_METRO_STATIONS:
+                s_dist = haversine_distance(lat, lon, station['lat'], station['lon'])
+                if s_dist <= 10:
+                    folium.Marker(
+                        [station['lat'], station['lon']],
+                        icon=folium.Icon(color='blue', icon='train', prefix='fa'),
+                        popup=f"{station['name']} ({station['line']} Line)",
+                        tooltip=station['name']
+                    ).add_to(metro_group)
+            metro_group.add_to(m)
+
+            # Cell towers layer (150ft+)
+            towers_group = folium.FeatureGroup(name='📡 Cell Towers (150+ ft)', show=False)
+            try:
+                from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
+                tower_analyzer = FairfaxCellTowersAnalysis()
+                tall_towers = tower_analyzer.get_towers_near_point(lat, lon, radius_miles=2.0)
+                if tall_towers is not None and len(tall_towers) > 0:
+                    if 'height_feet' in tall_towers.columns:
+                        tall_towers = tall_towers[tall_towers['height_feet'] >= 150]
+                    for _, t in tall_towers.iterrows():
+                        t_lat = t.get('latitude')
+                        t_lon = t.get('longitude')
+                        if pd.notna(t_lat) and pd.notna(t_lon):
+                            folium.Marker(
+                                [t_lat, t_lon],
+                                icon=folium.Icon(color='gray', icon='signal', prefix='fa'),
+                                popup=f"Tower: {t.get('owner', 'Unknown')} ({t.get('height_feet', 0):.0f} ft)",
+                                tooltip=f"Cell Tower ({t.get('height_feet', 0):.0f} ft)"
+                            ).add_to(towers_group)
+            except Exception:
+                pass
+            towers_group.add_to(m)
+
+            # Hospital layer
+            hospitals_group = folium.FeatureGroup(name='🏥 Hospitals', show=False)
+            try:
+                from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
+                hc = FairfaxHealthcareAnalysis()
+                hosp_nearby = hc.get_facilities_near_point(lat, lon, radius_miles=5.0, facility_type='hospital')
+                if hosp_nearby is not None and len(hosp_nearby) > 0:
+                    for _, h in hosp_nearby.iterrows():
+                        h_lat = h.get('latitude')
+                        h_lon = h.get('longitude')
+                        if pd.notna(h_lat) and pd.notna(h_lon):
+                            folium.Marker(
+                                [h_lat, h_lon],
+                                icon=folium.Icon(color='red', icon='plus-square', prefix='fa'),
+                                popup=h.get('name', 'Hospital'),
+                                tooltip=h.get('name', 'Hospital')
+                            ).add_to(hospitals_group)
+            except Exception:
+                pass
+            hospitals_group.add_to(m)
+
+            # Layer control
+            folium.LayerControl(position='topright', collapsed=False).add_to(m)
+
+            st_folium(m, width=None, height=500, use_container_width=True, returned_objects=[])
+
+        elif not FOLIUM_AVAILABLE and PLOTLY_AVAILABLE and len(map_permits) > 0:
+            # Fallback to Plotly scatter map
             map_df = map_permits.copy()
             map_df['date'] = map_df['issued_date'].dt.strftime('%Y-%m-%d').fillna('N/A')
-
             fig = px.scatter_map(
-                map_df,
-                lat='centroid_lat',
-                lon='centroid_lon',
-                color='permit_type',
-                hover_name='address',
-                hover_data={
-                    'permit_type': True,
-                    'date': True,
-                    'centroid_lat': False,
-                    'centroid_lon': False,
-                },
-                height=500,
-                map_style='open-street-map',
+                map_df, lat='centroid_lat', lon='centroid_lon',
+                color='permit_type', hover_name='address',
+                height=500, map_style='open-street-map',
             )
-            fig.update_layout(
-                margin=dict(l=0, r=0, t=0, b=0),
-                map=dict(
-                    center=dict(lat=lat, lon=lon),
-                    zoom=12,
-                ),
-            )
+            fig.update_layout(margin=dict(l=0, r=0, t=0, b=0),
+                              map=dict(center=dict(lat=lat, lon=lon), zoom=12))
             st.plotly_chart(fig, width='stretch')
-            st.caption("Map shows new construction permits color-coded by type.")
-        elif not PLOTLY_AVAILABLE:
-            st.info("Map display requires the plotly package.")
         else:
-            st.info(
-                f"No new construction permits in the last {map_window} months "
-                f"within {radius:.0f} miles."
-            )
+            st.info(f"No new construction permits in the last {map_window} months within {radius:.0f} miles.")
 
         # ── Permit type breakdown ──
         st.markdown("### Permit Type Breakdown (24 Months)")

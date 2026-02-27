@@ -1746,10 +1746,66 @@ AIRPORTS = {
     "Reagan National (DCA)": {"lat": 38.8512, "lon": -77.0402},
 }
 
-# Travel time destinations for Fairfax
-FAIRFAX_TRAVEL_DESTINATIONS = [
-    "Tysons Corner", "Downtown DC", "Dulles Airport", "Reagan National (DCA)", "Pentagon"
-]
+# Travel time destinations for Fairfax (name → Google-geocodable address)
+FAIRFAX_TRAVEL_DESTINATIONS = {
+    "Tysons Corner": "Tysons Corner Center, McLean, VA",
+    "Downtown DC": "Washington, DC 20004",
+    "Dulles Airport (IAD)": "Dulles International Airport, Dulles, VA",
+    "Reagan National (DCA)": "Ronald Reagan Washington National Airport, Arlington, VA",
+    "Pentagon": "The Pentagon, Arlington, VA",
+}
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _fetch_travel_times(origin_lat: float, origin_lon: float) -> list:
+    """Fetch drive times from Google Distance Matrix API for Fairfax destinations.
+
+    Returns list of dicts: [{'name': str, 'duration': str, 'distance': str}, ...]
+    Results are cached for 24h per origin coordinate.
+    """
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+    if not api_key:
+        return []
+
+    origin = f"{origin_lat},{origin_lon}"
+    destinations = "|".join(FAIRFAX_TRAVEL_DESTINATIONS.values())
+    url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+    params = {
+        "origins": origin,
+        "destinations": destinations,
+        "key": api_key,
+        "units": "imperial",
+        "departure_time": "now",
+    }
+
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+        data = resp.json()
+        if data.get('status') != 'OK':
+            return []
+
+        results = []
+        dest_names = list(FAIRFAX_TRAVEL_DESTINATIONS.keys())
+        elements = data.get('rows', [{}])[0].get('elements', [])
+        for i, elem in enumerate(elements):
+            if i >= len(dest_names):
+                break
+            if elem.get('status') == 'OK':
+                duration = elem.get('duration_in_traffic', elem.get('duration', {}))
+                results.append({
+                    'name': dest_names[i],
+                    'duration': duration.get('text', 'N/A'),
+                    'distance': elem.get('distance', {}).get('text', 'N/A'),
+                })
+            else:
+                results.append({
+                    'name': dest_names[i],
+                    'duration': 'N/A',
+                    'distance': 'N/A',
+                })
+        return results
+    except Exception:
+        return []
 
 
 def _classify_road_type(address: str, traffic_data=None) -> Tuple[str, str]:
@@ -2076,10 +2132,16 @@ def display_location_quality_section(lat: float, lon: float, address: str):
                 st.markdown(f"- Average Daily Traffic: {r['adt']:,} vehicles/day")
             st.markdown(f"- Distance: {r.get('distance_miles', 0):.1f} miles")
         st.markdown("")
-        st.markdown("**Travel Times:**")
-        for dest in FAIRFAX_TRAVEL_DESTINATIONS:
-            st.markdown(f"• {dest}")
-        st.caption("Data: VDOT Traffic Volume Database")
+        st.markdown("**Travel Times (current traffic):**")
+        travel_results = _fetch_travel_times(lat, lon)
+        if travel_results:
+            for t in travel_results:
+                st.markdown(f"• **{t['name']}:** {t['duration']} ({t['distance']})")
+            st.caption("Data: Google Distance Matrix API (live traffic), VDOT Traffic Volume Database")
+        else:
+            for dest in FAIRFAX_TRAVEL_DESTINATIONS:
+                st.markdown(f"• {dest}")
+            st.caption("Data: VDOT Traffic Volume Database")
 
     # Aircraft Noise expander
     with st.expander("✈️ Aircraft Noise Information"):

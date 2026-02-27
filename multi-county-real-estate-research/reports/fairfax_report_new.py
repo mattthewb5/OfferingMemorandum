@@ -817,10 +817,10 @@ def expand_road_name(name: str) -> str:
 @st.cache_data
 def load_cell_towers() -> pd.DataFrame:
     """
-    Load and cache cell tower data for Loudoun County.
+    Load and cache cell tower data for Fairfax County.
 
-    Data source: Loudoun County GIS enhanced with FCC carrier data.
-    Contains 110 towers with coordinates, heights, and attribution levels.
+    Data source: Fairfax County GIS enhanced with FCC carrier data.
+    Contains towers with coordinates, heights, and attribution levels.
 
     Returns:
         DataFrame with columns: tower_id, tower_name, structure_type, height_ft,
@@ -940,7 +940,7 @@ def load_parks_data() -> Dict[str, Any]:
     Load parks data from static JSON file.
 
     The parks.json file contains pre-fetched data from Google Places API
-    covering parks and playgrounds across Loudoun County.
+    covering parks and playgrounds across Fairfax County.
 
     Returns:
         dict: Parks data with 'available', 'parks' list, 'metadata', and 'total_parks'
@@ -1028,9 +1028,9 @@ def get_nearest_parks(lat: float, lon: float, parks_data: Dict[str, Any],
 @st.cache_data
 def check_flood_zone(lat: float, lon: float) -> Dict[str, Any]:
     """
-    Check if property is in a FEMA flood zone using Loudoun County GIS.
+    Check if property is in a FEMA flood zone using Fairfax County GIS.
 
-    Uses the official Loudoun County GIS FEMA Flood layer API to determine
+    Uses the official Fairfax County GIS FEMA Flood layer API to determine
     flood zone status. Returns plain English descriptions for homeowner clarity.
 
     Args:
@@ -1071,7 +1071,7 @@ def check_flood_zone(lat: float, lon: float) -> Dict[str, Any]:
                 'zone_type': None,
                 'zone_description': None,
                 'insurance_required': False,
-                'source': 'FEMA FIRM via Loudoun County GIS',
+                'source': 'FEMA FIRM via Fairfax County GIS',
                 'success': True,
                 'error': None
             }
@@ -1094,7 +1094,7 @@ def check_flood_zone(lat: float, lon: float) -> Dict[str, Any]:
             'zone_type': zone_type,
             'zone_description': zone_raw,
             'insurance_required': True,
-            'source': 'FEMA FIRM via Loudoun County GIS',
+            'source': 'FEMA FIRM via Fairfax County GIS',
             'success': True,
             'error': None
         }
@@ -1313,71 +1313,76 @@ def display_schools_section(lat: float, lon: float):
                     help="2024-25 Virginia SOL pass rates - percentage of students passing state standardized tests"
                 )
 
-    # Performance charts
-    # PHASE 1 FIX: Fairfax data is summary format (no yearly trends)
-    # Loudoun code expects year-by-year data for line charts, but Fairfax only has summary statistics
-    # TODO Phase 2: Build Fairfax-specific charts using summary data columns:
-    #   - school_name, recent_reading_pass_rate, recent_math_pass_rate
-    #
-    # if PLOTLY_AVAILABLE and not performance_df.empty:
-    #     st.markdown("### School Performance Trends")
-    #
-    #     tab1, tab2 = st.tabs(["Reading Proficiency", "Math Proficiency"])
-    #
-    #     with tab1:
-    #         # Get trend data for assigned schools
-    #         chart_data = []
-    #         for level, school in assignments.items():
-    #             if school:
-    #                 # Use match function to get exact school name from performance data
-    #                 matched_name = match_school_in_performance_data(school, performance_df)
-    #                 if matched_name:
-    #                     school_data = performance_df[
-    #                         performance_df['School_Name'] == matched_name
-    #                     ]
-    #                     for _, row in school_data.iterrows():
-    #                         chart_data.append({
-    #                             'School': school,
-    #                             'Year': row['Year'],
-    #                             'Reading Pass Rate': row.get('Reading_Pass_Rate', 0)
-    #                         })
-    #
-    #         if chart_data:
-    #             chart_df = pd.DataFrame(chart_data)
-    #             fig = px.line(chart_df, x='Year', y='Reading Pass Rate', color='School',
-    #                          title='Reading Proficiency Trends',
-    #                          markers=True)
-    #             fig.update_layout(yaxis_range=[0, 100])
-    #             st.plotly_chart(fig, width='stretch')
-    #         else:
-    #             st.info("School performance trend data not available for assigned schools.")
-    #
-    #     with tab2:
-    #         chart_data = []
-    #         for level, school in assignments.items():
-    #             if school:
-    #                 # Use match function to get exact school name from performance data
-    #                 matched_name = match_school_in_performance_data(school, performance_df)
-    #                 if matched_name:
-    #                     school_data = performance_df[
-    #                         performance_df['School_Name'] == matched_name
-    #                     ]
-    #                     for _, row in school_data.iterrows():
-    #                         chart_data.append({
-    #                             'School': school,
-    #                             'Year': row['Year'],
-    #                             'Math Pass Rate': row.get('Math_Pass_Rate', 0)
-    #                         })
-    #
-    #         if chart_data:
-    #             chart_df = pd.DataFrame(chart_data)
-    #             fig = px.line(chart_df, x='Year', y='Math Pass Rate', color='School',
-    #                          title='Math Proficiency Trends',
-    #                          markers=True)
-    #             fig.update_layout(yaxis_range=[0, 100])
-    #             st.plotly_chart(fig, width='stretch')
-    #         else:
-    #             st.info("School performance trend data not available for assigned schools.")
+    # Inline Performance Trend Charts (matches Loudoun pattern — visible without expander)
+    try:
+        import altair as alt
+        from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
+        perf_analyzer = FairfaxSchoolPerformanceAnalysis()
+
+        # Collect trend data for all assigned schools
+        reading_data = []
+        math_data = []
+        for _level_key in ('elementary', 'middle', 'high'):
+            school_name = assignments.get(_level_key)
+            if not school_name:
+                continue
+            trends = perf_analyzer.get_school_trends(school_name, years=5)
+            if not trends.get('found'):
+                # Try short name variants
+                for lw in ('Elementary School', 'Middle School', 'High School'):
+                    if school_name.endswith(lw):
+                        short = school_name[:-len(lw)].strip()
+                        last = short.split()[-1] if short.split() else short
+                        level_word = lw.replace(' School', '')
+                        trends = perf_analyzer.get_school_trends(f"{last} {level_word}", years=5)
+                        if trends.get('found'):
+                            break
+            if not trends.get('found'):
+                continue
+            yearly = trends.get('yearly_data', [])
+            for yr_row in yearly:
+                year = yr_row.get('year')
+                if year:
+                    r_rate = yr_row.get('reading_pass_rate')
+                    m_rate = yr_row.get('math_pass_rate')
+                    if r_rate is not None:
+                        reading_data.append({'School': school_name, 'Year': str(year), 'Pass Rate': float(r_rate)})
+                    if m_rate is not None:
+                        math_data.append({'School': school_name, 'Year': str(year), 'Pass Rate': float(m_rate)})
+
+        if reading_data or math_data:
+            st.subheader("School Performance Trends")
+            tab_read, tab_math = st.tabs(["Reading Proficiency", "Math Proficiency"])
+
+            with tab_read:
+                if reading_data:
+                    rdf = pd.DataFrame(reading_data)
+                    chart = alt.Chart(rdf).mark_line(point=True).encode(
+                        x=alt.X('Year:N', title='Year'),
+                        y=alt.Y('Pass Rate:Q', title='Pass Rate (%)', scale=alt.Scale(domain=[0, 100])),
+                        color=alt.Color('School:N', title='School'),
+                        tooltip=['School', 'Year', 'Pass Rate']
+                    ).properties(title='Reading Proficiency Trends', height=300)
+                    st.altair_chart(chart, use_container_width=True)
+                else:
+                    st.info("Reading trend data not available for assigned schools.")
+
+            with tab_math:
+                if math_data:
+                    mdf = pd.DataFrame(math_data)
+                    chart = alt.Chart(mdf).mark_line(point=True).encode(
+                        x=alt.X('Year:N', title='Year'),
+                        y=alt.Y('Pass Rate:Q', title='Pass Rate (%)', scale=alt.Scale(domain=[0, 100])),
+                        color=alt.Color('School:N', title='School'),
+                        tooltip=['School', 'Year', 'Pass Rate']
+                    ).properties(title='Math Proficiency Trends', height=300)
+                    st.altair_chart(chart, use_container_width=True)
+                else:
+                    st.info("Math trend data not available for assigned schools.")
+        else:
+            st.caption("Performance trend data not yet available for assigned schools.")
+    except Exception as e:
+        st.caption(f"Performance trends unavailable: {e}")
 
     # School Performance Comparison with State Average and Peer Schools
     if PLOTLY_AVAILABLE:
@@ -1707,686 +1712,436 @@ def display_crime_section(lat: float, lon: float):
 
 
 # =============================================================================
-# SECTION: LOCATION QUALITY
+# SECTION: LOCATION QUALITY (Unified — matches Loudoun pattern)
 # =============================================================================
 
-def analyze_location_quality(lat: float, lon: float, address: str) -> Dict[str, Any]:
-    """Analyze location quality using GIS data (cached for performance)."""
+# Road type classifier (from spec)
+ROAD_TYPES = {
+    "CUL-DE-SAC": "Cul-de-sac / Court (Very Low traffic)",
+    "COURT": "Cul-de-sac / Court (Very Low traffic)",
+    "PLACE": "Local Road (Low traffic)",
+    "LANE": "Local Road (Low traffic)",
+    "DRIVE": "Local/Collector Road (Low-Moderate traffic)",
+    "WAY": "Local Road (Low traffic)",
+    "ROAD": "Collector/Arterial (Moderate traffic)",
+    "AVENUE": "Collector Road (Moderate traffic)",
+    "BOULEVARD": "Arterial Road (Higher traffic)",
+    "PARKWAY": "Divided Arterial (Higher traffic)",
+    "HIGHWAY": "Highway Frontage (High traffic)",
+}
+
+# Fairfax Metro stations (from spec)
+FAIRFAX_METRO_STATIONS = [
+    {"name": "Wiehle-Reston East", "lat": 38.9473, "lon": -77.3402, "line": "Silver"},
+    {"name": "Spring Hill", "lat": 38.9281, "lon": -77.2735, "line": "Silver"},
+    {"name": "Greensboro", "lat": 38.9246, "lon": -77.2375, "line": "Silver"},
+    {"name": "Tysons Corner", "lat": 38.9208, "lon": -77.2234, "line": "Silver"},
+    {"name": "McLean", "lat": 38.9344, "lon": -77.1804, "line": "Silver"},
+    {"name": "Vienna/Fairfax-GMU", "lat": 38.8783, "lon": -77.2716, "line": "Orange"},
+    {"name": "Dunn Loring-Merrifield", "lat": 38.8843, "lon": -77.2297, "line": "Orange"},
+    {"name": "West Falls Church", "lat": 38.9004, "lon": -77.1877, "line": "Orange"},
+    {"name": "East Falls Church", "lat": 38.8855, "lon": -77.1569, "line": "Orange/Silver"},
+    {"name": "Franconia-Springfield", "lat": 38.7659, "lon": -77.1681, "line": "Blue"},
+    {"name": "Van Dorn Street", "lat": 38.7965, "lon": -77.1290, "line": "Blue"},
+    {"name": "Huntington", "lat": 38.7954, "lon": -77.0743, "line": "Yellow"},
+]
+
+# Airport coordinates
+AIRPORTS = {
+    "Dulles International (IAD)": {"lat": 38.9531, "lon": -77.4565},
+    "Reagan National (DCA)": {"lat": 38.8512, "lon": -77.0402},
+}
+
+# Travel time destinations for Fairfax
+FAIRFAX_TRAVEL_DESTINATIONS = [
+    "Tysons Corner", "Downtown DC", "Dulles Airport", "Reagan National (DCA)", "Pentagon"
+]
+
+
+def _classify_road_type(address: str) -> Tuple[str, str]:
+    """Classify road type from address suffix."""
+    addr_upper = address.upper().strip()
+    for suffix, desc in ROAD_TYPES.items():
+        if addr_upper.endswith(suffix) or f" {suffix} " in addr_upper or f" {suffix}," in addr_upper:
+            return suffix, desc
+    return "ROAD", "Collector/Arterial (Moderate traffic)"
+
+
+def _compute_location_score(traffic_data, flood_data, parks_data, metro_data, noise_dist, address):
+    """Compute location quality score out of 10 (mirrors Loudoun)."""
+    score = 5.0  # baseline
+
+    # Road type component
+    road_suffix, _ = _classify_road_type(address)
+    road_scores = {
+        "CUL-DE-SAC": 2, "COURT": 2, "PLACE": 1, "LANE": 1,
+        "WAY": 1, "DRIVE": 0.5, "AVENUE": 0, "ROAD": 0,
+        "BOULEVARD": -0.5, "PARKWAY": -0.5, "HIGHWAY": -1,
+    }
+    score += road_scores.get(road_suffix, 0)
+
+    # Highway access distance
+    if traffic_data:
+        nearest_dist = traffic_data.get('nearest_distance_miles', 5)
+        if nearest_dist < 1:
+            score += 1
+        elif nearest_dist < 3:
+            score += 1.5
+        elif nearest_dist < 5:
+            score += 1
+    else:
+        score += 0.5
+
+    # Flood zone
+    if flood_data:
+        fema = flood_data.get('fema_zone')
+        if fema:
+            zone_code = fema.get('zone_code', 'X') if isinstance(fema, dict) else 'X'
+            if zone_code in ('X', 'X SHADED', None):
+                score += 2
+            elif zone_code == 'X SHADED':
+                score += 1
+            elif zone_code in ('AE', 'A'):
+                score += 0
+            elif zone_code in ('AO', 'FLOODWAY'):
+                score -= 1
+            else:
+                score += 1
+        else:
+            score += 2  # No flood zone data = likely not in zone
+    else:
+        score += 1
+
+    # Parks
+    if parks_data and isinstance(parks_data, list) and len(parks_data) > 0:
+        park_dist = parks_data[0].get('distance_miles', 10)
+        if park_dist < 0.5:
+            score += 1.5
+        elif park_dist < 1:
+            score += 1
+        elif park_dist < 2:
+            score += 0.5
+    elif parks_data and isinstance(parks_data, dict):
+        park_dist = parks_data.get('closest_park_distance', 10)
+        if park_dist < 0.5:
+            score += 1.5
+        elif park_dist < 1:
+            score += 1
+        elif park_dist < 2:
+            score += 0.5
+
+    # Metro
+    if metro_data:
+        metro_dist = metro_data.get('distance_miles', 20)
+        if metro_dist < 3:
+            score += 2
+        elif metro_dist < 7:
+            score += 1.5
+        elif metro_dist < 12:
+            score += 1
+        else:
+            score += 0.5
+
+    # Noise (distance-based)
+    if noise_dist:
+        min_noise_dist = min(noise_dist.values()) if noise_dist else 20
+        if min_noise_dist > 10:
+            score += 1  # far from airports
+        elif min_noise_dist > 5:
+            score += 0.5
+        elif min_noise_dist < 3:
+            score -= 1
+
+    return max(1.0, min(10.0, score))
+
+
+def display_location_quality_section(lat: float, lon: float, address: str):
+    """Display unified Location Quality section (matches Loudoun pattern).
+
+    Uses Fairfax-specific modules for traffic, flood, parks, transit, utilities.
+    Replaces separate traffic, emergency services sections."""
+
+    # --- Gather data from Fairfax modules ---
+    traffic_data = {}
     try:
-        # Use cached analyzer for better performance across property analyses
-        analyzer = get_cached_location_analyzer()
-        return analyzer.analyze_location(lat, lon, address)
-    except Exception as e:
-        return {'error': str(e)}
+        from core.fairfax_traffic_analysis import FairfaxTrafficAnalysis
+        ta = FairfaxTrafficAnalysis()
+        traffic_data = ta.calculate_traffic_exposure_score(lat, lon)
+        nearby_traffic = ta.get_nearby_traffic(lat, lon, radius_miles=2.0)
+        traffic_data['nearby'] = nearby_traffic
+    except Exception:
+        pass
 
+    flood_data = {}
+    try:
+        from core.fairfax_flood_analysis import FairfaxFloodAnalysis
+        fa = FairfaxFloodAnalysis()
+        flood_data = fa.get_flood_risk(lat, lon)
+    except Exception:
+        pass
 
-def display_location_section(location_data: Dict[str, Any], power_lines: Dict[str, Any] = None, metro_data: Dict[str, Any] = None, flood_data: Dict[str, Any] = None, parks_data: Dict[str, Any] = None, lat: float = None, lon: float = None):
-    """Display location quality summary including flood zone, parks, and other features."""
+    parks_list = []
+    parks_score = {}
+    try:
+        from core.fairfax_parks_analysis import FairfaxParksAnalysis
+        pa = FairfaxParksAnalysis()
+        parks_list = pa.get_nearby_parks(lat, lon, radius_miles=5.0, limit=5)
+        parks_score = pa.calculate_park_access_score(lat, lon)
+    except Exception:
+        pass
+
+    metro_data = {}
+    try:
+        from core.fairfax_transit_analysis import FairfaxTransitAnalysis
+        transit = FairfaxTransitAnalysis()
+        metro_data = transit.get_nearest_metro_station(lat, lon)
+    except Exception:
+        pass
+
+    power_data = {}
+    try:
+        from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
+        ua = FairfaxUtilitiesAnalysis()
+        power_data = ua.check_proximity(lat, lon, distance_threshold_miles=1.0)
+    except Exception:
+        pass
+
+    # Airport distances
+    airport_distances = {}
+    for airport_name, coords in AIRPORTS.items():
+        airport_distances[airport_name] = haversine_distance(lat, lon, coords["lat"], coords["lon"])
+
+    # --- Compute location score ---
+    loc_score = _compute_location_score(traffic_data, flood_data, parks_list, metro_data, airport_distances, address)
+
+    # --- Display ---
     st.markdown("## 📍 Location Quality")
 
-    if power_lines is None:
-        power_lines = {}
-    if metro_data is None:
-        metro_data = {}
-    if flood_data is None:
-        flood_data = {}
-    if parks_data is None:
-        parks_data = {}
+    col1, col2 = st.columns([3, 1])
 
-    # Initialize traffic analyzer for ADT data
-    traffic_analyzer = None
-    try:
-        traffic_analyzer = LoudounTrafficVolumeAnalyzer()
-    except Exception:
-        pass  # Traffic data optional
-
-    if 'error' in location_data:
-        st.warning(f"Location analysis unavailable: {location_data['error']}")
-        return
-
-    col1, col2 = st.columns([2, 1])
+    with col2:
+        st.metric("Location Score", f"{loc_score:.1f}/10",
+                  help="Based on road type, highway access, flood zone, noise, parks, and Metro access")
 
     with col1:
         st.markdown("**Key Location Features:**")
 
-        highlights = []
+        # Road Type
+        road_suffix, road_desc = _classify_road_type(address)
+        st.markdown(f"🛣️ **Road Type:** {road_desc}")
 
-        # Road classification
-        road_class = location_data.get('road_classification', {})
-        if isinstance(road_class, dict):
-            classification = road_class.get('classification', 'Unknown')
-            traffic = road_class.get('traffic_level', 'Unknown')
-            highlights.append(f"🛣️ **Road Type:** {classification} ({traffic} traffic)")
+        # Highway Access (nearest high-traffic road from VDOT data)
+        nearby = traffic_data.get('nearby', [])
+        if nearby and isinstance(nearby, list) and len(nearby) > 0:
+            nearest_road = nearby[0] if isinstance(nearby[0], dict) else {}
+            road_name = nearest_road.get('road_name', 'N/A')
+            road_dist = nearest_road.get('distance_miles', 0)
+            road_adt = nearest_road.get('adt', 0)
+            hw_icon = "🟢" if road_dist > 1.0 else ("🟡" if road_dist > 0.5 else "🔴")
+            adt_str = f" • ~{road_adt:,} vehicles/day" if road_adt else ""
+            st.markdown(f"🚗 **Highway Access:** {hw_icon} {road_name} ({road_dist:.1f} mi){adt_str}")
 
-        # Highway access with ADT
-        hw = location_data.get('highway_proximity', {})
-        hw_name = None
-        hw_dist = 0
-        hw_adt = None
-        hw_vdot_route = None
-        if isinstance(hw, dict) and hw.get('nearest_highway'):
-            hw_name = hw.get('nearest_highway', 'Unknown')
-            hw_dist = hw.get('distance_miles', 0)
-            hw_level = hw.get('proximity_level', '')
-            # Color indicator based on proximity
-            if hw_dist < 0.5:
-                hw_icon = "🔴"  # Very close - noise concern
-            elif hw_dist < 1.0:
-                hw_icon = "🟡"  # Close
+            # Second road if available
+            if len(nearby) > 1:
+                r2 = nearby[1] if isinstance(nearby[1], dict) else {}
+                r2_name = r2.get('road_name', '')
+                r2_dist = r2.get('distance_miles', 0)
+                r2_adt = r2.get('adt', 0)
+                r2_icon = "🟢" if r2_dist > 0.75 else ("🟡" if r2_dist > 0.3 else "🔴")
+                adt2_str = f" • ~{r2_adt:,} vehicles/day" if r2_adt else ""
+                st.markdown(f"🛤️ **Major Road:** {r2_icon} {r2_name} ({r2_dist:.1f} mi){adt2_str}")
+
+        # Aircraft Noise (distance-based for Fairfax — 2 airports)
+        nearest_airport = min(airport_distances, key=airport_distances.get) if airport_distances else None
+        nearest_apt_dist = airport_distances.get(nearest_airport, 99) if nearest_airport else 99
+        if nearest_apt_dist < 5:
+            st.markdown(f"⚠️ **Aircraft Noise Zone** - {nearest_airport} ({nearest_apt_dist:.1f} mi)")
+        else:
+            st.markdown("✅ **No Aircraft Noise Disclosure** - Outside disclosure zones")
+        st.markdown(f"🛫 **{nearest_airport}:** {nearest_apt_dist:.1f} miles")
+
+        # Flood Zone
+        fema = flood_data.get('fema_zone')
+        if fema and isinstance(fema, dict):
+            zone_code = fema.get('zone_code', 'X')
+            if zone_code in ('A', 'AE', 'AO', 'FLOODWAY', 'V', 'VE'):
+                st.markdown(f"⚠️ **Flood Insurance Required** - FEMA Zone {zone_code}")
             else:
-                hw_icon = "🟢"  # Good distance
+                st.markdown("✅ **No Flood Insurance Required** - Not in mapped flood zone")
+        elif flood_data.get('overall_risk') == 'High':
+            st.markdown("⚠️ **Flood Risk Identified** - Check FEMA maps")
+        else:
+            st.markdown("✅ **No Flood Insurance Required** - Not in mapped flood zone")
 
-            # Get ADT from traffic analyzer
-            if traffic_analyzer and lat and lon:
-                hw_traffic = traffic_analyzer.get_traffic_volume(hw_name, lat, lon)
-                if hw_traffic:
-                    hw_adt = hw_traffic.get('adt')
-                    hw_vdot_route = hw_traffic.get('vdot_route')
-
-            # Build display string with optional ADT
-            hw_display = f"🚗 **Highway Access:** {hw_icon} {hw_name} ({hw_dist:.1f} mi)"
-            if hw_adt:
-                hw_display += f" • {traffic_analyzer.format_adt(hw_adt)}"
-            highlights.append(hw_display)
-
-        # Collector Roads (major local roads) with ADT
-        coll = location_data.get('collector_proximity', {})
-        coll_name = None
-        coll_dist = 0
-        coll_adt = None
-        coll_vdot_route = None
-        if isinstance(coll, dict) and coll.get('nearest_collector'):
-            coll_name = coll.get('nearest_collector', 'Unknown')
-            coll_dist = coll.get('distance_miles', 0)
-            # Color indicator based on proximity (collectors are local, so different thresholds)
-            if coll_dist < 0.3:
-                coll_icon = "🔴"  # Very close - traffic concern
-            elif coll_dist < 0.75:
-                coll_icon = "🟡"  # Close
-            else:
-                coll_icon = "🟢"  # Good distance
-
-            # Get ADT from traffic analyzer
-            if traffic_analyzer and lat and lon:
-                coll_traffic = traffic_analyzer.get_traffic_volume(coll_name, lat, lon)
-                if coll_traffic:
-                    coll_adt = coll_traffic.get('adt')
-                    coll_vdot_route = coll_traffic.get('vdot_route')
-
-            # Build display string with optional ADT
-            coll_display = f"🛤️ **Major Road:** {coll_icon} {coll_name} ({coll_dist:.1f} mi)"
-            if coll_adt:
-                coll_display += f" • {traffic_analyzer.format_adt(coll_adt)}"
-            highlights.append(coll_display)
-
-        # Airport zone - Plain English display (lead with severity, not zone codes)
-        aiod = location_data.get('aiod_status', {})
-        if isinstance(aiod, dict):
-            if aiod.get('in_aiod'):
-                zone = aiod.get('zone', 'Unknown')
-                airport = aiod.get('airport', 'Dulles')
-                # Translate zone codes to plain English severity
-                if 'Ldn 65' in zone or 'LDN65' in zone.upper():
-                    severity = "High Aircraft Noise Zone"
-                elif 'Ldn 60' in zone or 'LDN60' in zone.upper():
-                    if 'Buffer' in zone or 'BUFFER' in zone.upper():
-                        severity = "Aircraft Noise Buffer Zone"
-                    else:
-                        severity = "Moderate Aircraft Noise Zone"
-                else:
-                    severity = "Aircraft Noise Buffer Zone"
-                highlights.append(f"🔔 **{severity}** - Disclosure required ({airport})")
-            else:
-                highlights.append("✅ **No Aircraft Noise Disclosure** - Outside disclosure zones")
-
-            dulles_dist = aiod.get('distance_to_dulles_miles', 0)
-            if dulles_dist:
-                highlights.append(f"🛫 **Dulles Airport:** {dulles_dist:.1f} miles")
-
-        # Flood Zone - Plain English display (lead with impact, not zone codes)
-        if flood_data and flood_data.get('success'):
-            if flood_data.get('in_flood_zone'):
-                zone_type = flood_data.get('zone_type', 'Unknown')
-                if zone_type == 'FLOODWAY':
-                    highlights.append("⚠️ **Flood Insurance Required - Building Restricted** - Property in floodway")
-                else:
-                    highlights.append("🔔 **Flood Insurance Required** - Property in mapped flood risk area")
-            else:
-                highlights.append("✅ **No Flood Insurance Required** - Not in mapped flood zone")
-        elif flood_data and not flood_data.get('success'):
-            # API error - show neutral status
-            highlights.append("⚪ **Flood Zone:** Data unavailable")
-
-        # Parks proximity - show nearest park
-        if parks_data and parks_data.get('available') and parks_data.get('nearest_park'):
-            nearest = parks_data['nearest_park']
-            dist = nearest['distance_miles']
-            name = nearest['name']
-
-            if dist < 0.5:
-                highlights.append(f"🌳 **Parks:** {name} ({dist:.1f} mi) - Walking distance")
-            elif dist <= 5.0:
-                highlights.append(f"🌳 **Parks:** {name} ({dist:.1f} mi)")
-            else:
-                highlights.append(f"🌳 **Parks:** Nearest park {dist:.1f} miles away")
-        elif parks_data and parks_data.get('available'):
-            highlights.append("🌳 **Parks:** Limited park access (>10 mi)")
+        # Parks
+        if parks_list and len(parks_list) > 0:
+            p = parks_list[0]
+            p_name = p.get('park_name', 'Unknown Park')
+            p_dist = p.get('distance_miles', 0)
+            walk_label = " - Walking distance" if p_dist < 0.5 else ""
+            st.markdown(f"🌳 **Parks:** {p_name} ({p_dist:.1f} mi){walk_label}")
 
         # Metro Access
-        if metro_data and metro_data.get('available'):
-            prox = metro_data.get('proximity', {})
-            tier = metro_data.get('tier', {})
-            station = prox.get('nearest_station', 'Unknown')
-            distance = prox.get('distance_miles', 0)
-            tier_name = tier.get('tier', 'Unknown')
-            tier_icon = tier.get('icon', '⚪')
-            highlights.append(f"🚇 **Metro Access:** {tier_icon} {station} ({distance:.1f} mi) - {tier_name}")
+        if metro_data and metro_data.get('station_name'):
+            m_name = metro_data.get('station_name', 'N/A')
+            m_dist = metro_data.get('distance_miles', 0)
+            if m_dist < 1:
+                m_icon = "🟢"
+                m_label = "Walk-to-Metro"
+            elif m_dist < 3:
+                m_icon = "🟡"
+                m_label = "Close Metro Access"
+            elif m_dist < 7:
+                m_icon = "🟠"
+                m_label = "Moderate Metro Access"
+            else:
+                m_icon = "🔴"
+                m_label = "Drive-to-Metro"
+            st.markdown(f"🚇 **Metro Access:** {m_icon} {m_name} ({m_dist:.1f} mi) - {m_label}")
 
-        # Power Infrastructure - conditional display based on impact
-        if power_lines and 'error' not in power_lines:
-            impact_score = power_lines.get('visual_impact_score', 1)
-            nearest_built = power_lines.get('nearest_built_line')
-            nearest_approved = power_lines.get('nearest_approved_line')
+    # --- Expanders ---
 
-            # Determine which line is nearest (built or approved)
-            nearest_line = None
-            nearest_status = None
-            if nearest_built and nearest_approved:
-                if nearest_built['distance_miles'] <= nearest_approved['distance_miles']:
-                    nearest_line = nearest_built
-                    nearest_status = "Built"
-                else:
-                    nearest_line = nearest_approved
-                    nearest_status = "Approved"
-            elif nearest_built:
-                nearest_line = nearest_built
-                nearest_status = "Built"
-            elif nearest_approved:
-                nearest_line = nearest_approved
-                nearest_status = "Approved"
+    # Road Access Details
+    with st.expander("ℹ️ Road Access Details"):
+        if nearby and isinstance(nearby, list) and len(nearby) > 0:
+            r = nearby[0] if isinstance(nearby[0], dict) else {}
+            st.markdown(f"**Nearest Major Road:** {r.get('road_name', 'N/A')}")
+            if r.get('adt'):
+                st.markdown(f"- Average Daily Traffic: {r['adt']:,} vehicles/day")
+            st.markdown(f"- Distance: {r.get('distance_miles', 0):.1f} miles")
+            st.markdown(f"- Traffic Level: {r.get('traffic_level', 'N/A')}")
+        st.markdown("")
+        st.markdown("**Travel Time Destinations (Fairfax):**")
+        for dest in FAIRFAX_TRAVEL_DESTINATIONS:
+            st.markdown(f"• {dest}")
+        st.caption("Data: VDOT Traffic Volume Database")
 
-            # For LOW/MODERATE impact (scores 1-3): Add to highlights list (inline)
-            if impact_score <= 3:
-                if impact_score == 3:
-                    if nearest_line:
-                        voltage = nearest_line['voltage']
-                        dist = nearest_line['distance_miles']
-                        highlights.append(f"⚡ **Power Lines:** 🟡 Moderate ({impact_score}/5) - {voltage}kV at {dist:.1f} mi")
-                elif impact_score == 2:
-                    if nearest_line:
-                        voltage = nearest_line['voltage']
-                        dist = nearest_line['distance_miles']
-                        highlights.append(f"⚡ **Power Lines:** 🟢 Low Impact ({impact_score}/5) - {voltage}kV at {dist:.1f} mi")
-                else:  # score 1
-                    highlights.append("✅ **Power Lines:** No major lines within 1 mile")
-
-                # Future line if different from nearest (still inline)
-                if nearest_approved and nearest_status == "Built":
-                    voltage = nearest_approved['voltage']
-                    dist = nearest_approved['distance_miles']
-                    highlights.append(f"🔮 **Future Power Line:** {voltage}kV approved at {dist:.1f} mi")
-
-        # Render all highlights together
-        for h in highlights:
-            st.markdown(h)
-
-        # Road Access Details expander (show if we have highway or collector data)
-        show_road_expander = hw_name or coll_name
-        if show_road_expander:
-            with st.expander("ℹ️ Road Access Details"):
-                # Load road context for travel times
-                road_context = load_road_context()
-                roads_data = road_context.get('roads', {})
-                destinations = road_context.get('destinations', {})
-
-                if hw_name:
-                    # Look up highway in road context (try exact match, then normalized)
-                    hw_context = roads_data.get(hw_name)
-                    if not hw_context:
-                        hw_context = roads_data.get(hw_name.upper())
-                    if not hw_context:
-                        normalized_hw = normalize_road_name(hw_name)
-                        hw_context = roads_data.get(normalized_hw)
-                    else:
-                        normalized_hw = hw_name.upper()
-
-                    # Display expanded road name if we matched via normalization
-                    if hw_context:
-                        display_hw_name = expand_road_name(normalized_hw)
-                    else:
-                        display_hw_name = hw_name
-
-                    # Build final display with route number first if available
-                    if hw_context and hw_context.get('route_number'):
-                        final_display = f"{hw_context['route_number']} ({display_hw_name})"
-                    elif hw_vdot_route and hw_vdot_route != hw_name:
-                        final_display = f"{display_hw_name} ({hw_vdot_route})"
-                    else:
-                        final_display = display_hw_name
-
-                    st.markdown(f"**Highway: {final_display}**")
-
-                    # Add toll info if available
-                    if hw_context:
-                        if hw_context.get('toll'):
-                            st.markdown("- Toll: **Yes** (paid)")
-                        else:
-                            st.markdown("- Toll: No")
-
-                        # Travel times
-                        travel_times = hw_context.get('travel_times', {})
-                        if travel_times:
-                            route_label = hw_context.get('route_number', 'this highway')
-                            st.markdown(f"- **Travel Times** (via {route_label}):")
-                            for dest_key, times in travel_times.items():
-                                if 'error' not in times:
-                                    dest_name = destinations.get(dest_key, {}).get('name', dest_key.title())
-                                    rush = times.get('rush_min', 0)
-                                    typical = times.get('offpeak_min', 0)
-                                    min_time = min(rush, typical)
-                                    max_time = max(rush, typical)
-                                    st.markdown(f"  - {dest_name}: ~{min_time}-{max_time} min")
-
-                if coll_name:
-                    # Look up collector in road context (try exact match, then normalized)
-                    coll_context = roads_data.get(coll_name)
-                    if not coll_context:
-                        coll_context = roads_data.get(coll_name.upper())
-                    if not coll_context:
-                        normalized_coll = normalize_road_name(coll_name)
-                        coll_context = roads_data.get(normalized_coll)
-                    else:
-                        normalized_coll = coll_name.upper()
-
-                    # Only show Major Road section if we have travel time data
-                    if coll_context and coll_context.get('travel_times'):
-                        if hw_name:
-                            st.markdown("---")
-
-                        # Display expanded road name if we matched via normalization
-                        if coll_context:
-                            display_coll_name = expand_road_name(normalized_coll)
-                        else:
-                            display_coll_name = coll_name
-
-                        # Build final display with route number first if available
-                        if coll_context and coll_context.get('route_number'):
-                            final_display = f"{coll_context['route_number']} ({display_coll_name})"
-                        elif coll_vdot_route and coll_vdot_route != coll_name:
-                            final_display = f"{display_coll_name} ({coll_vdot_route})"
-                        else:
-                            final_display = display_coll_name
-
-                        st.markdown(f"**Major Road: {final_display}**")
-
-                        # Add travel times for collectors
-                        travel_times = coll_context.get('travel_times', {})
-                        if travel_times:
-                            route_label = coll_context.get('route_number', 'this road')
-                            st.markdown(f"- **Travel Times** (via {route_label}):")
-                            for dest_key, times in travel_times.items():
-                                if 'error' not in times:
-                                    dest_name = destinations.get(dest_key, {}).get('name', dest_key.title())
-                                    rush = times.get('rush_min', 0)
-                                    typical = times.get('offpeak_min', 0)
-                                    min_time = min(rush, typical)
-                                    max_time = max(rush, typical)
-                                    st.markdown(f"  - {dest_name}: ~{min_time}-{max_time} min")
-
-                st.markdown("---")
-                st.caption("Data: VDOT Traffic Volume, Google Distance Matrix")
-
-        # Aircraft Noise Information (expandable) - Plain English display
-        if isinstance(aiod, dict):
-            with st.expander("✈️ Aircraft Noise Information"):
-                if aiod.get('in_aiod'):
-                    # Inside a noise disclosure zone
-                    zone = aiod.get('zone', 'Unknown')
-                    zone_code = aiod.get('zone_code', zone)
-                    airport = aiod.get('airport', 'Dulles International')
-                    construction_req = aiod.get('construction_requirements', 'None specified')
-
-                    # Determine severity level for plain English display
-                    if 'Ldn 65' in zone or 'LDN65' in str(zone_code).upper():
-                        severity = "high aircraft noise area"
-                        st.markdown(f"""
-This property is in a **{severity}** near {airport}.
-Seller disclosure of aircraft noise is required at sale.
+    # Aircraft Noise expander
+    with st.expander("✈️ Aircraft Noise Information"):
+        if nearest_apt_dist < 5:
+            st.markdown(f"""This property **IS** within proximity of **{nearest_airport}** ({nearest_apt_dist:.1f} mi).
+Aircraft noise may be noticeable. Seller disclosure may be required.
 
 **What This Means:**
-- Frequent aircraft noise expected during arrivals and departures
-- Seller must disclose noise impact to buyers
-- New residential construction requires sound-reducing features
-
-**Technical Reference:**
-- Zone: Ldn 65+ (elevated noise contour)
-- Building Requirements: {construction_req}
-- Disclosure: Required at sale
+- Aircraft noise from arrivals and departures may be audible
+- Check Fairfax County Noise Overlay Districts for disclosure requirements
+- Consider noise during outdoor activities
 """)
-                    elif 'Ldn 60' in zone or 'LDN60' in str(zone_code).upper():
-                        if 'Buffer' in zone or 'BUFFER' in str(zone_code).upper():
-                            # Buffer zone
-                            st.markdown(f"""
-This property is in an **aircraft noise buffer zone** near {airport}.
-Seller disclosure of aircraft noise is required at sale.
-
-**What This Means:**
-- Occasional overflight noise possible
-- Seller must disclose proximity to airport
-- No special construction requirements
-
-**Technical Reference:**
-- Zone: 1-Mile Buffer
-- Building Requirements: None required
-- Disclosure: Required at sale
-""")
-                        else:
-                            # Moderate zone (Ldn 60-65)
-                            st.markdown(f"""
-This property is in a **moderate aircraft noise area** near {airport}.
-Seller disclosure of aircraft noise is required at sale.
-
-**What This Means:**
-- Periodic aircraft noise during busy flight times
-- Seller must disclose noise impact to buyers
-- Sound-reducing construction recommended for new buildings
-
-**Technical Reference:**
-- Zone: Ldn 60-65 (moderate noise contour)
-- Building Requirements: {construction_req}
-- Disclosure: Required at sale
-""")
-                    else:
-                        # Fallback for buffer or unknown zones
-                        st.markdown(f"""
-This property is in an **aircraft noise buffer zone** near {airport}.
-Seller disclosure of aircraft noise is required at sale.
-
-**What This Means:**
-- Occasional overflight noise possible
-- Seller must disclose proximity to airport
-- No special construction requirements
-
-**Technical Reference:**
-- Zone: Buffer area
-- Building Requirements: {construction_req}
-- Disclosure: Required at sale
-""")
-                else:
-                    # Outside all noise disclosure zones
-                    dulles_dist = aiod.get('distance_to_dulles_miles', 0)
-
-                    st.markdown(f"""
-This property is **not in an aircraft noise disclosure zone**.
-No noise-related disclosures required at sale.
+        else:
+            st.markdown(f"""This property is **not** in an aircraft noise disclosure zone.
+No noise-related disclosures are typically required at sale.
 
 **What This Means:**
 - No aircraft noise restrictions or disclosures required
 - No special construction requirements
-- Full flexibility for property development
-
-**Distance to Dulles Airport:** {dulles_dist:.1f} miles
 """)
+        for apt_name, apt_dist in sorted(airport_distances.items(), key=lambda x: x[1]):
+            st.markdown(f"**Distance to {apt_name}:** {apt_dist:.1f} miles")
+        st.caption("📊 Source: Fairfax County Airport Noise Overlay Districts")
 
-                st.caption("📊 Source: Loudoun County Airport Impact Overlay Districts (Jan 2023)")
+    # Flood Zone expander
+    with st.expander("✅ Flood Zone Information" if not (fema and isinstance(fema, dict) and fema.get('zone_code', 'X') in ('A', 'AE', 'AO', 'FLOODWAY')) else "⚠️ Flood Zone Information"):
+        if fema and isinstance(fema, dict):
+            zone_code = fema.get('zone_code', 'X')
+            risk = fema.get('risk_level', 'Minimal')
+            desc = fema.get('zone_description', fema.get('risk_description', ''))
+            ins = fema.get('insurance_required', False)
+            if zone_code in ('A', 'AE', 'AO', 'FLOODWAY', 'V', 'VE'):
+                st.markdown(f"""This property **IS** located in a FEMA-designated flood risk area.
 
-        # Flood Zone Details (expandable) - Plain English display
-        if flood_data and flood_data.get('success'):
-            if flood_data.get('in_flood_zone'):
-                zone_type = flood_data.get('zone_type', 'Unknown')
-
-                if zone_type == 'FLOODWAY':
-                    with st.expander("⚠️ Flood Insurance Required - Building Restricted"):
-                        st.markdown("""
-This property is in a regulatory floodway, which is reserved for the
-passage of floodwaters. This designation has both financial and
-development implications.
-
-**Financial Impact:**
-- Flood insurance required by mortgage lenders
-- Costs vary based on property specifics and risk level
-
-**Development Restrictions:**
-- New dwellings/enclosed structures not permitted
-- Cannot place fill material or obstruct flood flow
-- Area must remain open for floodwater passage
-- Only open-space uses allowed (yards, parking, gardens)
+**FEMA Zone:** {zone_code} — {desc}
+**Risk Level:** {risk}
+**Flood Insurance:** {'Required' if ins else 'Recommended'}
 
 **What This Means:**
-The floodway is the river channel plus adjacent land needed to carry
-floodwaters. Strict building limitations apply to prevent obstructing
-flood flow.
+- Mortgage lenders may require flood insurance
+- 1% annual chance of flooding (Zone A/AE)
+- Consider elevation certificates for insurance quotes
 
-💡 Get actual insurance quotes at [FloodSmart.gov](https://www.floodsmart.gov) or through your insurance agent
+💡 Learn more at [FloodSmart.gov](https://www.floodsmart.gov)
 """)
-                        st.caption(f"📊 Source: FEMA Flood Insurance Rate Map via Loudoun County GIS")
-
-                elif zone_type == 'AE':
-                    with st.expander("🔔 Flood Insurance Required"):
-                        st.markdown("""
-This property is located in a mapped flood risk area where mortgage
-lenders typically require flood insurance.
-
-**What This Means:**
-- Federally-backed mortgage lenders require flood insurance in this zone
-- Insurance costs vary based on property elevation, value, and other factors
-- 1% annual chance of flooding (26% over 30-year mortgage)
-
-**Technical Details:**
-- FEMA Zone: AE (detailed flood studies completed)
-- Base flood elevations determined for this area
-
-💡 Get actual insurance quotes at [FloodSmart.gov](https://www.floodsmart.gov) or through your insurance agent
-""")
-                        st.caption(f"📊 Source: FEMA Flood Insurance Rate Map via Loudoun County GIS")
-
-                elif zone_type == 'A':
-                    with st.expander("🔔 Flood Insurance Required"):
-                        st.markdown("""
-This property is located in a mapped flood risk area where mortgage
-lenders typically require flood insurance.
-
-**What This Means:**
-- Federally-backed mortgage lenders require flood insurance in this zone
-- Insurance costs vary based on property elevation, value, and other factors
-- 1% annual chance of flooding (26% over 30-year mortgage)
-
-**Technical Details:**
-- FEMA Zone: A (approximate analysis)
-- Base flood elevations not yet determined
-
-💡 Get actual insurance quotes at [FloodSmart.gov](https://www.floodsmart.gov) or through your insurance agent
-""")
-                        st.caption(f"📊 Source: FEMA Flood Insurance Rate Map via Loudoun County GIS")
-
-                else:
-                    # Fallback for any other zone type
-                    with st.expander("🔔 Flood Zone Information"):
-                        st.markdown(f"""
-This property is located in a mapped flood risk area ({zone_type}).
-Mortgage lenders may require flood insurance.
-
-💡 Get actual insurance quotes at [FloodSmart.gov](https://www.floodsmart.gov) or through your insurance agent
-""")
-                        st.caption(f"📊 Source: FEMA Flood Insurance Rate Map via Loudoun County GIS")
-
             else:
-                # Outside all flood zones
-                with st.expander("✅ Flood Zone Information"):
-                    st.markdown("""
-This property is not located in a FEMA-designated flood risk area.
+                st.markdown(f"""This property is **not** located in a FEMA-designated flood risk area.
 Mortgage lenders do not require flood insurance.
+
+**FEMA Zone:** {zone_code}
+**Risk Level:** {risk}
 
 **What This Means:**
 - Flood insurance optional but may be advisable
-- Approximately 25% of flood claims come from outside mapped zones
-- Consider coverage if near streams, ponds, or low-lying areas
+- ~25% of flood claims come from outside mapped zones
 
-💡 Learn more about optional flood insurance at [FloodSmart.gov](https://www.floodsmart.gov)
+💡 Learn more at [FloodSmart.gov](https://www.floodsmart.gov)
 """)
-                    st.caption("📊 Source: FEMA Flood Insurance Rate Map via Loudoun County GIS")
+        else:
+            st.markdown("Flood zone data not available for this location.")
+            st.markdown("💡 Check [FloodSmart.gov](https://www.floodsmart.gov) for flood insurance information.")
+        st.caption("📊 Source: FEMA Flood Insurance Rate Map via Fairfax County GIS")
 
-        # Parks & Recreation (expandable)
-        if parks_data and parks_data.get('available'):
-            with st.expander("🌳 Parks & Recreation"):
-                nearby = parks_data.get('nearby_parks', [])
-                count_5mi = parks_data.get('count_within_5mi', 0)
+    # Parks & Recreation expander
+    with st.expander("🌳 Parks & Recreation"):
+        if parks_list and len(parks_list) > 0:
+            count = len(parks_list)
+            p0 = parks_list[0]
+            p0_dist = p0.get('distance_miles', 0)
+            p0_name = p0.get('park_name', 'Unknown')
+            access_label = "walking distance" if p0_dist < 0.5 else ("short drive" if p0_dist < 2 else "drive")
+            st.markdown(f"**{count} parks within 5 miles**, with {p0_name} {p0_dist:.1f} miles away - **{access_label}**.")
+            st.markdown("")
+            st.markdown("**Nearest Parks:**")
+            for park in parks_list[:5]:
+                pn = park.get('park_name', 'Unknown')
+                pd_mi = park.get('distance_miles', 0)
+                pc = park.get('park_class', 'Park')
+                st.markdown(f"• **{pn}** - {pd_mi:.1f} mi ({pc})")
+        else:
+            st.markdown("No parks found within 5 miles of this property.")
+        st.caption("📊 Source: Fairfax County GIS Parks")
 
-                if nearby:
-                    nearest = nearby[0]
-                    dist = nearest['distance_miles']
+    # Metro Access expander
+    with st.expander("🚇 Metro Access Details"):
+        if metro_data and metro_data.get('station_name'):
+            m_col1, m_col2, m_col3 = st.columns(3)
+            with m_col1:
+                st.metric("Nearest Station", metro_data.get('station_name', 'N/A'))
+            with m_col2:
+                st.metric("Distance", f"{metro_data.get('distance_miles', 0):.1f} mi")
+            with m_col3:
+                walk = metro_data.get('walk_time_minutes')
+                st.metric("Walk Time", f"~{walk} min" if walk and walk < 60 else "Drive recommended")
 
-                    # Summary statement based on distance
-                    if dist < 0.5:
-                        st.markdown(f"**{count_5mi} parks within 5 miles**, with {nearest['name']} "
-                                  f"just {dist:.1f} miles away - **walking distance**.")
-                    elif dist <= 2.0:
-                        st.markdown(f"**{count_5mi} parks within 5 miles**, with {nearest['name']} "
-                                  f"{dist:.1f} miles away - **short drive**.")
-                    else:
-                        st.markdown(f"**{count_5mi} parks within 5 miles**. Nearest is {nearest['name']} "
-                                  f"at {dist:.1f} miles.")
+            st.markdown(metro_data.get('message', ''))
+        else:
+            st.markdown("Metro station data not available.")
 
-                    st.markdown("")
-                    st.markdown("**Nearest Parks:**")
+        st.markdown("")
+        st.markdown("**All Metro Stations in Fairfax County:**")
+        for station in FAIRFAX_METRO_STATIONS:
+            s_dist = haversine_distance(lat, lon, station["lat"], station["lon"])
+            st.markdown(f"• {station['name']} ({station['line']}): {s_dist:.1f} miles")
+        st.markdown("---")
+        st.caption("Metro connects Fairfax County to Tysons, Arlington, and downtown DC. Walk-to-Metro properties typically command 10-20% premium valuations.")
 
-                    # List up to 5 nearest parks
-                    for park in nearby[:5]:
-                        # Format park types for display
-                        park_types = park.get('types', [])
-                        type_labels = []
-                        if 'park' in park_types:
-                            type_labels.append('Park')
-                        if 'playground' in park_types:
-                            type_labels.append('Playground')
-                        type_str = ", ".join(type_labels) if type_labels else "Recreation"
-
-                        st.markdown(f"• **{park['name']}** - {park['distance_miles']:.1f} mi ({type_str})")
-
-                    st.markdown("")
-                    st.caption("📊 Source: Google Places (Dec 2025)")
-                else:
-                    st.markdown("No parks found within 10 miles of this property.")
-                    st.markdown("")
-                    st.caption("📊 Source: Google Places (Dec 2025)")
-
-        # Metro Access Details (expandable)
-        if metro_data and metro_data.get('available'):
-            prox = metro_data.get('proximity', {})
-            tier = metro_data.get('tier', {})
-            drive_time = metro_data.get('drive_time', {})
-            narrative = metro_data.get('narrative', '')
-
-            with st.expander("🚇 Silver Line Metro Access Details"):
-                # Metrics row
-                m_col1, m_col2, m_col3 = st.columns(3)
-                with m_col1:
-                    st.metric("Nearest Station", prox.get('nearest_station', 'N/A'))
-                with m_col2:
-                    st.metric("Distance", f"{prox.get('distance_miles', 0):.1f} mi")
-                with m_col3:
-                    st.metric("Drive Time", drive_time.get('display', 'N/A'))
-
-                # Tier badge
-                tier_icon = tier.get('icon', '⚪')
-                tier_name = tier.get('tier', 'Unknown')
-                tier_desc = tier.get('tier_description', '')
-                st.markdown(f"**Accessibility:** {tier_icon} {tier_name} - {tier_desc}")
-
-                # Narrative
-                if narrative:
-                    st.markdown(f"_{narrative}_")
-
-                # All stations
-                st.markdown("**All Silver Line Stations in Loudoun:**")
-                for station in prox.get('all_stations', []):
-                    st.markdown(f"• {station['name']}: {station['distance_miles']:.1f} miles")
-
-                st.markdown("---")
-                st.caption("The Silver Line connects Loudoun County to Tysons Corner, Arlington, and downtown Washington DC. Walk-to-Metro properties typically command 10-20% premium valuations.")
-
-        # For HIGH impact (scores 4-5): Show separate prominent section AFTER highlights
-        if power_lines and 'error' not in power_lines:
-            impact_score = power_lines.get('visual_impact_score', 1)
-
-            if impact_score >= 4:
-                nearest_built = power_lines.get('nearest_built_line')
-                nearest_approved = power_lines.get('nearest_approved_line')
-                lines_within_mile = power_lines.get('lines_within_one_mile', 0)
-
-                # Determine nearest line
-                nearest_line = None
-                nearest_status = None
-                if nearest_built and nearest_approved:
-                    if nearest_built['distance_miles'] <= nearest_approved['distance_miles']:
-                        nearest_line = nearest_built
-                        nearest_status = "Built"
-                    else:
-                        nearest_line = nearest_approved
-                        nearest_status = "Approved"
-                elif nearest_built:
-                    nearest_line = nearest_built
-                    nearest_status = "Built"
-                elif nearest_approved:
-                    nearest_line = nearest_approved
-                    nearest_status = "Approved"
-
-                st.markdown("**⚡ Power Infrastructure/Major Power Lines:**")
-
-                if impact_score == 5:
-                    st.error(f"🔴 Very High Impact ({impact_score}/5)")
-                else:
-                    st.error(f"🔴 High Impact ({impact_score}/5)")
-
-                if nearest_line:
-                    voltage = nearest_line['voltage']
-                    dist = nearest_line['distance_miles']
-                    st.markdown(f"Nearest line: {voltage}kV at {dist:.2f} miles ({nearest_status})")
-
-                if lines_within_mile > 0:
-                    st.markdown(f"{lines_within_mile} line(s) within 1 mile")
-
-                # Additional future line if exists and wasn't nearest
-                if nearest_approved and nearest_status == "Built":
-                    voltage = nearest_approved['voltage']
-                    dist = nearest_approved['distance_miles']
-                    st.markdown(f"🔮 Additional future line: {voltage}kV approved at {dist:.2f} mi")
-
-    with col2:
-        # Quality score (computed from factors)
-        quality_score = 8.0  # Base score
-
-        # Adjust based on road type
-        road_class = location_data.get('road_classification', {})
-        if isinstance(road_class, dict):
-            traffic = road_class.get('traffic_level', '')
-            if traffic == 'Very Low':
-                quality_score += 1.0
-            elif traffic == 'High':
-                quality_score -= 1.0
-
-        # Adjust for airport zone
-        aiod = location_data.get('aiod_status', {})
-        if isinstance(aiod, dict) and aiod.get('in_aiod'):
-            quality_score -= 0.5
-
-        # Adjust for power line proximity
-        if power_lines and 'error' not in power_lines:
-            impact_score = power_lines.get('visual_impact_score', 1)
-            if impact_score >= 5:
-                quality_score -= 1.5  # Very High impact
-            elif impact_score >= 4:
-                quality_score -= 1.0  # High impact
-            elif impact_score >= 3:
-                quality_score -= 0.5  # Moderate impact
-
-        quality_score = min(10.0, max(1.0, quality_score))
-
-        st.metric(
-            "Location Score",
-            f"{quality_score:.1f}/10",
-            help="Based on road type, traffic levels, airport proximity, and power infrastructure"
-        )
+    # Power Infrastructure (inline, not in expander — per spec)
+    if power_data:
+        within = power_data.get('within_threshold', False)
+        closest = power_data.get('closest_utility')
+        utilities_nearby = power_data.get('utilities_within_threshold', [])
+        line_count = len(utilities_nearby)
+        if within and closest:
+            c_dist = closest.get('distance_miles', 0)
+            c_type = closest.get('utility_type', 'Unknown')
+            if c_dist < 0.1:
+                st.markdown(f"⚡ **Power Infrastructure/Major Power Lines:**")
+                st.error(f"🔴 High Impact — Nearest: {c_type} at {c_dist:.2f} miles")
+            elif c_dist < 0.5:
+                st.markdown(f"⚡ **Power Infrastructure:** 🟡 Moderate — Nearest: {c_type} at {c_dist:.2f} mi")
+            else:
+                st.markdown(f"⚡ **Power Infrastructure:** 🟢 Low Impact — Nearest: {c_type} at {c_dist:.2f} mi")
+            if line_count > 0:
+                st.markdown(f"{line_count} line(s) within 1 mile")
+        else:
+            st.markdown("✅ **Power Lines:** No major lines within 1 mile")
 
     st.markdown("---")
 
@@ -2678,49 +2433,68 @@ def display_community_section(valuation_data: Dict[str, Any], lat: float = None,
 # =============================================================================
 
 def display_cell_towers_section(lat: float, lon: float):
-    """Display cell tower coverage for a Fairfax County property."""
+    """Display cell tower coverage matching Loudoun layout."""
     st.markdown("## 📡 Cell Tower Coverage")
 
     try:
         from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
         analyzer = FairfaxCellTowersAnalysis()
         coverage = analyzer.calculate_coverage_score(lat, lon)
+        nearby_towers = analyzer.get_nearest_towers(lat, lon, limit=20)
 
         if not coverage:
             st.info("Cell tower data not available for this location.")
+            st.markdown("---")
             return
 
-        # Summary metrics
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Coverage Score", f"{coverage.get('score', 0)}/100")
-        with col2:
-            st.metric("Rating", coverage.get('rating', 'N/A'))
-        with col3:
-            st.metric("Towers Within 2 mi", coverage.get('towers_within_2mi', 0))
+        towers_2mi = coverage.get('towers_within_2mi', 0)
 
-        # Nearest tower
-        nearest = coverage.get('nearest_tower_miles')
-        if nearest:
-            st.markdown(f"**Nearest tower:** {nearest:.2f} mi ({nearest * 5280:,.0f} ft)")
+        # Large count metric (matches Loudoun)
+        st.markdown("**Cell Towers Within 2 Miles**")
+        st.markdown(f"### {towers_2mi}")
 
-        # Nearby towers table
-        nearby = analyzer.get_towers_near_point(lat, lon, radius_miles=2.0)
-        if nearby is not None and len(nearby) > 0:
-            with st.expander(f"View All Nearby Towers ({len(nearby)} within 2 mi)", expanded=False):
-                display_df = nearby[['structure_type_desc', 'distance_miles', 'height_feet', 'city']].copy()
-                display_df.columns = ['Type', 'Distance (mi)', 'Height (ft)', 'City']
-                display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")
-                display_df['Height (ft)'] = display_df['Height (ft)'].apply(
-                    lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "—"
-                )
+        # Nearest Tower subsection
+        if nearby_towers and len(nearby_towers) > 0:
+            t = nearby_towers[0]
+            t_name = t.get('owner', t.get('carrier_category', 'Unknown'))
+            t_height = t.get('height_feet', 0)
+            t_dist = t.get('distance_miles', 0)
+            t_type = t.get('structure_type_desc', t.get('structure_type', 'Unknown'))
+            t_feet = t_dist * 5280
 
-                st.dataframe(display_df, width='stretch', hide_index=True)
+            st.markdown("**Nearest Tower**")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"**{t_name}**")
+                st.markdown(f"Distance: {t_dist:.2f} mi ({t_feet:,.0f} ft)")
+            with col2:
+                st.markdown(f"Height: {t_height:.0f} ft" if t_height else "Height: Unknown")
+                st.markdown(f"Type: {t_type}")
 
-        st.caption(f"📶 Source: FCC Antenna Structure Registration, Fairfax County")
+        # Table in expander
+        all_nearby = analyzer.get_towers_near_point(lat, lon, radius_miles=2.0)
+        if all_nearby is not None and len(all_nearby) > 0:
+            with st.expander(f"View All Nearby Towers ({len(all_nearby)} within 2 mi)", expanded=False):
+                cols = [c for c in ['owner', 'distance_miles', 'structure_type_desc', 'height_feet', 'city'] if c in all_nearby.columns]
+                display_df = all_nearby[cols].copy()
+                col_map = {'owner': 'Tower Name', 'distance_miles': 'Distance (mi)',
+                           'structure_type_desc': 'Type', 'height_feet': 'Height (ft)', 'city': 'City'}
+                display_df = display_df.rename(columns=col_map)
+                if 'Distance (mi)' in display_df.columns:
+                    display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")
+                if 'Height (ft)' in display_df.columns:
+                    display_df['Height (ft)'] = display_df['Height (ft)'].apply(
+                        lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "Unknown"
+                    )
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+        st.caption(f"📶 {towers_2mi} cell towers within 2 miles of this property.")
+        st.caption("Source: FCC Antenna Structure Registration, Fairfax County GIS")
 
     except Exception as e:
         st.warning(f"Cell tower analysis unavailable: {e}")
+
+    st.markdown("---")
 
 
 def analyze_development(lat: float, lon: float, radius_miles: float = 2.0) -> Dict[str, Any]:
@@ -2882,10 +2656,18 @@ def create_development_map(lat: float, lon: float, nearby_permits: pd.DataFrame)
     metro_layer = folium.FeatureGroup(name='🚇 Metro Stations')
 
     metro_stations = [
-        {"name": "Ashburn", "lat": 39.0057, "lon": -77.4910},
-        {"name": "Loudoun Gateway", "lat": 38.9556, "lon": -77.4377},
+        {"name": "Vienna/Fairfax-GMU", "lat": 38.8776, "lon": -77.2714},
+        {"name": "Dunn Loring-Merrifield", "lat": 38.8834, "lon": -77.2290},
+        {"name": "West Falls Church", "lat": 38.9009, "lon": -77.1891},
+        {"name": "East Falls Church", "lat": 38.8859, "lon": -77.1565},
+        {"name": "Tysons Corner", "lat": 38.9207, "lon": -77.2233},
+        {"name": "Greensboro", "lat": 38.9203, "lon": -77.2348},
+        {"name": "Spring Hill", "lat": 38.9286, "lon": -77.2413},
+        {"name": "McLean", "lat": 38.9246, "lon": -77.2103},
+        {"name": "Wiehle-Reston East", "lat": 38.9476, "lon": -77.3399},
+        {"name": "Reston Town Center", "lat": 38.9531, "lon": -77.3597},
+        {"name": "Herndon", "lat": 38.9534, "lon": -77.3860},
         {"name": "Innovation Center", "lat": 38.9614, "lon": -77.4143},
-        {"name": "Dulles Airport", "lat": 38.9531, "lon": -77.4483},
     ]
 
     for station in metro_stations:
@@ -3032,21 +2814,29 @@ def create_development_map(lat: float, lon: float, nearby_permits: pd.DataFrame)
     # CMS-rated hospitals (hardcoded for reliability - these rarely change)
     cms_hospitals = [
         {
-            "name": "Inova Loudoun Hospital",
-            "lat": 39.073917871721612,
-            "lon": -77.478042919767631,
+            "name": "Inova Fairfax Hospital",
+            "lat": 38.8601,
+            "lon": -77.2280,
             "cms_rating": 5,
-            "phone": "(703) 858-6600",
-            "address": "44045 Riverside Pkwy, Leesburg, VA 20176"
+            "phone": "(703) 776-4001",
+            "address": "3300 Gallows Rd, Falls Church, VA 22042"
         },
         {
-            "name": "StoneSprings Hospital Center",
-            "lat": 38.9404382,
-            "lon": -77.5424483,
+            "name": "Inova Fair Oaks Hospital",
+            "lat": 38.8627,
+            "lon": -77.3591,
+            "cms_rating": 4,
+            "phone": "(703) 391-3600",
+            "address": "3600 Joseph Siewick Dr, Fairfax, VA 22033"
+        },
+        {
+            "name": "Inova Mount Vernon Hospital",
+            "lat": 38.7331,
+            "lon": -77.0947,
             "cms_rating": 3,
-            "phone": "(571) 349-4000",
-            "address": "24440 Stone Springs Blvd, Dulles, VA 20166"
-        }
+            "phone": "(703) 664-7000",
+            "address": "2501 Parkers Ln, Alexandria, VA 22306"
+        },
     ]
 
     for hospital in cms_hospitals:
@@ -3274,7 +3064,7 @@ def display_urgent_care_subsection(facilities: List[Dict[str, Any]], lat: float,
     # Show count and nearest 2
     nearest_2 = urgent_care_sorted[:2]
 
-    st.markdown(f"**{len(urgent_care)} urgent care centers** in Loudoun County")
+    st.markdown(f"**{len(urgent_care)} urgent care centers** in Fairfax County")
     st.markdown(f"*Showing {len(nearest_2)} nearest:*")
 
     for uc in nearest_2:
@@ -3749,10 +3539,32 @@ def display_medical_access_section(lat: float, lon: float):
         else:
             st.info("No urgent care centers found within 3 miles.")
 
-        st.caption("Source: Fairfax County GIS, CMS Hospital Compare, Leapfrog Group")
+        # ── Pharmacies subsection ──
+        st.markdown("### 💊 Pharmacies")
+        st.info("Pharmacy data requires Google Places API. Configure `GOOGLE_PLACES_API_KEY` in `.env`.")
+
+        # ── Maternity subsection ──
+        st.markdown("### 🍼 Maternity & Birthing Hospitals")
+        try:
+            _display_maternity_content(lat, lon)
+        except Exception:
+            st.info("Maternity hospital data not available.")
+
+        # Healthcare access summary
+        access_score = score.get('score', 0)
+        if access_score >= 80:
+            st.success("✅ **Excellent Healthcare Access** — Fairfax County ranks among the best in Virginia for healthcare infrastructure.")
+        elif access_score >= 60:
+            st.success("✅ **Good Healthcare Access** — Multiple hospitals and urgent care options nearby.")
+        else:
+            st.info("ℹ️ **Moderate Healthcare Access** — Consider proximity to major medical centers.")
+
+        st.caption("Data: Fairfax County GIS, Leapfrog Group, CMS Hospital Compare")
 
     except Exception as e:
         st.warning(f"Medical access analysis unavailable: {e}")
+
+    st.markdown("---")
 
 
 def _display_maternity_content(lat: float, lon: float):
@@ -3782,11 +3594,11 @@ def _display_maternity_content(lat: float, lon: float):
     hospitals_sorted = sorted(hospitals, key=lambda x: x['distance_miles'])
 
     # Summary at top
-    loudoun_hospitals = [h for h in hospitals_sorted if h.get('in_loudoun_county')]
-    nearby_hospitals = [h for h in hospitals_sorted if not h.get('in_loudoun_county')]
+    fairfax_hospitals = [h for h in hospitals_sorted if h.get('in_fairfax_county', not h.get('in_loudoun_county', False))]
+    nearby_other = [h for h in hospitals_sorted if not h.get('in_fairfax_county', not h.get('in_loudoun_county', False))]
 
     st.markdown(f"""
-**{len(loudoun_hospitals)} birthing hospitals in Loudoun County** and **{len(nearby_hospitals)} nearby in Fairfax County**.
+**{len(fairfax_hospitals)} birthing hospitals in Fairfax County** and **{len(nearby_other)} nearby in adjacent counties**.
 All hospitals shown have labor & delivery units, NICUs, and are rated by CMS and Leapfrog for safety.
     """)
 
@@ -3797,7 +3609,7 @@ All hospitals shown have labor & delivery units, NICUs, and are rated by CMS and
 
         distance = hospital['distance_miles']
         name = hospital.get('name', 'Unknown Hospital')
-        county_badge = "📍 Loudoun" if hospital.get('in_loudoun_county') else "📍 Fairfax"
+        county_badge = "📍 Fairfax" if hospital.get('in_fairfax_county', not hospital.get('in_loudoun_county', False)) else "📍 Adjacent County"
 
         stars = format_star_rating(quality.get('cms_overall_rating'))
         safety_grade = quality.get('leapfrog_safety_grade', 'N/A')
@@ -3992,8 +3804,8 @@ def _create_permits_map(permits_df, property_lat: float, property_lon: float):
 
 
 def display_development_section(lat: float, lon: float):
-    """Display neighborhood development activity and building permits."""
-    st.markdown("## 🏗 Neighborhood Development Activity")
+    """Display neighborhood development and infrastructure (matches Loudoun pattern)."""
+    st.markdown("## 📊 Neighborhood Development & Infrastructure")
 
     try:
         from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
@@ -4133,48 +3945,152 @@ def display_development_section(lat: float, lon: float):
                     "Transit Station Area, and Tysons Corner Urban Center."
                 )
 
-        # ── Permit map (new construction) ──
-        st.markdown("### New Construction Activity Map")
-        st.caption(
-            f"Showing {len(map_permits):,} new construction permits "
-            f"(last {map_window} months, {radius:.0f}-mile radius)"
-        )
+        # ── Development Activity Map (Leaflet via Folium — matches Loudoun) ──
+        st.markdown("### Development Activity Map")
+        st.markdown("🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other Construction")
 
-        if len(map_permits) > 0 and PLOTLY_AVAILABLE:
+        if FOLIUM_AVAILABLE and len(map_permits) > 0:
+            import folium
+            from streamlit_folium import st_folium
+
+            m = folium.Map(location=[lat, lon], zoom_start=13, tiles='OpenStreetMap')
+
+            # 2-mile radius circle
+            folium.Circle(
+                location=[lat, lon], radius=3218,
+                color='blue', fill=True, fill_opacity=0.05, weight=1,
+                tooltip="2-mile radius"
+            ).add_to(m)
+
+            # Property marker
+            folium.Marker(
+                [lat, lon],
+                popup="<b>Subject Property</b>",
+                icon=folium.Icon(color='red', icon='home', prefix='fa'),
+                tooltip="Subject Property"
+            ).add_to(m)
+
+            # Permits layer
+            permits_group = folium.FeatureGroup(name='🏗️ Major Projects', show=True)
+            PERMIT_COLORS = {
+                'data_center': 'red', 'fiber': 'orange', 'infrastructure': 'purple',
+                'commercial_new': 'green', 'residential_new': 'green', 'other': 'gray',
+            }
+            for _, row in map_permits.iterrows():
+                p_lat = row.get('centroid_lat')
+                p_lon = row.get('centroid_lon')
+                if pd.notna(p_lat) and pd.notna(p_lon):
+                    cat = row.get('permit_category', 'other')
+                    color = PERMIT_COLORS.get(cat, 'gray')
+                    addr = row.get('address', '')
+                    ptype = row.get('permit_type', '')
+                    folium.CircleMarker(
+                        location=[p_lat, p_lon], radius=5,
+                        color=color, fill=True, fillColor=color, fillOpacity=0.6,
+                        popup=f"<b>{addr}</b><br>{ptype}",
+                        tooltip=ptype
+                    ).add_to(permits_group)
+            permits_group.add_to(m)
+
+            # Schools layer
+            schools_group = folium.FeatureGroup(name='🏫 Schools', show=True)
+            try:
+                coords_df = load_school_coordinates()
+                if coords_df is not None and len(coords_df) > 0:
+                    for _, s in coords_df.iterrows():
+                        s_lat = s.get('Latitude')
+                        s_lon = s.get('Longitude')
+                        if pd.notna(s_lat) and pd.notna(s_lon):
+                            s_dist = haversine_distance(lat, lon, s_lat, s_lon)
+                            if s_dist <= 2.5:
+                                s_type = s.get('School_Type', '')
+                                s_color = {'Elem': 'green', 'Middle': 'orange', 'High': 'red'}.get(s_type, 'blue')
+                                folium.Marker(
+                                    [s_lat, s_lon],
+                                    icon=folium.Icon(color=s_color, icon='graduation-cap', prefix='fa'),
+                                    popup=s.get('School_Name', ''),
+                                    tooltip=s.get('School_Name', '')
+                                ).add_to(schools_group)
+            except Exception:
+                pass
+            schools_group.add_to(m)
+
+            # Metro stations layer
+            metro_group = folium.FeatureGroup(name='🚇 Metro', show=True)
+            for station in FAIRFAX_METRO_STATIONS:
+                s_dist = haversine_distance(lat, lon, station['lat'], station['lon'])
+                if s_dist <= 10:
+                    folium.Marker(
+                        [station['lat'], station['lon']],
+                        icon=folium.Icon(color='blue', icon='train', prefix='fa'),
+                        popup=f"{station['name']} ({station['line']} Line)",
+                        tooltip=station['name']
+                    ).add_to(metro_group)
+            metro_group.add_to(m)
+
+            # Cell towers layer (150ft+)
+            towers_group = folium.FeatureGroup(name='📡 Cell Towers (150+ ft)', show=False)
+            try:
+                from core.fairfax_cell_towers_analysis import FairfaxCellTowersAnalysis
+                tower_analyzer = FairfaxCellTowersAnalysis()
+                tall_towers = tower_analyzer.get_towers_near_point(lat, lon, radius_miles=2.0)
+                if tall_towers is not None and len(tall_towers) > 0:
+                    if 'height_feet' in tall_towers.columns:
+                        tall_towers = tall_towers[tall_towers['height_feet'] >= 150]
+                    for _, t in tall_towers.iterrows():
+                        t_lat = t.get('latitude')
+                        t_lon = t.get('longitude')
+                        if pd.notna(t_lat) and pd.notna(t_lon):
+                            folium.Marker(
+                                [t_lat, t_lon],
+                                icon=folium.Icon(color='gray', icon='signal', prefix='fa'),
+                                popup=f"Tower: {t.get('owner', 'Unknown')} ({t.get('height_feet', 0):.0f} ft)",
+                                tooltip=f"Cell Tower ({t.get('height_feet', 0):.0f} ft)"
+                            ).add_to(towers_group)
+            except Exception:
+                pass
+            towers_group.add_to(m)
+
+            # Hospital layer
+            hospitals_group = folium.FeatureGroup(name='🏥 Hospitals', show=False)
+            try:
+                from core.fairfax_healthcare_analysis import FairfaxHealthcareAnalysis
+                hc = FairfaxHealthcareAnalysis()
+                hosp_nearby = hc.get_facilities_near_point(lat, lon, radius_miles=5.0, facility_type='hospital')
+                if hosp_nearby is not None and len(hosp_nearby) > 0:
+                    for _, h in hosp_nearby.iterrows():
+                        h_lat = h.get('latitude')
+                        h_lon = h.get('longitude')
+                        if pd.notna(h_lat) and pd.notna(h_lon):
+                            folium.Marker(
+                                [h_lat, h_lon],
+                                icon=folium.Icon(color='red', icon='plus-square', prefix='fa'),
+                                popup=h.get('name', 'Hospital'),
+                                tooltip=h.get('name', 'Hospital')
+                            ).add_to(hospitals_group)
+            except Exception:
+                pass
+            hospitals_group.add_to(m)
+
+            # Layer control
+            folium.LayerControl(position='topright', collapsed=False).add_to(m)
+
+            st_folium(m, width=None, height=500, use_container_width=True, returned_objects=[])
+
+        elif not FOLIUM_AVAILABLE and PLOTLY_AVAILABLE and len(map_permits) > 0:
+            # Fallback to Plotly scatter map
             map_df = map_permits.copy()
             map_df['date'] = map_df['issued_date'].dt.strftime('%Y-%m-%d').fillna('N/A')
-
             fig = px.scatter_map(
-                map_df,
-                lat='centroid_lat',
-                lon='centroid_lon',
-                color='permit_type',
-                hover_name='address',
-                hover_data={
-                    'permit_type': True,
-                    'date': True,
-                    'centroid_lat': False,
-                    'centroid_lon': False,
-                },
-                height=500,
-                map_style='open-street-map',
+                map_df, lat='centroid_lat', lon='centroid_lon',
+                color='permit_type', hover_name='address',
+                height=500, map_style='open-street-map',
             )
-            fig.update_layout(
-                margin=dict(l=0, r=0, t=0, b=0),
-                map=dict(
-                    center=dict(lat=lat, lon=lon),
-                    zoom=12,
-                ),
-            )
+            fig.update_layout(margin=dict(l=0, r=0, t=0, b=0),
+                              map=dict(center=dict(lat=lat, lon=lon), zoom=12))
             st.plotly_chart(fig, width='stretch')
-            st.caption("Map shows new construction permits color-coded by type.")
-        elif not PLOTLY_AVAILABLE:
-            st.info("Map display requires the plotly package.")
         else:
-            st.info(
-                f"No new construction permits in the last {map_window} months "
-                f"within {radius:.0f} miles."
-            )
+            st.info(f"No new construction permits in the last {map_window} months within {radius:.0f} miles.")
 
         # ── Permit type breakdown ──
         st.markdown("### Permit Type Breakdown (24 Months)")
@@ -4408,6 +4324,31 @@ which may signal:
 """)
         except Exception:
             pass  # Silently skip if permits data unavailable
+
+        # Comparative Context (matches Loudoun)
+        st.markdown("### 📊 Comparative Context")
+
+        st.markdown("""
+**High-Scoring Areas in Fairfax County (75-100 points):**
+Areas near Tysons Corner, Reston Town Center, and the Dulles Corridor tend to score highest
+due to active mixed-use development, Metro access, and commercial investment.
+
+**Low-Scoring Areas in Fairfax County (0-25 points):**
+Established residential neighborhoods in Great Falls, Clifton, and Burke typically
+have minimal development pressure — valued for their stability and mature tree canopy.
+""")
+
+        try:
+            dev_pressure = permits_analyzer.calculate_development_pressure(lat, lon, radius_miles=1.0, months_back=24)
+            dev_score = dev_pressure.get('score', 0)
+            if dev_score >= 60:
+                st.markdown(f"**This Property:** Development score of {dev_score}/100 indicates an **active growth area**.")
+            elif dev_score >= 30:
+                st.markdown(f"**This Property:** Development score of {dev_score}/100 indicates **moderate activity** — typical suburban Fairfax.")
+            else:
+                st.markdown(f"**This Property:** Development score of {dev_score}/100 indicates a **stable, established neighborhood**.")
+        except Exception:
+            pass
 
     except Exception as e:
         st.warning(f"Zoning analysis error: {str(e)}")
@@ -4862,11 +4803,11 @@ def _generate_power_line_narrative(power_lines: Dict[str, Any]) -> str:
 
     # High impact (score 4)
     elif impact_score == 4:
-        narrative = f"Power infrastructure context: {voltage}kV transmission line at {dist:.2f} miles ({feet:,} feet). Close enough that you might notice it, especially in winter when trees are bare. Part of Loudoun's electrical grid supporting residential and commercial development. Worth a drive-by to see the actual visual impact from the property."
+        narrative = f"Power infrastructure context: {voltage}kV transmission line at {dist:.2f} miles ({feet:,} feet). Close enough that you might notice it, especially in winter when trees are bare. Part of Fairfax County's electrical grid supporting residential and commercial development. Worth a drive-by to see the actual visual impact from the property."
 
     # Moderate impact (score 3)
     elif impact_score == 3:
-        narrative = f"Power infrastructure: {voltage}kV line sits {dist:.2f} miles out. You probably won't see it day-to-day from the house. It's part of Loudoun's electrical grid serving residential and commercial development. At this distance, most buyers don't think twice about it."
+        narrative = f"Power infrastructure: {voltage}kV line sits {dist:.2f} miles out. You probably won't see it day-to-day from the house. It's part of Fairfax County's electrical grid serving residential and commercial development. At this distance, most buyers don't think twice about it."
 
     # Low impact (score 2)
     else:
@@ -4884,7 +4825,7 @@ def _generate_power_line_narrative(power_lines: Dict[str, Any]) -> str:
 
     # Data center corridor context for high voltage lines in Ashburn area
     if voltage >= 230 and lines_within_mile >= 2:
-        narrative += " This infrastructure is part of the electrical backbone supporting Loudoun's position as a global data center hub - the reason the county has world-class fiber infrastructure and stable tech employment."
+        narrative += " This infrastructure is part of the electrical backbone supporting Fairfax County's technology corridor - the reason the county has world-class fiber infrastructure and stable tech employment."
 
     return narrative
 
@@ -5073,222 +5014,6 @@ def display_transit_section(lat: float, lon: float):
             st.code(traceback.format_exc())
 
 
-# =============================================================================
-# SECTION: TRAFFIC & ROAD NETWORK
-# =============================================================================
-
-def display_traffic_section(lat: float, lon: float):
-    """Display traffic exposure and nearby road analysis for Fairfax County properties."""
-    st.markdown("## 🚗 Traffic & Road Network")
-
-    try:
-        from core.fairfax_traffic_analysis import FairfaxTrafficAnalysis
-        traffic = FairfaxTrafficAnalysis()
-
-        # Traffic exposure score (inverted: lower traffic = higher score = better)
-        exposure = traffic.calculate_traffic_exposure_score(lat, lon)
-        score = exposure.get('score', 0)
-        rating = exposure.get('rating', 'Unknown')
-
-        # Nearby roads
-        nearby_roads = traffic.get_nearby_traffic(lat, lon, radius_miles=0.5)
-
-        # ── 4-column metrics ──
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            color = {'Excellent': '🟢', 'Good': '🟢', 'Fair': '🟡', 'Poor': '🔴'}.get(rating, '')
-            st.metric("Traffic Exposure", f"{score}/100")
-            st.caption(f"{color} {rating}")
-        with col2:
-            if nearby_roads:
-                nearest = nearby_roads[0]
-                st.metric("Nearest Road", nearest['road_name'][:22])
-                st.caption(f"{nearest['distance_miles']:.2f} mi away")
-            else:
-                st.metric("Nearest Road", "None nearby")
-                st.caption("No VDOT data within 0.5 mi")
-        with col3:
-            if nearby_roads:
-                adt = nearby_roads[0]['adt']
-                st.metric("Daily Traffic (ADT)", f"{adt:,}")
-                st.caption(nearby_roads[0].get('traffic_level', ''))
-            else:
-                st.metric("Daily Traffic (ADT)", "N/A")
-        with col4:
-            high_count = exposure.get('high_traffic_roads_nearby', 0)
-            st.metric("High-Traffic Roads", str(high_count))
-            st.caption("Within 0.5 mi (>30K ADT)")
-
-        # ── Analysis narrative ──
-        analysis = exposure.get('analysis', '')
-        if analysis:
-            if score >= 70:
-                st.success(f"**{analysis}**")
-            elif score >= 40:
-                st.info(f"**{analysis}**")
-            else:
-                st.warning(f"**{analysis}**")
-
-        # ── Road table in expander ──
-        if nearby_roads and len(nearby_roads) > 1:
-            with st.expander(f"All Roads Within 0.5 Miles ({len(nearby_roads)} roads)"):
-                table_data = []
-                for road in nearby_roads[:15]:
-                    table_data.append({
-                        'Road': road.get('road_name', 'Unknown'),
-                        'Route': road.get('route_name', '') or '-',
-                        'Distance': f"{road.get('distance_miles', 0):.2f} mi",
-                        'Daily Traffic': f"{road.get('adt', 0):,}",
-                        'Level': road.get('traffic_level', 'N/A')
-                    })
-                st.dataframe(
-                    pd.DataFrame(table_data),
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-        st.caption(
-            "Source: Virginia DOT (VDOT) traffic counts | "
-            "ADT = Average Daily Traffic | "
-            "Score: higher = less traffic exposure (better for residential)"
-        )
-
-    except FileNotFoundError:
-        st.info("Traffic volume data not available.")
-    except Exception as e:
-        st.warning(f"Traffic analysis unavailable: {e}")
-
-    st.markdown("---")
-
-
-# =============================================================================
-# SECTION: EMERGENCY SERVICES
-# =============================================================================
-
-def display_emergency_services_section(lat: float, lon: float):
-    """Display nearest fire/police stations and ISO fire protection assessment."""
-    st.markdown("## 🚒 Emergency Services")
-
-    try:
-        from core.fairfax_emergency_services_analysis import FairfaxEmergencyServicesAnalysis
-        analyzer = FairfaxEmergencyServicesAnalysis()
-
-        nearest_fire = analyzer.get_nearest_fire_station(lat, lon)
-        nearest_police = analyzer.get_nearest_police_station(lat, lon)
-        iso_assessment = analyzer.assess_fire_protection_iso(lat, lon)
-
-        # ── 4-column metrics ──
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            fire_name = nearest_fire.get('station_name') or 'N/A'
-            st.metric("Nearest Fire Station", fire_name[:22])
-            fire_dist = nearest_fire.get('distance_miles')
-            if fire_dist is not None:
-                st.caption(f"{fire_dist:.1f} mi · ~{nearest_fire.get('drive_time_minutes', '?')} min response")
-        with col2:
-            police_name = nearest_police.get('station_name') or 'N/A'
-            st.metric("Nearest Police", police_name[:22])
-            police_dist = nearest_police.get('distance_miles')
-            if police_dist is not None:
-                st.caption(f"{police_dist:.1f} mi · ~{nearest_police.get('drive_time_minutes', '?')} min response")
-        with col3:
-            iso_rating = iso_assessment.get('rating', 'N/A')
-            color = {'Excellent': '🟢', 'Very Good': '🟢', 'Good': '🟡', 'Limited': '🔴'}.get(iso_rating, '')
-            st.metric("Fire Protection", f"{color} {iso_rating}")
-            iso_class = iso_assessment.get('iso_class_range', '')
-            if iso_class:
-                st.caption(f"ISO Class {iso_class}")
-        with col4:
-            insurance = iso_assessment.get('insurance_impact', '')
-            st.metric("Insurance Impact", iso_rating)
-            if insurance:
-                st.caption(insurance[:40])
-
-        # ── ISO context ──
-        with st.expander("What is ISO Fire Protection Class?"):
-            st.markdown(
-                "**ISO Public Protection Classification (PPC)** is used by ~75% of U.S. insurance "
-                "companies to set homeowners insurance rates. Classes range from 1 (best) to 10 (worst).\n\n"
-                "**Key threshold:** Properties more than 5 road miles from a fire station automatically "
-                "receive ISO Class 10 (highest premiums). Distance to the nearest fire station is a "
-                "primary factor in your classification.\n\n"
-                f"This property is **{iso_assessment.get('iso_threshold_status', 'within')}** "
-                f"the 5-mile ISO threshold."
-            )
-
-        st.caption(
-            "Source: Fairfax County GIS (fire stations, police stations) | "
-            "Response times estimated at 20 mph average"
-        )
-
-    except FileNotFoundError:
-        st.info("Emergency services data not available.")
-    except Exception as e:
-        st.warning(f"Emergency services analysis unavailable: {e}")
-
-    st.markdown("---")
-
-
-# =============================================================================
-# SECTION: SUBDIVISIONS
-# =============================================================================
-
-def display_subdivisions_section(lat: float, lon: float):
-    """Display subdivision information for the property location."""
-    st.markdown("## 🏘️ Subdivision")
-
-    try:
-        from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
-        analyzer = FairfaxSubdivisionsAnalysis()
-
-        subdivision = analyzer.get_subdivision(lat, lon)
-
-        if subdivision.get('found'):
-            name = subdivision.get('subdivision_name', 'Unknown')
-            st.markdown(f"📍 This property is in **{name}**")
-
-            # Show details in compact layout
-            details = []
-            if subdivision.get('section'):
-                details.append(f"**Section:** {subdivision['section']}")
-            if subdivision.get('phase'):
-                details.append(f"**Phase:** {subdivision['phase']}")
-            if subdivision.get('block'):
-                details.append(f"**Block:** {subdivision['block']}")
-            if subdivision.get('record_date'):
-                details.append(f"**Recorded:** {subdivision['record_date']}")
-
-            if details:
-                st.markdown(" · ".join(details))
-        else:
-            st.info("This property is not within a recorded subdivision boundary.")
-
-        # Nearby subdivisions
-        nearby = analyzer.get_nearby_subdivisions(lat, lon, radius_miles=1.0, limit=8)
-        if nearby:
-            with st.expander(f"Nearby Subdivisions ({len(nearby)} within 1 mile)"):
-                table_data = []
-                for sub in nearby:
-                    table_data.append({
-                        'Subdivision': sub.get('subdivision_name', 'Unknown'),
-                        'Distance': f"{sub.get('distance_miles', 0):.2f} mi",
-                        'Section': sub.get('section') or '-',
-                        'Recorded': sub.get('record_date') or '-'
-                    })
-                st.dataframe(
-                    pd.DataFrame(table_data),
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-        st.caption("Source: Fairfax County GIS — Subdivision boundaries")
-
-    except FileNotFoundError:
-        st.info("Subdivision data not available.")
-    except Exception as e:
-        st.warning(f"Subdivision analysis unavailable: {e}")
-
-    st.markdown("---")
 
 
 # =============================================================================
@@ -5296,39 +5021,36 @@ def display_subdivisions_section(lat: float, lon: float):
 # =============================================================================
 
 def display_footer():
-    """Display data sources and footer."""
+    """Display data sources and footer (matches Loudoun pattern)."""
     st.markdown("## 📊 Data Sources")
-
-    # Dynamic valuation source based on ATTOM availability
-    valuation_source = "ATTOM Data Solutions, RentCast API" if ATTOM_CLIENT else "RentCast API"
 
     st.markdown(f"""
 | Category | Source |
 |----------|--------|
-| Property Valuation | {valuation_source} |
+| Property Valuation | ATTOM Data Solutions, RentCast API |
 | Area Demographics | U.S. Census Bureau - American Community Survey 2019-2023 |
 | Monthly Unemployment | Bureau of Labor Statistics - Local Area Unemployment Statistics |
 | Labor Force Participation | U.S. Census Bureau - ACS 5-Year Estimates |
 | Industry Employment | U.S. Census Bureau - ACS 5-Year Estimates |
 | Major Employers | Fairfax County ACFR (2008-2025) |
-| Schools | Fairfax County Public Schools (FCPS) / Fairfax County GIS |
+| Schools | Fairfax County Public Schools (FCPS) Boundaries |
 | School Performance | Virginia Department of Education - SOL 5-Year Trends |
-| Building Permits | Fairfax County Permit Portal |
+| Building Permits | Fairfax County Open Data (updated weekly) |
 | Traffic Volume | VDOT Bidirectional Traffic Volume Database |
-| Metro Access | WMATA Metro Stations / Fairfax County GIS |
-| Power Infrastructure | Fairfax County Power Infrastructure (GIS) |
-| Cell Towers | Fairfax County Telecom Towers (GIS) + FCC Registration Database |
+| Metro Access | WMATA Station Data / Fairfax County GIS |
+| Power Infrastructure | Fairfax County Major Power Lines (GIS) |
+| Cell Towers | Fairfax County GIS + FCC Registration Database |
 | Medical Facilities | Fairfax County GIS, CMS Hospital Compare, Leapfrog Group |
 | Pharmacies | Google Places API |
 | Neighborhood Amenities | Google Places API (Real-time) |
 | Travel Times | Google Distance Matrix API |
-| Parks & Recreation | Google Places API |
+| Parks & Recreation | Fairfax County GIS Parks |
 | GIS Data | Fairfax County Official Shapefiles |
-| Road Network | Fairfax County Roadway Centerlines GIS |
+| Road Network | Fairfax Street Centerline GIS |
 | Zoning | Fairfax County Zoning Districts (GIS) |
-| Airport Zones | Fairfax County Airport Overlay Districts |
-| Flood Zones | FEMA Flood Insurance Rate Map (via Fairfax County GIS) |
-| Community Data | NewCo Private Research, RentCast API |
+| Airport Zones | Fairfax County Noise Overlay Districts |
+| Flood Zones | FEMA Flood Insurance Rate Map (via Fairfax GIS) |
+| Community Data | FairfaxSubdivisionsAnalysis, RentCast API |
 
 **Analysis Date:** {datetime.now().strftime('%B %d, %Y')}
 
@@ -5343,10 +5065,51 @@ def display_footer():
 # SECTION: COMPARABLE SALES (LOCAL PARQUET DATA)
 # =============================================================================
 
-def display_comparable_sales_section(lat: float, lon: float):
-    """Display comparable sales from local Fairfax County parquet data."""
-    st.markdown("## 💰 Comparable Sales")
+def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
+    """Display property value analysis (matches Loudoun pattern).
 
+    Uses full valuation orchestrator when API keys are configured,
+    falls back to local parquet comparable sales data otherwise.
+    """
+    # If full valuation pipeline is available, delegate to display_valuation_section
+    if VALUATION_AVAILABLE:
+        display_valuation_section(address, lat, lon, sqft_result=None)
+        return
+
+    st.markdown("## 💰 Property Value Analysis")
+
+    # Property Details subsection — from Fairfax tax records parquet
+    st.markdown("### Property Details")
+    prop_size = "N/A"
+    year_built = "N/A"
+    property_type = "N/A"
+    try:
+        from core.fairfax_sales_analysis import get_nearby_sales
+        # Look for the subject property itself (very tight radius)
+        subject = get_nearby_sales(lat, lon, radius_miles=0.05, limit=1)
+        if subject:
+            s = subject[0]
+            if s.get('sqft'):
+                prop_size = f"{int(s['sqft']):,} sqft"
+            if s.get('year_built'):
+                year_built = str(int(s['year_built']))
+            if s.get('property_type'):
+                property_type = s['property_type']
+    except Exception:
+        pass
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("📐 Property Size", prop_size)
+    with c2:
+        st.metric("🏠 Year Built", year_built)
+    with c3:
+        st.metric("🏘️ Property Type", property_type)
+    if prop_size == "N/A":
+        st.caption("Property details unavailable — configure ATTOM API for full data")
+
+    # Sales History subsection
+    st.markdown("### 📊 Sales History")
     try:
         from core.fairfax_sales_analysis import get_nearby_sales
 
@@ -5357,7 +5120,8 @@ def display_comparable_sales_section(lat: float, lon: float):
             comps = get_nearby_sales(lat, lon, radius_miles=1.0, limit=10)
 
         if not comps:
-            st.info("No comparable sales found within 1 mile of this property.")
+            st.info("No recorded sales found in county records (2020-2025).")
+            _display_value_api_prompt()
             st.markdown("---")
             return
 
@@ -5366,7 +5130,6 @@ def display_comparable_sales_section(lat: float, lon: float):
         # Build display data with quality scoring
         display_data = []
         for comp in comps:
-            # Sale recency score
             sale_date_str = comp.get('sale_date', '')
             display_date = sale_date_str or '—'
             recency_score = 1
@@ -5382,7 +5145,6 @@ def display_comparable_sales_section(lat: float, lon: float):
                 except Exception:
                     pass
 
-            # Distance score
             dist = comp.get('distance_miles', 99)
             if dist < 0.1:
                 dist_score = 3
@@ -5409,7 +5171,6 @@ def display_comparable_sales_section(lat: float, lon: float):
                 '_sort_score': avg_score,
             })
 
-        # Sort by quality
         display_data.sort(key=lambda x: x['_sort_score'], reverse=True)
         for row in display_data:
             del row['_sort_score']
@@ -5437,6 +5198,251 @@ def display_comparable_sales_section(lat: float, lon: float):
 
     except Exception as e:
         st.error(f"Comparable sales error: {e}")
+
+    # Current Value Estimates — requires API
+    st.markdown("### Current Value Estimates")
+    st.info("Configure ATTOM and RentCast API keys to enable current value estimates, valuation projections, and investment analysis.")
+
+    st.markdown("---")
+
+
+def _display_value_api_prompt():
+    """Show API configuration prompt for full valuation features."""
+    st.markdown("### Current Value Estimates")
+    st.info("Configure ATTOM and RentCast API keys to enable current value estimates, valuation projections, and investment analysis.")
+
+
+# =============================================================================
+# SECTION: DISCOVER YOUR NEIGHBORHOOD (NEW — matches Loudoun pattern)
+# =============================================================================
+
+def display_neighborhood_section(lat: float, lon: float):
+    """Display neighborhood amenities (Discover Your Neighborhood).
+
+    Uses Google Places API if available, otherwise shows placeholder."""
+    st.markdown("## 🏪 Discover Your Neighborhood")
+
+    # Try Google Places analysis
+    neighborhood_data = None
+    try:
+        neighborhood_data = analyze_neighborhood((lat, lon))
+    except Exception:
+        pass
+
+    if not neighborhood_data or not neighborhood_data.get('available'):
+        # Graceful degradation
+        st.info("Neighborhood amenity data requires Google Places API configuration.")
+        st.caption("Configure `GOOGLE_PLACES_API_KEY` in `.env` to enable this section.")
+        st.markdown("---")
+        return
+
+    amenities = neighborhood_data.get('amenities', {})
+    convenience = neighborhood_data.get('convenience', {})
+    narrative = neighborhood_data.get('narrative', '')
+
+    # Top metrics row
+    score = convenience.get('score', 5)
+    rating = convenience.get('rating', 'Fair')
+    dining_count = amenities.get('dining', {}).get('count', 0)
+    grocery_dist = amenities.get('grocery', {}).get('nearest_distance', 0)
+    walkable = amenities.get('summary', {}).get('walkable_count', 0)
+
+    # Score label
+    if score >= 8:
+        score_label = "🟢 Excellent"
+    elif score >= 6:
+        score_label = "🟡 Good"
+    elif score >= 4:
+        score_label = "🟠 Fair"
+    else:
+        score_label = "🔴 Limited"
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.metric("Convenience Score", f"{score}/10")
+        st.caption(score_label)
+    with c2:
+        st.metric("Dining Nearby", f"{dining_count} places")
+    with c3:
+        st.metric("Nearest Grocery", f"{grocery_dist:.1f} mi" if grocery_dist else "N/A")
+    with c4:
+        st.metric("Walkable Places", str(walkable))
+
+    # Category tabs
+    tab_dining, tab_grocery, tab_shopping = st.tabs(["🍽️ Dining", "🛒 Grocery", "🛍️ Shopping"])
+
+    with tab_dining:
+        dining = amenities.get('dining', {}).get('places', [])
+        if dining:
+            for p in dining[:5]:
+                dist_mi = p.get('distance_miles', p.get('distance', 0))
+                rating_v = p.get('rating', '')
+                rating_str = f" ⭐{rating_v}" if rating_v else ""
+                st.markdown(f"**{p.get('name', 'Unknown')}** - {dist_mi:.2f} mi{rating_str}")
+                if p.get('address'):
+                    st.caption(p['address'])
+        else:
+            st.info("No dining places found within 1 mile")
+
+    with tab_grocery:
+        grocery = amenities.get('grocery', {}).get('places', [])
+        if grocery:
+            for p in grocery[:5]:
+                dist_mi = p.get('distance_miles', p.get('distance', 0))
+                rating_v = p.get('rating', '')
+                rating_str = f" ⭐{rating_v}" if rating_v else ""
+                st.markdown(f"**{p.get('name', 'Unknown')}** - {dist_mi:.2f} mi{rating_str}")
+                if p.get('address'):
+                    st.caption(p['address'])
+        else:
+            st.info("No grocery stores found within 5 miles")
+
+    with tab_shopping:
+        shopping = amenities.get('shopping', {}).get('places', [])
+        if shopping:
+            for p in shopping[:5]:
+                dist_mi = p.get('distance_miles', p.get('distance', 0))
+                rating_v = p.get('rating', '')
+                rating_str = f" ⭐{rating_v}" if rating_v else ""
+                st.markdown(f"**{p.get('name', 'Unknown')}** - {dist_mi:.2f} mi{rating_str}")
+                if p.get('address'):
+                    st.caption(p['address'])
+        else:
+            st.info("No shopping centers found within 1 mile")
+
+    # Neighborhood Summary expander
+    if narrative:
+        with st.expander("📝 Neighborhood Summary"):
+            st.markdown(narrative)
+            highlights = convenience.get('highlights', [])
+            if highlights:
+                st.markdown("**Key Highlights:**")
+                for h in highlights:
+                    st.markdown(f"• {h}")
+
+    st.markdown("---")
+
+
+# =============================================================================
+# SECTION: COMMUNITY & AMENITIES (matches Loudoun pattern)
+# =============================================================================
+
+def display_community_amenities_section(lat: float, lon: float):
+    """Display community and amenities information using Fairfax subdivision data."""
+    st.markdown("## 🏘️ Community & Amenities")
+
+    try:
+        from core.fairfax_subdivisions_analysis import FairfaxSubdivisionsAnalysis
+        sub_analyzer = FairfaxSubdivisionsAnalysis()
+
+        # Get current subdivision
+        sub_data = sub_analyzer.get_subdivision(lat, lon)
+
+        if sub_data and sub_data.get('found'):
+            sub_name = sub_data.get('subdivision_name', 'Unknown Community')
+            st.markdown(f"### {sub_name}")
+
+            # 3-column metrics (HOA data not available for Fairfax)
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Community", sub_name[:30])
+            with col2:
+                st.metric("Access", "Open")
+            with col3:
+                st.metric("HOA Fee", "Data Not Available")
+
+            st.caption("HOA fee data not available for Fairfax County in this system version.")
+
+            # Nearby subdivisions
+            nearby = sub_analyzer.get_nearby_subdivisions(lat, lon, radius_miles=5.0, limit=5)
+            if nearby:
+                st.markdown("")
+                st.markdown(f"**Other Nearby Communities ({len(nearby)} within 5 miles):**")
+                for n in nearby[:5]:
+                    n_name = n.get('subdivision_name', 'Unknown')
+                    n_dist = n.get('distance_miles', 0)
+                    st.markdown(f"• **{n_name}** - {n_dist:.1f} mi")
+        else:
+            st.info("No subdivision data found for this location.")
+
+    except Exception as e:
+        st.warning(f"Community data unavailable: {e}")
+
+    st.markdown("---")
+
+
+# =============================================================================
+# SECTION: AREA DEMOGRAPHICS (Fairfax — matches Loudoun pattern with Altair)
+# =============================================================================
+
+def display_demographics_section_fairfax(lat: float, lon: float, address: str):
+    """Display demographics section with Altair horizontal bar charts."""
+    st.markdown("## 📈 Area Demographics")
+
+    try:
+        demographics_data = calculate_demographics(
+            lat, lon, address,
+            county_fips='059',
+            county_name='Fairfax County, VA'
+        )
+        display_demographics_section(demographics_data, st)
+    except Exception as e:
+        st.warning(f"Demographics data unavailable: {e}")
+
+    st.markdown("---")
+
+
+# =============================================================================
+# SECTION: AI PROPERTY ANALYSIS (matches Loudoun pattern)
+# =============================================================================
+
+def display_ai_analysis_section(address: str, lat: float, lon: float, data: Dict = None):
+    """Display AI property analysis using Claude API."""
+    st.markdown("## 🤖 AI Property Analysis")
+
+    try:
+        from core.api_config import get_api_key
+        api_key = get_api_key('ANTHROPIC_API_KEY')
+        if not api_key:
+            st.info("AI analysis requires an Anthropic API key. Configure `ANTHROPIC_API_KEY` in `.env`.")
+            st.markdown("---")
+            return
+
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+
+        # Build context from available data
+        context_parts = [f"Property address: {address}"]
+        if data:
+            if data.get('schools'):
+                schools = data['schools']
+                context_parts.append(f"Schools: Elementary={schools.get('elementary', 'N/A')}, Middle={schools.get('middle', 'N/A')}, High={schools.get('high', 'N/A')}")
+            if data.get('zoning'):
+                z = data['zoning']
+                if isinstance(z, dict):
+                    context_parts.append(f"Zoning: {z.get('zone_code', 'N/A')} - {z.get('description', '')}")
+
+        prompt = f"""Provide a brief, insightful analysis of this property's key strengths and considerations.
+Focus on what stands out about this location for a potential buyer.
+Keep it to 3-4 sentences.
+
+Context:
+{chr(10).join(context_parts)}
+
+Coordinates: {lat}, {lon} (Fairfax County, Virginia)"""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=300,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        st.markdown("**What Stands Out:**")
+        st.markdown(response.content[0].text)
+        st.caption("🤖 AI-generated analysis")
+
+    except Exception as e:
+        st.info(f"AI analysis unavailable: {e}")
 
     st.markdown("---")
 
@@ -5472,60 +5478,9 @@ def render_report(address: str, lat: float, lon: float):
         # Pre-compute school assignments for AI narrative
         data['schools'] = find_assigned_schools(lat, lon)
 
-        # =========================================================================
-        # PHASE 2: INITIALIZATION CODE (TEMPORARILY DISABLED)
-        # These sections use Loudoun-specific modules not yet ported to Fairfax
-        # Uncomment after porting in Phase 2/3
-        # =========================================================================
-
-        # # Location (30%)
-        # status.text("⏳ Analyzing location quality...")
-        # progress.progress(30)
-        # data['location'] = analyze_location_quality(lat, lon, address)
-
-        # # Power Lines (40%)
-        # status.text("⏳ Checking power infrastructure...")
-        # progress.progress(40)
-        # data['power_lines'] = analyze_power_line_proximity(lat, lon)
-
-        # # Cell Towers (42%)
-        # status.text("⏳ Analyzing cell tower coverage...")
-        # progress.progress(42)
-        # data['cell_towers'] = analyze_cell_tower_coverage(lat, lon)
-
-        # # Metro Access (45%)
-        # status.text("⏳ Analyzing Metro access...")
-        # progress.progress(45)
-        # data['metro'] = analyze_metro_access((lat, lon))
-
-        # # Flood Zone Check (47%)
-        # status.text("⏳ Checking flood zone status...")
-        # progress.progress(47)
-        # data['flood_zone'] = check_flood_zone(lat, lon)
-
-        # # Parks Proximity (48%)
-        # status.text("⏳ Finding nearby parks...")
-        # progress.progress(48)
-        # parks_static_data = load_parks_data()
-        # data['parks'] = get_nearest_parks(lat, lon, parks_static_data)
-
-        # # Neighborhood Amenities (50%)
-        # status.text("⏳ Discovering neighborhood amenities...")
-        # progress.progress(50)
-        # data['neighborhood'] = analyze_neighborhood((lat, lon))
-
-        # # Development - Dual Radius (60%)
-        # status.text("⏳ Analyzing development activity (2mi + 5mi)...")
-        # progress.progress(55)
-        # data['development_2mi'] = analyze_development(lat, lon, radius_miles=2.0)
-        # progress.progress(60)
-        # data['development_5mi'] = analyze_development(lat, lon, radius_miles=5.0)
-        # =========================================================================
-
-        # Square Footage - DISABLED for demo
-        # MLS web search unreliable (DuckDuckGo: bot detection, Brave: wrong results)
-        # Using tax assessor data for consistency - will show as "Tax Records"
-        # Future: Direct MLS API integration (Bridge/Zillow) post-demo
+        # Note: Data fetching for Location Quality, Cell Towers, Neighborhood,
+        # Development, etc. is now done inline within each display_*_section()
+        # function rather than pre-computed here. This matches the Loudoun pattern.
         status.text("⏳ Loading property details...")
         progress.progress(70)
         sqft_result = None  # Disabled - use ATTOM/tax records fallback
@@ -5541,18 +5496,8 @@ def render_report(address: str, lat: float, lon: float):
         except Exception:
             data['zoning'] = None
 
-        # PHASE 2: Valuation (85%) - TEMPORARILY DISABLED
+        # Valuation data fetched inline by display_comparable_sales_section
         data['valuation'] = None
-        # if VALUATION_AVAILABLE:
-        #     status.text("⏳ Fetching valuations...")
-        #     progress.progress(85)
-        #     # Pre-compute valuation for AI narrative
-        #     try:
-        #         orchestrator = PropertyValuationOrchestrator()
-        #         data['valuation'] = orchestrator.analyze_property(address, lat, lon, None)
-        #     except Exception as val_err:
-        #         # Valuation failure shouldn't block the whole analysis
-        #         data['valuation'] = None
 
         # Complete
         progress.progress(100)
@@ -5562,96 +5507,52 @@ def render_report(address: str, lat: float, lon: float):
         progress.empty()
         status.empty()
 
-        # Display all sections
+        # Display all sections — order matches Loudoun spec exactly
         st.success(f"✓ Analysis complete for: **{address}**")
         st.markdown("---")
 
-        # =========================================================================
-        # PHASE 1 SECTIONS (ACTIVE) - Schools, Crime, Zoning
-        # =========================================================================
-
-        # Schools (uses pre-computed assignments)
+        # 1. School Assignments + Performance Trends (inline charts)
         display_schools_section(lat, lon)
 
-        # Crime & Safety (Fairfax-specific)
-        display_crime_section(lat, lon)
+        # 2. School Performance vs State & Peers (expander) — inside display_schools_section
 
-        # Zoning
-        display_zoning_section(address, lat, lon)
+        # 3. Location Quality (unified — replaces traffic, emergency services)
+        display_location_quality_section(lat, lon, address)
 
-        # Transit & Transportation (Fairfax-specific module)
-        display_transit_section(lat, lon)
-
-        # Traffic & Road Network (VDOT traffic volumes)
-        display_traffic_section(lat, lon)
-
-        # Emergency Services (fire/police proximity, ISO rating)
-        display_emergency_services_section(lat, lon)
-
-        # Subdivision Information
-        display_subdivisions_section(lat, lon)
-
-        # =========================================================================
-        # END OF PHASE 1 SECTIONS
-        # =========================================================================
-
-        # =========================================================================
-        # PHASE 2/3 SECTIONS (TEMPORARILY DISABLED)
-        # Uncomment after porting Loudoun modules to Fairfax
-        # =========================================================================
-
-        # # Location Quality
-        # display_location_section(data['location'], data.get('power_lines', {}), data.get('metro', {}), data.get('flood_zone', {}), data.get('parks', {}), lat, lon)
-
-        # Cell Tower Coverage (rewired to Fairfax module)
+        # 4. Cell Tower Coverage
         display_cell_towers_section(lat, lon)
 
-        # # Neighborhood Amenities
-        # display_neighborhood_section(data.get('neighborhood', {}))
+        # 5. Discover Your Neighborhood
+        display_neighborhood_section(lat, lon)
 
-        # # Community & HOA Information
-        # display_community_section(data.get('valuation', {}), lat, lon)
+        # 6. Community & Amenities
+        display_community_amenities_section(lat, lon)
 
-        # Area Demographics (Census data — Fairfax County FIPS 51059)
+        # 7. Area Demographics
         demographics_data = None
         if DEMOGRAPHICS_AVAILABLE:
-            st.markdown("## 📈 Area Demographics")
-            demographics_data = calculate_demographics(
-                lat, lon, address,
-                county_fips='059',
-                county_name='Fairfax County, VA'
-            )
-            display_demographics_section(demographics_data, st)
+            display_demographics_section_fairfax(lat, lon, address)
 
-        # Economic Indicators (LFPR, Industry Mix, Major Employers)
+        # 8. Economic Indicators
         if ECONOMIC_INDICATORS_AVAILABLE:
             display_economic_indicators_section()
 
-        # Medical Access (rewired to Fairfax module)
+        # 9. Medical Access
         display_medical_access_section(lat, lon)
 
-        # Development Activity & Building Permits
+        # 10. Neighborhood Development & Infrastructure
         display_development_section(lat, lon)
 
-        # Comparable Sales (local parquet data — no API key required)
-        display_comparable_sales_section(lat, lon)
+        # 11. Zoning & Land Use
+        display_zoning_section(address, lat, lon)
 
-        # # Valuation (now includes MLS sqft lookup) — requires ATTOM API key
-        # display_valuation_section(address, lat, lon, sqft_result)
+        # 12. Property Value Analysis
+        display_comparable_sales_section(lat, lon, address)
 
-        # # AI Analysis - pass all pre-computed data including demographics
-        # display_ai_analysis(
-        #     address=address,
-        #     coords=(lat, lon),
-        #     schools_info=data.get('schools'),
-        #     valuation_result=data.get('valuation'),
-        #     development_2mi=data.get('development_2mi'),
-        #     development_5mi=data.get('development_5mi'),
-        #     demographics=demographics_data
-        # )
-        # =========================================================================
+        # 13. AI Property Analysis
+        display_ai_analysis_section(address, lat, lon, data)
 
-        # Footer
+        # 14. Data Sources
         display_footer()
 
     except Exception as e:

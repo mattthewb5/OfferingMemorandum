@@ -3597,9 +3597,19 @@ def display_medical_access_section(lat: float, lon: float):
         else:
             st.info("No urgent care centers found within 3 miles.")
 
-        # ── Pharmacies subsection ──
-        st.markdown("### 💊 Pharmacies")
-        st.info("Pharmacy data requires Google Places API. Configure `GOOGLE_PLACES_API_KEY` in `.env`.")
+        # ── Pharmacies subsection (via Google Places API) ──
+        try:
+            neighborhood_data = analyze_neighborhood((lat, lon))
+            if neighborhood_data and neighborhood_data.get('available'):
+                pharmacy_data = neighborhood_data.get('amenities', {}).get('pharmacy', {})
+                pharmacy_places = pharmacy_data.get('places', [])
+                display_pharmacies_subsection(pharmacy_places)
+            else:
+                st.markdown("### 💊 Pharmacies")
+                st.info("Pharmacy data requires Google Maps API. Configure `GOOGLE_MAPS_API_KEY` in `.env`.")
+        except Exception:
+            st.markdown("### 💊 Pharmacies")
+            st.info("Pharmacy data temporarily unavailable.")
 
         # ── Maternity subsection ──
         st.markdown("### 🍼 Maternity & Birthing Hospitals")

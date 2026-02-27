@@ -2689,43 +2689,55 @@ def create_development_map(lat: float, lon: float, nearby_permits: pd.DataFrame)
 
     power_layer.add_to(m)
 
-    # === METRO STATIONS LAYER ===
-    metro_layer = folium.FeatureGroup(name='🚇 Metro Stations')
+    # === METRO LAYER (stations + line geometry from parquet) ===
+    metro_layer = folium.FeatureGroup(name='🚇 Metro (Stations + Lines)')
 
-    metro_stations = [
-        {"name": "Vienna/Fairfax-GMU", "lat": 38.8776, "lon": -77.2714},
-        {"name": "Dunn Loring-Merrifield", "lat": 38.8834, "lon": -77.2290},
-        {"name": "West Falls Church", "lat": 38.9009, "lon": -77.1891},
-        {"name": "East Falls Church", "lat": 38.8859, "lon": -77.1565},
-        {"name": "Tysons Corner", "lat": 38.9207, "lon": -77.2233},
-        {"name": "Greensboro", "lat": 38.9203, "lon": -77.2348},
-        {"name": "Spring Hill", "lat": 38.9286, "lon": -77.2413},
-        {"name": "McLean", "lat": 38.9246, "lon": -77.2103},
-        {"name": "Wiehle-Reston East", "lat": 38.9476, "lon": -77.3399},
-        {"name": "Reston Town Center", "lat": 38.9531, "lon": -77.3597},
-        {"name": "Herndon", "lat": 38.9534, "lon": -77.3860},
-        {"name": "Innovation Center", "lat": 38.9614, "lon": -77.4143},
-    ]
+    METRO_LINE_COLORS = {
+        'Silver': '#A0A0A0', 'Orange': '#FF7700',
+        'Blue': '#0000FF', 'Yellow': '#FFD700',
+    }
 
-    for station in metro_stations:
+    # Station markers from constant
+    for station in FAIRFAX_METRO_STATIONS:
+        line_color_hex = METRO_LINE_COLORS.get(station['line'].split('/')[0], 'darkblue')
         folium.Marker(
             [station['lat'], station['lon']],
-            popup=f"🚇 {station['name']} Station (Silver Line)",
+            popup=f"🚇 {station['name']} ({station['line']} Line)",
             icon=folium.Icon(color='darkblue', icon='train', prefix='fa'),
             tooltip=f"{station['name']} Metro"
         ).add_to(metro_layer)
 
-    # Metro track line (simplified connection)
-    track_coords = [[s['lat'], s['lon']] for s in metro_stations]
-    folium.PolyLine(
-        track_coords,
-        weight=4,
-        color='#003DA5',
-        opacity=0.8,
-        dash_array='10',
-        popup='Silver Line Metro',
-        tooltip='Silver Line'
-    ).add_to(metro_layer)
+    # Line geometry from parquet (real track alignment)
+    try:
+        import geopandas as gpd
+        from shapely.geometry import MultiLineString
+        metro_lines_path = os.path.join(DATA_DIR, 'transit', 'processed', 'metro_lines.parquet')
+        metro_gdf = gpd.read_parquet(metro_lines_path)
+        for _, row in metro_gdf.iterrows():
+            line_name = row.get('line_name', 'Unknown')
+            color = METRO_LINE_COLORS.get(line_name, '#003DA5')
+            geom = row.geometry
+            # Handle both LineString and MultiLineString
+            if isinstance(geom, MultiLineString):
+                for part in geom.geoms:
+                    coords = [[c[1], c[0]] for c in part.coords]  # lon,lat -> lat,lon
+                    folium.PolyLine(
+                        coords, color=color, weight=4, opacity=0.8,
+                        tooltip=f"{line_name} Line"
+                    ).add_to(metro_layer)
+            else:
+                coords = [[c[1], c[0]] for c in geom.coords]
+                folium.PolyLine(
+                    coords, color=color, weight=4, opacity=0.8,
+                    tooltip=f"{line_name} Line"
+                ).add_to(metro_layer)
+    except Exception:
+        # Fallback: connect stations with straight lines
+        track_coords = [[s['lat'], s['lon']] for s in FAIRFAX_METRO_STATIONS]
+        folium.PolyLine(
+            track_coords, weight=4, color='#003DA5', opacity=0.8,
+            dash_array='10', tooltip='Metro Lines'
+        ).add_to(metro_layer)
 
     metro_layer.add_to(m)
 
@@ -4052,8 +4064,12 @@ def display_development_section(lat: float, lon: float):
                 pass
             schools_group.add_to(m)
 
-            # Metro stations layer
+            # Metro layer (stations + line geometry)
             metro_group = folium.FeatureGroup(name='🚇 Metro', show=True)
+            _metro_colors = {
+                'Silver': '#A0A0A0', 'Orange': '#FF7700',
+                'Blue': '#0000FF', 'Yellow': '#FFD700',
+            }
             for station in FAIRFAX_METRO_STATIONS:
                 s_dist = haversine_distance(lat, lon, station['lat'], station['lon'])
                 if s_dist <= 10:
@@ -4063,6 +4079,27 @@ def display_development_section(lat: float, lon: float):
                         popup=f"{station['name']} ({station['line']} Line)",
                         tooltip=station['name']
                     ).add_to(metro_group)
+            # Add line geometry from parquet
+            try:
+                import geopandas as gpd
+                from shapely.geometry import MultiLineString as _MLS
+                _metro_path = os.path.join(DATA_DIR, 'transit', 'processed', 'metro_lines.parquet')
+                _mgdf = gpd.read_parquet(_metro_path)
+                for _, _row in _mgdf.iterrows():
+                    _ln = _row.get('line_name', '')
+                    _clr = _metro_colors.get(_ln, '#003DA5')
+                    _g = _row.geometry
+                    if isinstance(_g, _MLS):
+                        for _part in _g.geoms:
+                            _c = [[p[1], p[0]] for p in _part.coords]
+                            folium.PolyLine(_c, color=_clr, weight=3, opacity=0.8,
+                                            tooltip=f"{_ln} Line").add_to(metro_group)
+                    else:
+                        _c = [[p[1], p[0]] for p in _g.coords]
+                        folium.PolyLine(_c, color=_clr, weight=3, opacity=0.8,
+                                        tooltip=f"{_ln} Line").add_to(metro_group)
+            except Exception:
+                pass
             metro_group.add_to(m)
 
             # Cell towers layer (150ft+)

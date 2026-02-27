@@ -5759,7 +5759,69 @@ def display_community_amenities_section(lat: float, lon: float):
     except Exception as e:
         st.warning(f"Community data unavailable: {e}")
 
+    # Recreation features from GIS data
+    _display_recreation_features(lat, lon)
+
     st.markdown("---")
+
+
+def _display_recreation_features(lat: float, lon: float):
+    """Display nearby recreation features (playgrounds, courts, fields, etc.) from GIS parquet."""
+    try:
+        rec_path = os.path.join(DATA_DIR, 'parks', 'processed', 'recreation.parquet')
+        if not os.path.exists(rec_path):
+            return
+
+        rec_df = pd.read_parquet(rec_path)
+
+        # Filter to features within 2 miles
+        rec_df = rec_df[rec_df['centroid_lat'].notna() & rec_df['centroid_lon'].notna()].copy()
+        rec_df['_dist'] = rec_df.apply(
+            lambda r: haversine_distance(lat, lon, r['centroid_lat'], r['centroid_lon']), axis=1
+        )
+        nearby = rec_df[rec_df['_dist'] <= 2.0].copy()
+
+        if len(nearby) == 0:
+            return
+
+        # Exclude PATHWAY (shown in trails section) and OTHER
+        nearby = nearby[~nearby['feature_type'].isin(['PATHWAY', 'OTHER'])]
+        if len(nearby) == 0:
+            return
+
+        with st.expander(f"🏓 Recreation Features ({len(nearby)} within 2 mi)", expanded=False):
+            # Summary by type
+            type_summary = nearby.groupby('feature_type').agg(
+                count=('_dist', 'count'),
+                nearest=('_dist', 'min')
+            ).sort_values('nearest').reset_index()
+
+            # Friendly names
+            friendly = {
+                'PLAYGROUND': '🛝 Playgrounds',
+                'BASKETBALL COURT': '🏀 Basketball Courts',
+                'TENNIS COURT': '🎾 Tennis Courts',
+                'BLEACHER': '🏟️ Athletic Fields (w/ Bleachers)',
+                'GRASS RECTANGLE FIELD': '⚽ Grass Fields',
+                'SYNTHETIC RECTANGLE FIELD': '🏈 Synthetic Fields',
+                '60 FOOT DIAMOND FIELD': '⚾ Baseball Diamonds (60ft)',
+                '90 FOOT DIAMOND FIELD': '⚾ Baseball Diamonds (90ft)',
+                'TRACK': '🏃 Running Tracks',
+                'VOLLEYBALL COURT': '🏐 Volleyball Courts',
+                'HORSE': '🐴 Equestrian Facilities',
+                'GOLF': '⛳ Golf Courses',
+                'MINIATURE GOLF': '⛳ Mini Golf',
+            }
+
+            for _, row in type_summary.iterrows():
+                ftype = row['feature_type']
+                label = friendly.get(ftype, ftype.title())
+                st.markdown(f"- {label}: **{int(row['count'])}** (nearest {row['nearest']:.1f} mi)")
+
+            st.caption(f"Source: Fairfax County GIS Parks & Recreation Features")
+
+    except Exception:
+        pass
 
 
 # =============================================================================

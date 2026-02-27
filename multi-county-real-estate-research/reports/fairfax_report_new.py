@@ -1789,103 +1789,103 @@ def _classify_road_type(address: str, traffic_data=None) -> Tuple[str, str]:
 
 
 def _compute_location_score(traffic_data, flood_data, parks_data, metro_data, noise_dist, address):
-    """Compute location quality score out of 10."""
-    score = 5.0  # baseline
+    """Compute location quality score out of 10.
 
-    # Road type component (property's own street)
+    Rebalanced so a typical suburban Fairfax property lands around 6-7,
+    not the previous 10/10. Baseline 4.0 + up to ~6.5 in bonuses.
+    """
+    score = 4.0  # baseline (lowered from 5.0)
+
+    # Road type component (max +1.5)
     road_suffix, _ = _classify_road_type(address, traffic_data)
     road_scores = {
-        "CUL-DE-SAC": 2.0, "COURT": 2.0, "PLACE": 1.5, "LANE": 1.0,
-        "WAY": 1.0, "LOCAL": 1.0, "DRIVE": 0.5, "AVENUE": 0, "ROAD": 0,
+        "CUL-DE-SAC": 1.5, "COURT": 1.5, "PLACE": 1.0, "LANE": 0.5,
+        "WAY": 0.5, "LOCAL": 0.5, "DRIVE": 0, "AVENUE": 0, "ROAD": 0,
         "BOULEVARD": -0.5, "PARKWAY": -0.5, "HIGHWAY": -1.0,
     }
     score += road_scores.get(road_suffix, 0)
 
-    # Highway access distance — use ADT-filtered highway, not raw nearest road
+    # Highway access distance (max +1.0)
     if traffic_data:
         nearby = traffic_data.get('nearby', [])
         nearby_dicts = [r for r in nearby if isinstance(r, dict)]
-        # Find nearest highway (ADT >= 40,000)
         highways = [r for r in nearby_dicts if (r.get('adt') or 0) >= 40000]
         if highways:
             hw_dist = min(r.get('distance_miles', 99) for r in highways)
         else:
-            # Fallback to nearest major road (ADT >= 10,000)
             majors = [r for r in nearby_dicts if (r.get('adt') or 0) >= 10000]
             hw_dist = min(r.get('distance_miles', 99) for r in majors) if majors else 10
 
-        if hw_dist < 1:
-            score += 0.5      # too close is noisy
-        elif hw_dist < 3:
-            score += 1.5      # sweet spot
-        elif hw_dist < 5:
-            score += 1.0
-        else:
+        if hw_dist < 0.3:
+            score -= 0.5       # very close = noise/safety issue
+        elif hw_dist < 1:
             score += 0.5
-    else:
-        score += 0.5
+        elif hw_dist < 3:
+            score += 1.0       # sweet spot
+        elif hw_dist < 5:
+            score += 0.5
 
-    # Flood zone
+    # Flood zone (max +1.0, penalty for high-risk)
     if flood_data:
         fema = flood_data.get('fema_zone')
         if fema:
             zone_code = fema.get('zone_code', 'X') if isinstance(fema, dict) else 'X'
-            if zone_code in ('X', 'X SHADED', None):
-                score += 2
+            if zone_code in ('X', None):
+                score += 1.0
             elif zone_code == 'X SHADED':
-                score += 1
+                score += 0.5
             elif zone_code in ('AE', 'A'):
-                score += 0
+                score -= 0.5
             elif zone_code in ('AO', 'FLOODWAY'):
-                score -= 1
+                score -= 1.5
             else:
-                score += 1
+                score += 0.5
         else:
-            score += 2  # No flood zone data = likely not in zone
+            score += 1.0
     else:
-        score += 1
+        score += 0.5
 
-    # Parks
+    # Parks (max +1.0)
     if parks_data and isinstance(parks_data, list) and len(parks_data) > 0:
         park_dist = parks_data[0].get('distance_miles', 10)
         if park_dist < 0.5:
-            score += 1.5
+            score += 1.0
         elif park_dist < 1:
-            score += 1
-        elif park_dist < 2:
             score += 0.5
+        elif park_dist < 2:
+            score += 0.25
     elif parks_data and isinstance(parks_data, dict):
         park_dist = parks_data.get('closest_park_distance', 10)
         if park_dist < 0.5:
-            score += 1.5
+            score += 1.0
         elif park_dist < 1:
-            score += 1
-        elif park_dist < 2:
             score += 0.5
+        elif park_dist < 2:
+            score += 0.25
 
-    # Metro
+    # Metro (max +1.5)
     if metro_data:
         metro_dist = metro_data.get('distance_miles', 20)
-        if metro_dist < 3:
-            score += 2
+        if metro_dist < 1:
+            score += 1.5       # walk-to-metro premium
+        elif metro_dist < 3:
+            score += 1.0
         elif metro_dist < 7:
-            score += 1.5
-        elif metro_dist < 12:
-            score += 1
-        else:
             score += 0.5
 
-    # Noise (distance-based)
+    # Noise (penalty-oriented; max +0.5, penalty up to -1.5)
     if noise_dist:
         min_noise_dist = min(noise_dist.values()) if noise_dist else 20
         if min_noise_dist > 10:
-            score += 1  # far from airports
-        elif min_noise_dist > 5:
             score += 0.5
-        elif min_noise_dist < 3:
-            score -= 1
+        elif min_noise_dist > 5:
+            pass               # neutral
+        elif min_noise_dist > 3:
+            score -= 0.5       # audible flight path
+        elif min_noise_dist <= 3:
+            score -= 1.5       # significant noise impact
 
-    return max(1.0, min(10.0, score))
+    return max(1.0, min(10.0, round(score * 2) / 2))  # round to nearest 0.5
 
 
 def display_location_quality_section(lat: float, lon: float, address: str):

@@ -4456,6 +4456,42 @@ def display_development_section(lat: float, lon: float):
                 pass
             crime_group.add_to(m)
 
+            # Trails layer
+            trails_group = folium.FeatureGroup(name='🥾 Trails', show=False)
+            try:
+                import geopandas as _tgpd
+                from shapely.geometry import MultiLineString as _TrailMLS
+                _trails_path = os.path.join(DATA_DIR, 'parks', 'processed', 'trails.parquet')
+                _trails_gdf = _tgpd.read_parquet(_trails_path)
+                # Filter to trails within ~3mi of property (use centroid of geometry)
+                _trails_gdf['_clat'] = _trails_gdf.geometry.centroid.y
+                _trails_gdf['_clon'] = _trails_gdf.geometry.centroid.x
+                _trails_near = _trails_gdf[
+                    _trails_gdf.apply(lambda r: haversine_distance(lat, lon, r['_clat'], r['_clon']) <= 3.0, axis=1)
+                ]
+                for _, _tr in _trails_near.iterrows():
+                    _tname = _tr.get('trail_name') or _tr.get('park_name') or 'Trail'
+                    _tsurf = _tr.get('surface_material', '')
+                    _tlen = _tr.get('length_miles', 0)
+                    _tooltip = f"{_tname}"
+                    if _tlen and pd.notna(_tlen) and _tlen > 0:
+                        _tooltip += f" ({_tlen:.1f} mi)"
+                    if _tsurf and pd.notna(_tsurf):
+                        _tooltip += f" - {_tsurf}"
+                    _tgeom = _tr.geometry
+                    if isinstance(_tgeom, _TrailMLS):
+                        for _part in _tgeom.geoms:
+                            _tc = [[p[1], p[0]] for p in _part.coords]
+                            folium.PolyLine(_tc, color='#228B22', weight=2, opacity=0.7,
+                                            tooltip=_tooltip).add_to(trails_group)
+                    else:
+                        _tc = [[p[1], p[0]] for p in _tgeom.coords]
+                        folium.PolyLine(_tc, color='#228B22', weight=2, opacity=0.7,
+                                        tooltip=_tooltip).add_to(trails_group)
+            except Exception:
+                pass
+            trails_group.add_to(m)
+
             # Layer control
             folium.LayerControl(position='topright', collapsed=False).add_to(m)
 

@@ -2493,29 +2493,38 @@ def display_cell_towers_section(lat: float, lon: float):
         # Nearest Tower subsection
         if nearby_towers and len(nearby_towers) > 0:
             t = nearby_towers[0]
-            t_name = t.get('owner', t.get('carrier_category', 'Unknown'))
             t_height = t.get('height_feet', 0)
             t_dist = t.get('distance_miles', 0)
             t_type = t.get('structure_type_desc', t.get('structure_type', 'Unknown'))
+            t_city = t.get('city', '')
             t_feet = t_dist * 5280
 
             st.markdown("**Nearest Tower**")
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
-                st.markdown(f"**{t_name}**")
                 st.markdown(f"Distance: {t_dist:.2f} mi ({t_feet:,.0f} ft)")
             with col2:
                 st.markdown(f"Height: {t_height:.0f} ft" if t_height else "Height: Unknown")
+            with col3:
                 st.markdown(f"Type: {t_type}")
 
-        # Table in expander
+        # Table in expander (no name/owner column)
         all_nearby = analyzer.get_towers_near_point(lat, lon, radius_miles=2.0)
         if all_nearby is not None and len(all_nearby) > 0:
             with st.expander(f"View All Nearby Towers ({len(all_nearby)} within 2 mi)", expanded=False):
-                cols = [c for c in ['owner', 'distance_miles', 'structure_type_desc', 'height_feet', 'city'] if c in all_nearby.columns]
+                cols = [c for c in ['distance_miles', 'structure_type_desc', 'height_feet', 'city'] if c in all_nearby.columns]
+                # Add coordinates if available
+                if 'latitude' in all_nearby.columns and 'longitude' in all_nearby.columns:
+                    all_nearby['coords'] = all_nearby.apply(
+                        lambda r: f"{r['latitude']:.4f}, {r['longitude']:.4f}"
+                        if pd.notna(r.get('latitude')) and pd.notna(r.get('longitude')) else '',
+                        axis=1
+                    )
+                    cols.append('coords')
                 display_df = all_nearby[cols].copy()
-                col_map = {'owner': 'Tower Name', 'distance_miles': 'Distance (mi)',
-                           'structure_type_desc': 'Type', 'height_feet': 'Height (ft)', 'city': 'City'}
+                col_map = {'distance_miles': 'Distance (mi)',
+                           'structure_type_desc': 'Type', 'height_feet': 'Height (ft)',
+                           'city': 'City', 'coords': 'Coordinates'}
                 display_df = display_df.rename(columns=col_map)
                 if 'Distance (mi)' in display_df.columns:
                     display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")

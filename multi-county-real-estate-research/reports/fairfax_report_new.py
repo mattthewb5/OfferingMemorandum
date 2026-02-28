@@ -5294,7 +5294,7 @@ def display_valuation_section(address: str, lat: float, lon: float, sqft_result:
                         return 'background-color: #f8d7da; color: #721c24'
 
                 # Apply styling and display
-                styled_df = df.style.applymap(style_quality, subset=['Quality'])
+                styled_df = df.style.map(style_quality, subset=['Quality'])
                 st.dataframe(
                     styled_df,
                     width='stretch',
@@ -5739,7 +5739,7 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
             else:
                 return 'background-color: #f8d7da; color: #721c24'
 
-        styled_df = df.style.applymap(style_quality, subset=['Quality'])
+        styled_df = df.style.map(style_quality, subset=['Quality'])
         st.dataframe(
             styled_df,
             width='stretch',

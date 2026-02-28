@@ -2151,10 +2151,12 @@ def display_location_quality_section(lat: float, lon: float, address: str):
         pass
 
     power_data = {}
+    power_by_type = {}
     try:
         from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
         ua = FairfaxUtilitiesAnalysis()
         power_data = ua.check_proximity(lat, lon, distance_threshold_miles=1.0)
+        power_by_type = ua.get_utility_types_nearby(lat, lon, radius_miles=1.0)
     except Exception:
         pass
 
@@ -2432,20 +2434,52 @@ Mortgage lenders do not require flood insurance.
         closest = power_data.get('closest_utility')
         utilities_nearby = power_data.get('utilities_within_threshold', [])
         line_count = len(utilities_nearby)
+
+        # Get electric vs gas breakdown
+        elec = power_by_type.get('electric', {}) if power_by_type else {}
+        gas = power_by_type.get('gas', {}) if power_by_type else {}
+        elec_count = elec.get('count', 0)
+        gas_count = gas.get('count', 0)
+        elec_dist = elec.get('closest_distance')
+        gas_dist = gas.get('closest_distance')
+
         if within and closest:
             c_dist = closest.get('distance_miles', 0)
             c_type = closest.get('utility_type', 'Unknown')
             if c_dist < 0.1:
-                st.markdown(f"⚡ **Power Infrastructure/Major Power Lines:**")
+                st.markdown("⚡ **Power Infrastructure/Major Power Lines:**")
                 st.error(f"🔴 High Impact — Nearest: {c_type} at {c_dist:.2f} miles")
             elif c_dist < 0.5:
                 st.markdown(f"⚡ **Power Infrastructure:** 🟡 Moderate — Nearest: {c_type} at {c_dist:.2f} mi")
             else:
                 st.markdown(f"⚡ **Power Infrastructure:** 🟢 Low Impact — Nearest: {c_type} at {c_dist:.2f} mi")
-            if line_count > 0:
+
+            # Show breakdown by type
+            details = []
+            if elec_count > 0 and elec_dist is not None:
+                # GIS layer is "Major Power Lines" = transmission-class
+                operators = ', '.join(elec.get('operators', []))
+                details.append(f"⚡ Electric (transmission-class): {elec_count} line(s) — nearest at {elec_dist:.2f} mi ({operators})")
+            if gas_count > 0 and gas_dist is not None:
+                operators = ', '.join(gas.get('operators', []))
+                details.append(f"🔥 Gas: {gas_count} line(s) — nearest at {gas_dist:.2f} mi ({operators})")
+
+            if details:
+                for d in details:
+                    st.markdown(f"&nbsp;&nbsp;{d}")
+            elif line_count > 0:
                 st.markdown(f"{line_count} line(s) within 1 mile")
         else:
-            st.markdown("✅ **Power Lines:** No major lines within 1 mile")
+            # No lines within threshold — still show if electric exists further out
+            if elec_count > 0 and elec_dist is not None:
+                st.markdown(f"⚡ **Power Infrastructure:** 🟢 Nearest electric (transmission-class): {elec_dist:.2f} mi")
+                if gas_count > 0 and gas_dist is not None:
+                    st.markdown(f"&nbsp;&nbsp;🔥 Gas: {gas_count} line(s) — nearest at {gas_dist:.2f} mi")
+            elif gas_count > 0 and gas_dist is not None:
+                st.markdown(f"⚡ **Power Infrastructure:** 🟢 Low Impact — Nearest: gas at {gas_dist:.2f} mi / {gas_count} line(s) within 1 mile")
+                st.markdown("&nbsp;&nbsp;No major electric transmission lines within 1 mile")
+            else:
+                st.markdown("✅ **Power Lines:** No major lines within 1 mile")
 
     st.markdown("---")
 

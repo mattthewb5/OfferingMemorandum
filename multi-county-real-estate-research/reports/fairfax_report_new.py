@@ -3556,29 +3556,17 @@ def display_economic_indicators_section():
         else:
             st.info("📈 **Major Employers:** Data loading from Fairfax County ACFR")
 
-        # Year tabs
-        tab_years = ["2025", "2024", "2023", "2022", "2021"]
-        tabs = st.tabs(tab_years + ["Earlier"])
+        # Year tabs — show all years with data, newest first
+        available_years = sorted(employer_year_dfs.keys(), reverse=True)
+        if available_years:
+            tab_labels = [str(y) for y in available_years]
+            tabs = st.tabs(tab_labels)
 
-        for i, tab in enumerate(tabs[:-1]):  # All except "Earlier"
-            year = int(tab_years[i])
-            with tab:
-                if year in employer_year_dfs:
+            for tab, year in zip(tabs, available_years):
+                with tab:
                     st.dataframe(employer_year_dfs[year], width='stretch', hide_index=True)
-                else:
-                    st.write("Data not available for this year.")
-
-        # "Earlier" tab with dropdown
-        with tabs[-1]:
-            earlier_year = st.selectbox(
-                "Select year",
-                range(2020, 2007, -1),
-                key="fairfax_earlier_year_select"
-            )
-            if earlier_year in employer_year_dfs:
-                st.dataframe(employer_year_dfs[earlier_year], width='stretch', hide_index=True)
-            else:
-                st.info(f"No employer data available for {earlier_year}")
+        else:
+            st.info("No employer data available.")
 
         st.caption("Source: Fairfax County Annual Comprehensive Financial Reports (ACFR)")
 

@@ -4584,14 +4584,37 @@ def display_development_section(lat: float, lon: float):
             tbl['Issued'] = tbl['issued_date'].dt.strftime('%Y-%m-%d')
             tbl['Dist'] = tbl['distance_miles'].round(2).astype(str) + ' mi'
 
-            display_cols = ['Issued', 'permit_type', 'address', 'city',
-                            'development_center', 'Dist']
-            col_names = ['Date', 'Type', 'Address', 'City',
-                         'Planning District', 'Distance']
+            # Project name — truncate at 80 chars
+            if 'project_name' in tbl.columns:
+                tbl['Project'] = tbl['project_name'].fillna('').astype(str).str[:80]
+            else:
+                tbl['Project'] = ''
+
+            # Permit link URL
+            if 'link_url' in tbl.columns:
+                tbl['Link'] = tbl['link_url'].fillna('').astype(str)
+            else:
+                tbl['Link'] = ''
+
+            display_cols = ['Issued', 'permit_type', 'Project', 'address', 'city',
+                            'development_center', 'Dist', 'Link']
+            col_names = ['Date', 'Type', 'Project', 'Address', 'City',
+                         'Planning District', 'Distance', 'Link']
 
             show = tbl[display_cols].copy()
             show.columns = col_names
-            st.dataframe(show, width='stretch', hide_index=True)
+            st.dataframe(
+                show,
+                width='stretch',
+                hide_index=True,
+                column_config={
+                    "Link": st.column_config.LinkColumn(
+                        "Permit",
+                        display_text="View",
+                        help="View permit on Fairfax County portal"
+                    )
+                }
+            )
 
         st.caption(
             f"Source: Fairfax County Permit Portal (PLUS System), "

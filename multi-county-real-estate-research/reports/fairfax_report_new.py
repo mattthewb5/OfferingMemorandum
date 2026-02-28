@@ -810,6 +810,71 @@ def expand_road_name(name: str) -> str:
     return name
 
 
+_reverse_geocode_cache: Dict[str, str] = {}
+
+
+def _reverse_geocode_tower(lat: float, lon: float) -> str:
+    """Reverse geocode tower coordinates to an approximate street address.
+
+    Returns street + city only. Falls back to 'lat, lon' format on failure.
+    Results are cached in-memory to avoid repeated API calls.
+    """
+    cache_key = f"{lat:.4f},{lon:.4f}"
+    if cache_key in _reverse_geocode_cache:
+        return _reverse_geocode_cache[cache_key]
+
+    fallback = f"{lat:.4f}, {lon:.4f}"
+
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key:
+        try:
+            from core.api_config import get_api_key
+            api_key = get_api_key('GOOGLE_MAPS_API_KEY')
+        except Exception:
+            pass
+
+    if not api_key:
+        _reverse_geocode_cache[cache_key] = fallback
+        return fallback
+
+    try:
+        import requests as _requests
+        resp = _requests.get(
+            'https://maps.googleapis.com/maps/api/geocode/json',
+            params={'latlng': f'{lat},{lon}', 'key': api_key},
+            timeout=5
+        )
+        data = resp.json()
+        if data.get('status') == 'OK' and data.get('results'):
+            components = data['results'][0].get('address_components', [])
+            street_number = ''
+            route = ''
+            city = ''
+            for comp in components:
+                types = comp.get('types', [])
+                if 'street_number' in types:
+                    street_number = comp['short_name']
+                elif 'route' in types:
+                    route = comp['short_name']
+                elif 'locality' in types:
+                    city = comp['short_name']
+            parts = []
+            if street_number and route:
+                parts.append(f"{street_number} {route}")
+            elif route:
+                parts.append(route)
+            if city:
+                parts.append(city)
+            result = ', '.join(parts) if parts else fallback
+            _reverse_geocode_cache[cache_key] = result
+            return result
+    except Exception:
+        pass
+
+    _reverse_geocode_cache[cache_key] = fallback
+    return fallback
+
+
 @st.cache_data
 def load_cell_towers() -> pd.DataFrame:
     """
@@ -2714,18 +2779,18 @@ def display_cell_towers_section(lat: float, lon: float):
         if all_nearby is not None and len(all_nearby) > 0:
             with st.expander(f"View All Nearby Towers ({len(all_nearby)} within 2 mi)", expanded=False):
                 cols = [c for c in ['distance_miles', 'structure_type_desc', 'height_feet', 'city'] if c in all_nearby.columns]
-                # Add coordinates if available
+                # Reverse geocode tower coordinates to approximate addresses
                 if 'latitude' in all_nearby.columns and 'longitude' in all_nearby.columns:
-                    all_nearby['coords'] = all_nearby.apply(
-                        lambda r: f"{r['latitude']:.4f}, {r['longitude']:.4f}"
-                        if pd.notna(r.get('latitude')) and pd.notna(r.get('longitude')) else '',
-                        axis=1
+                    all_nearby['approx_location'] = all_nearby.apply(
+                        lambda r: _reverse_geocode_tower(r['latitude'], r['longitude'])
+                        if pd.notna(r.get('latitude')) and pd.notna(r.get('longitude'))
+                        else '', axis=1
                     )
-                    cols.append('coords')
+                    cols.append('approx_location')
                 display_df = all_nearby[cols].copy()
                 col_map = {'distance_miles': 'Distance (mi)',
                            'structure_type_desc': 'Type', 'height_feet': 'Height (ft)',
-                           'city': 'City', 'coords': 'Coordinates'}
+                           'city': 'City', 'approx_location': 'Approximate Location'}
                 display_df = display_df.rename(columns=col_map)
                 if 'Distance (mi)' in display_df.columns:
                     display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")

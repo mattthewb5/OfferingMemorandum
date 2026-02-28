@@ -5650,8 +5650,8 @@ def _display_historical_sales_trends():
             pct_change = ((last_yr['median_price'] - first_yr['median_price']) / first_yr['median_price']) * 100
             peak = yearly.loc[yearly['median_price'].idxmax()]
 
-            st.markdown(f"- **{int(first_yr['SALE_YEAR'])}:** ${first_yr['median_price']:,.0f} median → **{int(last_yr['SALE_YEAR'])}:** ${last_yr['median_price']:,.0f} median ({pct_change:+.0f}%)")
-            st.markdown(f"- **Peak Year:** {int(peak['SALE_YEAR'])} (${peak['median_price']:,.0f} median)")
+            st.markdown(f"- **{int(first_yr['SALE_YEAR'])}:** \\${first_yr['median_price']:,.0f} median → **{int(last_yr['SALE_YEAR'])}:** \\${last_yr['median_price']:,.0f} median ({pct_change:+.0f}%)")
+            st.markdown(f"- **Peak Year:** {int(peak['SALE_YEAR'])} (\\${peak['median_price']:,.0f} median)")
             st.markdown(f"- **Total sales analyzed:** {int(yearly['count'].sum()):,} verified transactions")
             st.caption("Source: Fairfax County Commissioner of Revenue — Sales Records 2000-2019")
 

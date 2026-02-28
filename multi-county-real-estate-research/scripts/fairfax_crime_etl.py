@@ -674,8 +674,8 @@ def main():
                         help='Full refresh: FBI + Weekly')
     parser.add_argument('--no-geocode', action='store_true',
                         help='Skip geocoding step')
-    parser.add_argument('--max-geocode', type=int, default=100,
-                        help='Maximum addresses to geocode per run (default: 100)')
+    parser.add_argument('--max-geocode', type=int, default=500,
+                        help='Maximum addresses to geocode per run (default: 500)')
     parser.add_argument('--show-fbi-instructions', action='store_true',
                         help='Show FBI data download instructions')
 

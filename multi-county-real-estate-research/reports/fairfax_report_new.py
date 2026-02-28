@@ -1360,7 +1360,7 @@ def display_schools_section(lat: float, lon: float):
                         color=alt.Color('School:N', title='School'),
                         tooltip=['School', 'Year', 'Pass Rate']
                     ).properties(title='Reading Proficiency Trends', height=300)
-                    st.altair_chart(chart, use_container_width=True)
+                    st.altair_chart(chart, width='stretch')
                 else:
                     st.info("Reading trend data not available for assigned schools.")
 
@@ -1373,7 +1373,7 @@ def display_schools_section(lat: float, lon: float):
                         color=alt.Color('School:N', title='School'),
                         tooltip=['School', 'Year', 'Pass Rate']
                     ).properties(title='Math Proficiency Trends', height=300)
-                    st.altair_chart(chart, use_container_width=True)
+                    st.altair_chart(chart, width='stretch')
                 else:
                     st.info("Math trend data not available for assigned schools.")
         else:
@@ -2733,7 +2733,7 @@ def display_cell_towers_section(lat: float, lon: float):
                     display_df['Height (ft)'] = display_df['Height (ft)'].apply(
                         lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "Unknown"
                     )
-                st.dataframe(display_df, use_container_width=True, hide_index=True)
+                st.dataframe(display_df, width='stretch', hide_index=True)
 
         st.caption(f"📶 {towers_2mi} cell towers within 2 miles of this property.")
         st.caption("Source: FCC Antenna Structure Registration, Fairfax County GIS")
@@ -5585,7 +5585,7 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
         styled_df = df.style.applymap(style_quality, subset=['Quality'])
         st.dataframe(
             styled_df,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             height=min(400, 50 + len(display_data) * 35)
         )
@@ -5663,7 +5663,7 @@ def _display_historical_sales_trends():
                 margin=dict(l=60, r=20, t=40, b=40),
                 showlegend=False,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
             # Key stats
             first_yr = yearly.iloc[0]

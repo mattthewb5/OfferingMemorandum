@@ -365,7 +365,66 @@ def geocode_address_census(address: str, city: str, state: str, zip_code: str) -
         return None
 
 
-def geocode_incidents(df: pd.DataFrame, max_geocode: int = 100) -> pd.DataFrame:
+def geocode_address_google(address: str, city: str, state: str, zip_code: str) -> Optional[Tuple[float, float]]:
+    """
+    Geocode an address using Google Maps Geocoding API (fallback).
+
+    Requires GOOGLE_MAPS_API_KEY in environment or .env file.
+
+    Args:
+        address: Street address
+        city: City name
+        state: State abbreviation
+        zip_code: ZIP code
+
+    Returns:
+        Tuple of (latitude, longitude) or None if geocoding fails
+    """
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key:
+        try:
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            from core.api_config import get_api_key
+            api_key = get_api_key('GOOGLE_MAPS_API_KEY')
+        except Exception:
+            pass
+
+    if not api_key:
+        return None
+
+    full_address = f"{address}, {city}, {state} {zip_code}"
+
+    try:
+        url = "https://maps.googleapis.com/maps/api/geocode/json"
+        params = {
+            'address': full_address,
+            'key': api_key
+        }
+
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+
+        data = response.json()
+
+        if data.get('status') != 'OK' or not data.get('results'):
+            return None
+
+        location = data['results'][0]['geometry']['location']
+        lat, lon = location['lat'], location['lng']
+
+        # Validate coordinates are in Virginia area
+        if 36.5 <= lat <= 39.5 and -83.7 <= lon <= -75.2:
+            return (lat, lon)
+        else:
+            logger.debug(f"Google Maps returned out-of-bounds coords for {full_address}")
+            return None
+
+    except Exception as e:
+        logger.debug(f"Google Maps geocoding failed for {full_address}: {e}")
+        return None
+
+
+def geocode_incidents(df: pd.DataFrame, max_geocode: int = 500) -> pd.DataFrame:
     """
     Geocode addresses in incident DataFrame.
 
@@ -401,6 +460,7 @@ def geocode_incidents(df: pd.DataFrame, max_geocode: int = 100) -> pd.DataFrame:
 
     # Geocode new addresses (limited per run)
     geocoded_count = 0
+    google_count = 0
     new_cache_entries = []
 
     for address in new_addresses[:max_geocode]:
@@ -413,17 +473,26 @@ def geocode_incidents(df: pd.DataFrame, max_geocode: int = 100) -> pd.DataFrame:
             state = state_zip[0] if state_zip else 'VA'
             zip_code = state_zip[1] if len(state_zip) > 1 else ''
 
+            # Try Census geocoder first (free, no API key)
             coords = geocode_address_census(street, city, state, zip_code)
+            source = 'census'
+
+            # Fall back to Google Maps if Census fails
+            if not coords:
+                coords = geocode_address_google(street, city, state, zip_code)
+                source = 'google'
 
             if coords:
                 new_cache_entries.append({
                     'address': address,
                     'latitude': coords[0],
                     'longitude': coords[1],
-                    'quality': 'matched',
+                    'quality': f'matched_{source}',
                     'geocoded_date': datetime.now().strftime('%Y-%m-%d')
                 })
                 geocoded_count += 1
+                if source == 'google':
+                    google_count += 1
             else:
                 new_cache_entries.append({
                     'address': address,
@@ -433,7 +502,7 @@ def geocode_incidents(df: pd.DataFrame, max_geocode: int = 100) -> pd.DataFrame:
                     'geocoded_date': datetime.now().strftime('%Y-%m-%d')
                 })
 
-    logger.info(f"Geocoded {geocoded_count} new addresses")
+    logger.info(f"Geocoded {geocoded_count} new addresses (Census: {geocoded_count - google_count}, Google: {google_count})")
 
     # Update cache
     if new_cache_entries:

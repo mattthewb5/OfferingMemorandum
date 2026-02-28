@@ -47,6 +47,8 @@ jobs:
             --fetch-weekly \
             --max-geocode ${{ github.event.inputs.max_geocode || '500' }}
         continue-on-error: false
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
       - name: Check for changes
         id: check_changes

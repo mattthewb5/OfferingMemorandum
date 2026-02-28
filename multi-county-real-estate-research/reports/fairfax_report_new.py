@@ -4311,7 +4311,7 @@ def display_development_section(lat: float, lon: float):
             fig.add_trace(go.Scattermapbox(
                 lat=circle_lats, lon=circle_lons,
                 mode='lines',
-                line=dict(width=2, color='rgba(0,0,255,0.4)', dash='dash'),
+                line=dict(width=2, color='rgba(0,0,255,0.5)'),
                 name=f'{radius_miles:.0f}-mi radius',
                 hoverinfo='skip',
                 showlegend=True

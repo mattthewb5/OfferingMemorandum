@@ -2091,15 +2091,10 @@ def display_emergency_services_section(lat: float, lon: float):
         # ── Response time estimates ──
         with st.expander("⏱️ Response Time Estimates"):
             fire_resp = response.get('fire_response', {})
-            police_resp = response.get('police_response', {})
             if fire_resp.get('estimated_minutes'):
-                st.markdown(f"- **Fire:** ~{fire_resp['estimated_minutes']:.0f} min from {fire_resp.get('station_name', 'nearest station')} ({fire_resp.get('distance_miles', 0):.1f} mi)")
-            if police_resp.get('estimated_minutes'):
-                st.markdown(f"- **Police:** ~{police_resp['estimated_minutes']:.0f} min from {police_resp.get('station_name', 'nearest station')} ({police_resp.get('distance_miles', 0):.1f} mi)")
-            note = response.get('note', '')
-            if note:
-                st.caption(note)
-            st.caption("Estimates based on average emergency vehicle speed of 20 mph. Actual times vary by time of day and traffic.")
+                st.markdown(f"- **Fire (estimate):** ~{fire_resp['estimated_minutes']:.0f} min from {fire_resp.get('station_name', 'nearest station')} ({fire_resp.get('distance_miles', 0):.1f} mi)")
+            st.markdown("- **Police:** ~7 min avg (Priority 1)")
+            st.caption("Fire estimate based on distance to nearest station. Police response: *Source: Fairfax County Police Department Annual Report (county-wide average; actual times vary by patrol coverage).*")
 
     except Exception as e:
         st.info("Emergency services data is currently unavailable.")

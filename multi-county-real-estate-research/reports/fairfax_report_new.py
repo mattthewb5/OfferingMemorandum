@@ -2325,6 +2325,18 @@ Mortgage lenders do not require flood insurance.
 
     # Metro Access expander
     with st.expander("🚇 Metro Access Details"):
+        # WMATA Metro "M" logo
+        st.markdown(
+            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+            '<svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">'
+            '<circle cx="18" cy="18" r="17" fill="#0060A9" stroke="#003B6F" stroke-width="1"/>'
+            '<text x="18" y="25" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" '
+            'font-weight="900" font-size="22" fill="white">M</text>'
+            '</svg>'
+            '<span style="font-size:1.1em;font-weight:600">Washington Metropolitan Area Transit Authority</span>'
+            '</div>',
+            unsafe_allow_html=True
+        )
         if metro_data and metro_data.get('station_name'):
             m_col1, m_col2, m_col3 = st.columns(3)
             with m_col1:

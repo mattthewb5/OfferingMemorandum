@@ -4770,9 +4770,9 @@ def display_development_section(lat: float, lon: float):
                 tbl['Link'] = ''
 
             display_cols = ['Issued', 'permit_type', 'Project', 'address', 'city',
-                            'development_center', 'Dist', 'Link']
+                            'Dist', 'Link']
             col_names = ['Date', 'Type', 'Project', 'Address', 'City',
-                         'Planning District', 'Distance', 'Link']
+                         'Distance', 'Link']
 
             show = tbl[display_cols].copy()
             show.columns = col_names

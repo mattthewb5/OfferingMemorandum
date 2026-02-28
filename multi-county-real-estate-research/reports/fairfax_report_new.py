@@ -1641,6 +1641,11 @@ def display_crime_section(lat: float, lon: float):
 
             # Display score card
             st.markdown("### Safety Score")
+            breakdown = safety_score.get('breakdown', {})
+            violent = breakdown.get('violent', 0)
+            property_crimes = breakdown.get('property', 0)
+            other = breakdown.get('other', 0)
+            crime_count = violent + property_crimes
 
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -1648,33 +1653,20 @@ def display_crime_section(lat: float, lon: float):
             with col2:
                 st.metric("Rating", rating)
             with col3:
-                st.metric("Incidents", total_crimes)
+                st.metric("Crimes (V+P)", crime_count)
 
             # Crime breakdown
-            breakdown = safety_score.get('breakdown', {})
             if breakdown:
-                st.markdown("### Crime Breakdown (2.0 mile radius)")
+                st.markdown("### Crime Breakdown (2-mile radius)")
 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    violent = breakdown.get('violent', breakdown.get('VIOLENT', 0))
                     st.metric("Violent Crimes", violent)
                 with col2:
-                    property_crimes = breakdown.get('property', breakdown.get('PROPERTY', 0))
                     st.metric("Property Crimes", property_crimes)
                 with col3:
-                    other = breakdown.get('other', breakdown.get('OTHER', 0))
-                    st.metric("Other Incidents", other)
-
-            # Context messaging
-            if total_crimes == 0:
-                st.success("✅ **Very Safe** - No reported incidents in the specified time period and radius.")
-            elif total_crimes <= 5:
-                st.success(f"✅ **Safe** - {total_crimes} reported incidents. Low crime area.")
-            elif total_crimes <= 15:
-                st.info(f"🟡 **Moderate** - {total_crimes} reported incidents. Average for the area.")
-            else:
-                st.warning(f"⚠️ **Higher Crime** - {total_crimes} reported incidents. Exercise normal caution.")
+                    st.metric("Service Calls / Other", other)
+                st.caption("Score based on violent + property crimes only. Service calls (police dispatches, alarms, civil disputes) shown for context.")
 
             # Incident details with map
             with st.expander("📋 View Individual Incidents"):

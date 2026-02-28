@@ -6034,7 +6034,6 @@ def render_report(address: str, lat: float, lon: float):
         status.empty()
 
         # Display all sections in order
-        st.success(f"✓ Analysis complete for: **{address}**")
         st.markdown("---")
 
         # 1. School Assignments + Performance Trends (inline charts)

@@ -4272,6 +4272,12 @@ def display_development_section(lat: float, lon: float):
         st.markdown("### Development Activity Map")
         st.markdown("🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other")
 
+        # Show nearest permit distance if > 1 mile
+        if len(map_permits) > 0 and 'distance_miles' in map_permits.columns:
+            nearest_dist = map_permits['distance_miles'].min()
+            if nearest_dist > 1.0:
+                st.markdown(f"*ℹ️ Nearest permit activity: {nearest_dist:.1f} mi from subject property*")
+
         PERMIT_PLOTLY_COLORS = {
             'data_center': 'red', 'fiber': 'orange', 'infrastructure': 'purple',
             'commercial_new': 'green', 'residential_new': 'green',
@@ -4284,13 +4290,36 @@ def display_development_section(lat: float, lon: float):
 
             fig = go.Figure()
 
-            # Property marker
+            # Radius circle (dashed) — approximate circle using lat/lon points
+            import math
+            circle_points = 72
+            radius_miles = radius
+            radius_km = radius_miles * 1.60934
+            circle_lats = []
+            circle_lons = []
+            for i in range(circle_points + 1):
+                angle = 2 * math.pi * i / circle_points
+                dlat = (radius_km / 111.32) * math.cos(angle)
+                dlon = (radius_km / (111.32 * math.cos(math.radians(lat)))) * math.sin(angle)
+                circle_lats.append(lat + dlat)
+                circle_lons.append(lon + dlon)
+
+            fig.add_trace(go.Scattermapbox(
+                lat=circle_lats, lon=circle_lons,
+                mode='lines',
+                line=dict(width=2, color='rgba(0,0,255,0.4)', dash='dash'),
+                name=f'{radius_miles:.0f}-mi radius',
+                hoverinfo='skip',
+                showlegend=True
+            ))
+
+            # Property marker — large red star
             fig.add_trace(go.Scattermapbox(
                 lat=[lat], lon=[lon],
                 mode='markers',
-                marker=dict(size=14, color='blue', symbol='star'),
+                marker=dict(size=22, color='red', symbol='star'),
                 text=['Subject Property'],
-                name='Property',
+                name='Subject Property',
                 hoverinfo='text',
                 showlegend=True
             ))

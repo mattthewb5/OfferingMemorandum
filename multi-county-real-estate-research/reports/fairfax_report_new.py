@@ -4173,25 +4173,9 @@ def display_development_section(lat: float, lon: float):
                 lat, lon, radius_miles=radius, months_back=24
             )
 
-        # Adaptive time window for new construction map
-        NEW_CONSTRUCTION = ['residential_new', 'commercial_new']
-
-        permits_12mo = analyzer.get_permits_near_point(
-            lat, lon, radius_miles=radius, months_back=12
-        )
-        new_construction_12mo = permits_12mo[
-            permits_12mo['permit_category'].isin(NEW_CONSTRUCTION)
-        ]
-
-        if len(new_construction_12mo) >= 5:
-            map_permits = new_construction_12mo
-            map_window = 12
-        else:
-            new_construction_24mo = permits_24mo[
-                permits_24mo['permit_category'].isin(NEW_CONSTRUCTION)
-            ]
-            map_permits = new_construction_24mo
-            map_window = 24
+        # Use all permits for the map, not just new construction
+        map_permits = permits_24mo
+        map_window = 24
 
         # Development pressure (recalibrated)
         pressure = analyzer.calculate_development_pressure(
@@ -4289,52 +4273,133 @@ def display_development_section(lat: float, lon: float):
                     "Transit Station Area, and Tysons Corner Urban Center."
                 )
 
-        # ── Development Activity Map (Leaflet via Folium) ──
+        # ── Development Activity Map (Plotly) ──
         st.markdown("### Development Activity Map")
-        st.markdown("🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other Construction")
+        st.markdown("🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other")
 
-        if FOLIUM_AVAILABLE and len(map_permits) > 0:
-            import folium
-            from streamlit_folium import st_folium
+        PERMIT_PLOTLY_COLORS = {
+            'data_center': 'red', 'fiber': 'orange', 'infrastructure': 'purple',
+            'commercial_new': 'green', 'residential_new': 'green',
+            'commercial_alteration': 'green', 'residential_alteration': 'green',
+            'other': 'green',
+        }
 
-            m = folium.Map(location=[lat, lon], zoom_start=13, tiles='OpenStreetMap')
+        if len(map_permits) > 0:
+            import plotly.graph_objects as go
 
-            # 2-mile radius circle
-            folium.Circle(
-                location=[lat, lon], radius=3218,
-                color='blue', fill=True, fill_opacity=0.05, weight=1,
-                tooltip="2-mile radius"
-            ).add_to(m)
+            fig = go.Figure()
 
             # Property marker
-            folium.Marker(
-                [lat, lon],
-                popup="<b>Subject Property</b>",
-                icon=folium.Icon(color='red', icon='home', prefix='fa'),
-                tooltip="Subject Property"
-            ).add_to(m)
+            fig.add_trace(go.Scattermapbox(
+                lat=[lat], lon=[lon],
+                mode='markers',
+                marker=dict(size=14, color='blue', symbol='star'),
+                text=['Subject Property'],
+                name='Property',
+                hoverinfo='text',
+                showlegend=True
+            ))
 
-            # Permits layer
-            permits_group = folium.FeatureGroup(name='🏗️ Major Projects', show=True)
-            PERMIT_COLORS = {
-                'data_center': 'red', 'fiber': 'orange', 'infrastructure': 'purple',
-                'commercial_new': 'green', 'residential_new': 'green', 'other': 'gray',
-            }
-            for _, row in map_permits.iterrows():
-                p_lat = row.get('centroid_lat')
-                p_lon = row.get('centroid_lon')
-                if pd.notna(p_lat) and pd.notna(p_lon):
-                    cat = row.get('permit_category', 'other')
-                    color = PERMIT_COLORS.get(cat, 'gray')
-                    addr = row.get('address', '')
-                    ptype = row.get('permit_type', '')
-                    folium.CircleMarker(
-                        location=[p_lat, p_lon], radius=5,
-                        color=color, fill=True, fillColor=color, fillOpacity=0.6,
-                        popup=f"<b>{addr}</b><br>{ptype}",
-                        tooltip=ptype
-                    ).add_to(permits_group)
-            permits_group.add_to(m)
+            # Permit markers grouped by category for legend
+            plotted_categories = set()
+            for cat, color in PERMIT_PLOTLY_COLORS.items():
+                cat_data = map_permits[map_permits['permit_category'] == cat]
+                cat_data = cat_data.dropna(subset=['centroid_lat', 'centroid_lon'])
+                if cat_data.empty:
+                    continue
+                plotted_categories.add(cat)
+                hover_text = cat_data.apply(
+                    lambda r: (
+                        f"<b>{r.get('address', '')}</b><br>"
+                        f"{r.get('permit_type', '')}<br>"
+                        f"{r.get('issued_date').strftime('%Y-%m-%d') if pd.notna(r.get('issued_date')) else ''}<br>"
+                        f"{r.get('distance_miles', 0):.2f} mi"
+                    ), axis=1
+                )
+                fig.add_trace(go.Scattermapbox(
+                    lat=cat_data['centroid_lat'],
+                    lon=cat_data['centroid_lon'],
+                    mode='markers',
+                    marker=dict(size=9, color=color),
+                    text=hover_text,
+                    name=f'{cat.replace("_", " ").title()} ({len(cat_data)})',
+                    hoverinfo='text',
+                    showlegend=True
+                ))
+
+            # Also plot any permits with categories not in the color map
+            remaining = map_permits[~map_permits['permit_category'].isin(plotted_categories)]
+            remaining = remaining.dropna(subset=['centroid_lat', 'centroid_lon'])
+            if not remaining.empty:
+                hover_text = remaining.apply(
+                    lambda r: (
+                        f"<b>{r.get('address', '')}</b><br>"
+                        f"{r.get('permit_type', '')}<br>"
+                        f"{r.get('issued_date').strftime('%Y-%m-%d') if pd.notna(r.get('issued_date')) else ''}<br>"
+                        f"{r.get('distance_miles', 0):.2f} mi"
+                    ), axis=1
+                )
+                fig.add_trace(go.Scattermapbox(
+                    lat=remaining['centroid_lat'],
+                    lon=remaining['centroid_lon'],
+                    mode='markers',
+                    marker=dict(size=9, color='green'),
+                    text=hover_text,
+                    name=f'Other ({len(remaining)})',
+                    hoverinfo='text',
+                    showlegend=True
+                ))
+
+            fig.update_layout(
+                mapbox=dict(
+                    style='open-street-map',
+                    center=dict(lat=lat, lon=lon),
+                    zoom=12
+                ),
+                height=450,
+                margin=dict(l=0, r=0, t=0, b=0),
+                showlegend=True,
+                legend=dict(orientation='h', y=-0.02)
+            )
+            st.plotly_chart(fig, width='stretch')
+        else:
+            st.info(f"No permits in the last {map_window} months within {radius:.0f} miles.")
+
+        # ── Full interactive map (Folium — schools, transit, trails) ──
+        if FOLIUM_AVAILABLE and len(map_permits) > 0:
+            with st.expander("🗺️ Full Interactive Map (permits, schools, transit, trails)"):
+                import folium
+                from streamlit_folium import st_folium
+
+                m = folium.Map(location=[lat, lon], zoom_start=13, tiles='OpenStreetMap')
+
+                folium.Circle(
+                    location=[lat, lon], radius=3218,
+                    color='blue', fill=True, fill_opacity=0.05, weight=1,
+                    tooltip="2-mile radius"
+                ).add_to(m)
+
+                folium.Marker(
+                    [lat, lon],
+                    popup="<b>Subject Property</b>",
+                    icon=folium.Icon(color='red', icon='home', prefix='fa'),
+                    tooltip="Subject Property"
+                ).add_to(m)
+
+                permits_group = folium.FeatureGroup(name='🏗️ Permits', show=True)
+                for _, row in map_permits.iterrows():
+                    p_lat = row.get('centroid_lat')
+                    p_lon = row.get('centroid_lon')
+                    if pd.notna(p_lat) and pd.notna(p_lon):
+                        cat = row.get('permit_category', 'other')
+                        color = PERMIT_PLOTLY_COLORS.get(cat, 'gray')
+                        folium.CircleMarker(
+                            location=[p_lat, p_lon], radius=5,
+                            color=color, fill=True, fillColor=color, fillOpacity=0.6,
+                            popup=f"<b>{row.get('address', '')}</b><br>{row.get('permit_type', '')}",
+                            tooltip=row.get('permit_type', '')
+                        ).add_to(permits_group)
+                permits_group.add_to(m)
 
             # Schools layer
             schools_group = folium.FeatureGroup(name='🏫 Schools', show=True)
@@ -4616,21 +4681,6 @@ def display_development_section(lat: float, lon: float):
             folium.LayerControl(position='topright', collapsed=False).add_to(m)
 
             st_folium(m, width=None, height=500, use_container_width=True, returned_objects=[])
-
-        elif not FOLIUM_AVAILABLE and PLOTLY_AVAILABLE and len(map_permits) > 0:
-            # Fallback to Plotly scatter map
-            map_df = map_permits.copy()
-            map_df['date'] = map_df['issued_date'].dt.strftime('%Y-%m-%d').fillna('N/A')
-            fig = px.scatter_map(
-                map_df, lat='centroid_lat', lon='centroid_lon',
-                color='permit_type', hover_name='address',
-                height=500, map_style='open-street-map',
-            )
-            fig.update_layout(margin=dict(l=0, r=0, t=0, b=0),
-                              map=dict(center=dict(lat=lat, lon=lon), zoom=12))
-            st.plotly_chart(fig, width='stretch')
-        else:
-            st.info(f"No new construction permits in the last {map_window} months within {radius:.0f} miles.")
 
         # ── Permit type breakdown ──
         st.markdown("### Permit Type Breakdown (24 Months)")

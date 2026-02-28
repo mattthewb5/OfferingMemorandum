@@ -4700,8 +4700,6 @@ This indicates {"active" if total_permits > 20 else "moderate" if total_permits 
                         st.markdown(f"• **{residential_new}** new residential construction permits")
                     if commercial > 0:
                         st.markdown(f"• **{commercial}** commercial permits")
-                else:
-                    st.info("No recent building permits found within 1 mile (past 24 months).")
             except Exception as e:
                 st.caption("💡 Permit data unavailable")
 

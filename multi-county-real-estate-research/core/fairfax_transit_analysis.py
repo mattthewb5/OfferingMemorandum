@@ -223,7 +223,7 @@ class FairfaxTransitAnalysis:
             'year_opened': nearest['year_opened'],
             'walk_time_minutes': round(walk_time),
             'bike_time_minutes': round(bike_time),
-            'message': None
+            'message': ''
         }
 
     def get_nearby_bus_routes(
@@ -439,7 +439,7 @@ class FairfaxTransitAnalysis:
                 'bus_coverage': bus_score,
                 'service_variety': variety_score
             },
-            'message': None
+            'message': ''
         }
 
     def get_commute_options(self, lat: float, lon: float) -> Dict:
@@ -497,7 +497,7 @@ class FairfaxTransitAnalysis:
                 } if bus_routes else None
             },
             'overall_accessibility': accessibility,
-            'message': None
+            'message': ''
         }
 
     def get_statistics(self) -> Dict:

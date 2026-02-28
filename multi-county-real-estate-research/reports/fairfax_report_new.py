@@ -4170,6 +4170,10 @@ def display_development_section(lat: float, lon: float):
 
         # Use all permits for the map, not just new construction
         map_permits = permits_24mo
+
+        # Store for reuse in zoning section
+        st.session_state['_permits_24mo'] = permits_24mo
+        st.session_state['_permits_radius'] = radius
         map_window = 24
 
         # Development pressure (recalibrated)
@@ -4878,26 +4882,14 @@ including permitted uses, building heights, setbacks, and density limits.
 
             # === RECENT CONSTRUCTION ACTIVITY ===
             st.markdown("### Recent Construction Activity")
-            try:
-                permits_analyzer = FairfaxPermitsAnalysis()
-                nearby_permits = permits_analyzer.get_permits_near_point(lat, lon, radius_miles=1.0, months_back=24)
-
-                if len(nearby_permits) > 0:
-                    total_permits = len(nearby_permits)
-                    residential_new = len(nearby_permits[nearby_permits['permit_category'] == 'residential_new']) if 'permit_category' in nearby_permits.columns else 0
-                    commercial = len(nearby_permits[nearby_permits['permit_category'].str.contains('commercial', na=False)]) if 'permit_category' in nearby_permits.columns else 0
-
-                    st.markdown(f"""
-**{total_permits} building permits** issued within 1 mile in the past 24 months.
-
-This indicates {"active" if total_permits > 20 else "moderate" if total_permits > 5 else "low"} construction activity in the area.
-""")
-                    if residential_new > 0:
-                        st.markdown(f"• **{residential_new}** new residential construction permits")
-                    if commercial > 0:
-                        st.markdown(f"• **{commercial}** commercial permits")
-            except Exception as e:
-                st.caption("💡 Permit data unavailable")
+            cached_permits = st.session_state.get('_permits_24mo')
+            cached_radius = st.session_state.get('_permits_radius', 2)
+            if cached_permits is not None and len(cached_permits) > 0:
+                commercial = len(cached_permits[cached_permits['permit_category'].str.contains('commercial', na=False)]) if 'permit_category' in cached_permits.columns else 0
+                residential = len(cached_permits[cached_permits['permit_category'].str.contains('residential', na=False)]) if 'permit_category' in cached_permits.columns else 0
+                st.markdown(f"{commercial} commercial permits and {residential} residential permits within {cached_radius:.0f} miles in the past 24 months.")
+            else:
+                st.caption("No recent permit activity found nearby.")
 
             # Technical Reference
             st.markdown("---")

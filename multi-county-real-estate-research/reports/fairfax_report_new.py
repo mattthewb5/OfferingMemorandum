@@ -4058,23 +4058,18 @@ def display_development_section(lat: float, lon: float):
 
         analyzer = FairfaxPermitsAnalysis()
 
-        # Adaptive radius: start at 1mi, expand until >= 20 permits (or hit 5mi)
+        # Adaptive radius: start at 1mi, expand until >= 10 permits (max 3mi)
         radius = 1.0
         permits_24mo = analyzer.get_permits_near_point(
             lat, lon, radius_miles=radius, months_back=24
         )
-        if len(permits_24mo) < 20:
+        if len(permits_24mo) < 10:
             radius = 2.0
             permits_24mo = analyzer.get_permits_near_point(
                 lat, lon, radius_miles=radius, months_back=24
             )
-        if len(permits_24mo) < 20:
+        if len(permits_24mo) < 10:
             radius = 3.0
-            permits_24mo = analyzer.get_permits_near_point(
-                lat, lon, radius_miles=radius, months_back=24
-            )
-        if len(permits_24mo) < 20:
-            radius = 5.0
             permits_24mo = analyzer.get_permits_near_point(
                 lat, lon, radius_miles=radius, months_back=24
             )
@@ -4137,7 +4132,7 @@ def display_development_section(lat: float, lon: float):
         if radius > 1.0:
             st.caption(
                 f"ℹ️ Search radius expanded to {radius:.0f} miles "
-                f"(fewer than 20 permits within 1 mile)."
+                f"(fewer than 10 permits within 1 mile)."
             )
 
         # ── Development narrative ──
@@ -5655,8 +5650,8 @@ def _display_historical_sales_trends():
             pct_change = ((last_yr['median_price'] - first_yr['median_price']) / first_yr['median_price']) * 100
             peak = yearly.loc[yearly['median_price'].idxmax()]
 
-            st.markdown(f"- **{int(first_yr['SALE_YEAR'])}:** ${first_yr['median_price']:,.0f} median → **{int(last_yr['SALE_YEAR'])}:** ${last_yr['median_price']:,.0f} median ({pct_change:+.0f}%)")
-            st.markdown(f"- **Peak Year:** {int(peak['SALE_YEAR'])} (${peak['median_price']:,.0f} median)")
+            st.markdown(f"- **{int(first_yr['SALE_YEAR'])}:** \\${first_yr['median_price']:,.0f} median → **{int(last_yr['SALE_YEAR'])}:** \\${last_yr['median_price']:,.0f} median ({pct_change:+.0f}%)")
+            st.markdown(f"- **Peak Year:** {int(peak['SALE_YEAR'])} (\\${peak['median_price']:,.0f} median)")
             st.markdown(f"- **Total sales analyzed:** {int(yearly['count'].sum()):,} verified transactions")
             st.caption("Source: Fairfax County Commissioner of Revenue — Sales Records 2000-2019")
 

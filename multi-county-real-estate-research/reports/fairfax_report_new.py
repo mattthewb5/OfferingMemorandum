@@ -4058,23 +4058,18 @@ def display_development_section(lat: float, lon: float):
 
         analyzer = FairfaxPermitsAnalysis()
 
-        # Adaptive radius: start at 1mi, expand until >= 20 permits (or hit 5mi)
+        # Adaptive radius: start at 1mi, expand until >= 10 permits (max 3mi)
         radius = 1.0
         permits_24mo = analyzer.get_permits_near_point(
             lat, lon, radius_miles=radius, months_back=24
         )
-        if len(permits_24mo) < 20:
+        if len(permits_24mo) < 10:
             radius = 2.0
             permits_24mo = analyzer.get_permits_near_point(
                 lat, lon, radius_miles=radius, months_back=24
             )
-        if len(permits_24mo) < 20:
+        if len(permits_24mo) < 10:
             radius = 3.0
-            permits_24mo = analyzer.get_permits_near_point(
-                lat, lon, radius_miles=radius, months_back=24
-            )
-        if len(permits_24mo) < 20:
-            radius = 5.0
             permits_24mo = analyzer.get_permits_near_point(
                 lat, lon, radius_miles=radius, months_back=24
             )
@@ -4137,7 +4132,7 @@ def display_development_section(lat: float, lon: float):
         if radius > 1.0:
             st.caption(
                 f"ℹ️ Search radius expanded to {radius:.0f} miles "
-                f"(fewer than 20 permits within 1 mile)."
+                f"(fewer than 10 permits within 1 mile)."
             )
 
         # ── Development narrative ──

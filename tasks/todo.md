@@ -13,29 +13,29 @@ in `multi-county-real-estate-research/scripts/fairfax_crime_etl.py`.
 ## Plan
 
 ### Fix 1 — Cache: stop permanently caching failures
-- [ ] In `geocode_incidents()` (lines 496-503), remove the `else` block that
-  writes `quality='not_found'` entries to the cache. Only successful geocodes
+- [x] In `geocode_incidents()`, removed the `else` block that wrote
+  `quality='not_found'` entries to the cache. Only successful geocodes
   get cached. Failed addresses become retryable on the next run.
 
 ### Fix 2 — City abbreviation expansion
-- [ ] Add a `CITY_ABBREV` dict at module level (21 entries: ALEX→Alexandria,
+- [x] Added `CITY_ABBREV` dict at module level (21 entries: ALEX→Alexandria,
   RSTN→Reston, etc.).
-- [ ] In `geocode_incidents()`, before building `full_address` (line 448),
-  map `df['city']` through `CITY_ABBREV` using `.map().fillna(df['city'])` so
+- [x] In `geocode_incidents()`, before building `full_address`,
+  mapped `df['city']` through `CITY_ABBREV` using `.map().fillna()` so
   unknown codes pass through unchanged.
 
 ### Fix 3 — ZIP float formatting
-- [ ] In `geocode_incidents()` line 451, after `astype(str)`, chain
+- [x] In `geocode_incidents()`, after `astype(str)`, chained
   `.str.replace('.0', '', regex=False)` to strip the float suffix.
 
 ### Fix 4 — Semicolon unit parsing
-- [ ] In `geocode_incidents()`, before building `full_address`, apply
-  `df['address'].str.replace(r';(\d)', r' APT \1', regex=True)` to convert
+- [x] In `geocode_incidents()`, before building `full_address`, applied
+  `.str.replace(r';(\d)', r' APT \1', regex=True)` to convert
   `3300 CANNONGATE RD;102` → `3300 CANNONGATE RD APT 102`.
 
 ### Fix 5 — Route number expansion
-- [ ] In `geocode_incidents()`, before building `full_address`, apply
-  `str.replace(r'\bROUTE (\d+)', r'VA-\1', regex=True)` on the address column
+- [x] In `geocode_incidents()`, before building `full_address`, applied
+  `.str.replace(r'\bROUTE (\d+)', r'VA-\1', regex=True)` on the address column
   to convert `ROUTE 50` → `VA-50`.
 
 ### Workflow check
@@ -44,11 +44,10 @@ in `multi-county-real-estate-research/scripts/fairfax_crime_etl.py`.
   No change needed.
 
 ### Verification
-- [ ] After implementation, run a dry-run test that constructs 5 sample
-  `full_address` strings showing before/after for each fix. No live API calls.
+- [x] Dry-run test passed — 5 sample addresses verified (no live API calls).
 
 ### Commit & push
-- [ ] Commit all changes and push to `claude/fix-fairfax-geocoding-05Haa`.
+- [x] Committed and pushed to `claude/fix-fairfax-geocoding-05Haa`.
 
 ## Files to change
 1. `multi-county-real-estate-research/scripts/fairfax_crime_etl.py` — all 5 fixes

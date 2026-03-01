@@ -23,6 +23,8 @@ from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 from io import StringIO
 
+import re
+
 import pandas as pd
 import requests
 
@@ -32,6 +34,20 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# CITY ABBREVIATION MAPPING (Fairfax internal codes → real city names)
+# ============================================================================
+
+CITY_ABBREV = {
+    'ALEX': 'Alexandria', 'RSTN': 'Reston', 'FLCH': 'Falls Church',
+    'FRFX': 'Fairfax', 'SFLD': 'Springfield', 'ANDL': 'Annandale',
+    'CENT': 'Centreville', 'MCLN': 'McLean', 'HRND': 'Herndon',
+    'VNNA': 'Vienna', 'CHAN': 'Chantilly', 'LRTN': 'Lorton',
+    'BRKE': 'Burke', 'GTFL': 'Great Falls', 'CLFT': 'Clifton',
+    'OKTN': 'Oakton', 'FXST': 'Fairfax Station', 'FTBV': 'Fort Belvoir',
+    'DUNN': 'Dunn Loring', 'LOCO': 'Lorton', 'ARLN': 'Arlington',
+}
 
 # ============================================================================
 # CONFIGURATION
@@ -443,12 +459,23 @@ def geocode_incidents(df: pd.DataFrame, max_geocode: int = 500) -> pd.DataFrame:
     cache = load_geocode_cache()
     cached_addresses = set(cache['address'].tolist()) if len(cache) > 0 else set()
 
+    # --- Address normalization before geocoding ---
+    # Fix 4: Semicolon unit numbers (e.g. "3300 CANNONGATE RD;102" → "3300 CANNONGATE RD APT 102")
+    addr_clean = df['address'].astype(str).fillna('')
+    addr_clean = addr_clean.str.replace(r';(\d)', r' APT \1', regex=True)
+    # Fix 5: Route number expansion (e.g. "ROUTE 50" → "VA-50")
+    addr_clean = addr_clean.str.replace(r'\bROUTE (\d+)', r'VA-\1', regex=True)
+    # Fix 2: City abbreviation expansion (e.g. "FRFX" → "Fairfax")
+    city_clean = df['city'].astype(str).fillna('').map(CITY_ABBREV).fillna(df['city'].astype(str).fillna(''))
+    # Fix 3: ZIP float formatting (e.g. "22306.0" → "22306")
+    zip_clean = df['zip'].astype(str).fillna('').str.replace('.0', '', regex=False)
+
     # Get unique addresses to geocode - ensure string types
     df['full_address'] = (
-        df['address'].astype(str).fillna('') + ', ' +
-        df['city'].astype(str).fillna('') + ', ' +
+        addr_clean + ', ' +
+        city_clean + ', ' +
         df['state'].astype(str).fillna('') + ' ' +
-        df['zip'].astype(str).fillna('')
+        zip_clean
     )
 
     unique_addresses = df['full_address'].unique()
@@ -493,14 +520,7 @@ def geocode_incidents(df: pd.DataFrame, max_geocode: int = 500) -> pd.DataFrame:
                 geocoded_count += 1
                 if source == 'google':
                     google_count += 1
-            else:
-                new_cache_entries.append({
-                    'address': address,
-                    'latitude': None,
-                    'longitude': None,
-                    'quality': 'not_found',
-                    'geocoded_date': datetime.now().strftime('%Y-%m-%d')
-                })
+            # Fix 1: Do NOT cache failures — leave them retryable on next run
 
     logger.info(f"Geocoded {geocoded_count} new addresses (Census: {geocoded_count - google_count}, Google: {google_count})")
 

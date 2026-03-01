@@ -11,7 +11,7 @@ on:
       max_geocode:
         description: 'Maximum addresses to geocode'
         required: false
-        default: '100'
+        default: '500'
 
 jobs:
   update-crime-data:
@@ -36,18 +36,25 @@ jobs:
         run: |
           pip install pandas pyarrow requests
 
+      - name: Ensure geocode cache directory exists
+        run: |
+          mkdir -p multi-county-real-estate-research/data/fairfax/crime/raw/geocoded
+
       - name: Run crime ETL
         run: |
           cd $GITHUB_WORKSPACE
           python multi-county-real-estate-research/scripts/fairfax_crime_etl.py \
             --fetch-weekly \
-            --max-geocode ${{ github.event.inputs.max_geocode || '100' }}
+            --max-geocode ${{ github.event.inputs.max_geocode || '500' }}
         continue-on-error: false
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
       - name: Check for changes
         id: check_changes
         run: |
-          if git diff --quiet multi-county-real-estate-research/data/fairfax/crime/processed/; then
+          git add -N multi-county-real-estate-research/data/fairfax/crime/
+          if git diff --quiet multi-county-real-estate-research/data/fairfax/crime/; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -59,10 +66,7 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git add multi-county-real-estate-research/data/fairfax/crime/processed/
-          # Only add geocode cache if it exists
-          if [ -d "multi-county-real-estate-research/data/fairfax/crime/raw/geocoded" ]; then
-            git add multi-county-real-estate-research/data/fairfax/crime/raw/geocoded/ || true
-          fi
+          git add multi-county-real-estate-research/data/fairfax/crime/raw/geocoded/
           git commit -m "Auto-update: Fairfax crime data $(date '+%Y-%m-%d')"
           git push
         env:

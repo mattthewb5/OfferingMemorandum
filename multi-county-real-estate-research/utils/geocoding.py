@@ -102,6 +102,8 @@ TEST_ADDRESSES = {
     '13172 ruby lace ct, herndon': (38.918914, -77.401634),
     '13172 ruby lace ct, herndon, va 20170': (38.918914, -77.401634),
     '13172 ruby lace ct, herndon va 20170': (38.918914, -77.401634),
+    '13172 ruby lace ct, herndon, va 20171': (38.918914, -77.401634),
+    '13172 ruby lace ct, herndon va 20171': (38.918914, -77.401634),
     'tysons': (38.9187, -77.2311),
     'falls church': (38.8823, -77.1711),
 

@@ -810,6 +810,71 @@ def expand_road_name(name: str) -> str:
     return name
 
 
+_reverse_geocode_cache: Dict[str, str] = {}
+
+
+def _reverse_geocode_tower(lat: float, lon: float) -> str:
+    """Reverse geocode tower coordinates to an approximate street address.
+
+    Returns street + city only. Falls back to 'lat, lon' format on failure.
+    Results are cached in-memory to avoid repeated API calls.
+    """
+    cache_key = f"{lat:.4f},{lon:.4f}"
+    if cache_key in _reverse_geocode_cache:
+        return _reverse_geocode_cache[cache_key]
+
+    fallback = f"{lat:.4f}, {lon:.4f}"
+
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key:
+        try:
+            from core.api_config import get_api_key
+            api_key = get_api_key('GOOGLE_MAPS_API_KEY')
+        except Exception:
+            pass
+
+    if not api_key:
+        _reverse_geocode_cache[cache_key] = fallback
+        return fallback
+
+    try:
+        import requests as _requests
+        resp = _requests.get(
+            'https://maps.googleapis.com/maps/api/geocode/json',
+            params={'latlng': f'{lat},{lon}', 'key': api_key},
+            timeout=5
+        )
+        data = resp.json()
+        if data.get('status') == 'OK' and data.get('results'):
+            components = data['results'][0].get('address_components', [])
+            street_number = ''
+            route = ''
+            city = ''
+            for comp in components:
+                types = comp.get('types', [])
+                if 'street_number' in types:
+                    street_number = comp['short_name']
+                elif 'route' in types:
+                    route = comp['short_name']
+                elif 'locality' in types:
+                    city = comp['short_name']
+            parts = []
+            if street_number and route:
+                parts.append(f"{street_number} {route}")
+            elif route:
+                parts.append(route)
+            if city:
+                parts.append(city)
+            result = ', '.join(parts) if parts else fallback
+            _reverse_geocode_cache[cache_key] = result
+            return result
+    except Exception:
+        pass
+
+    _reverse_geocode_cache[cache_key] = fallback
+    return fallback
+
+
 @st.cache_data
 def load_cell_towers() -> pd.DataFrame:
     """
@@ -1360,7 +1425,7 @@ def display_schools_section(lat: float, lon: float):
                         color=alt.Color('School:N', title='School'),
                         tooltip=['School', 'Year', 'Pass Rate']
                     ).properties(title='Reading Proficiency Trends', height=300)
-                    st.altair_chart(chart, use_container_width=True)
+                    st.altair_chart(chart, width='stretch')
                 else:
                     st.info("Reading trend data not available for assigned schools.")
 
@@ -1373,7 +1438,7 @@ def display_schools_section(lat: float, lon: float):
                         color=alt.Color('School:N', title='School'),
                         tooltip=['School', 'Year', 'Pass Rate']
                     ).properties(title='Math Proficiency Trends', height=300)
-                    st.altair_chart(chart, use_container_width=True)
+                    st.altair_chart(chart, width='stretch')
                 else:
                     st.info("Math trend data not available for assigned schools.")
         else:
@@ -1576,6 +1641,11 @@ def display_crime_section(lat: float, lon: float):
 
             # Display score card
             st.markdown("### Safety Score")
+            breakdown = safety_score.get('breakdown', {})
+            violent = breakdown.get('violent', 0)
+            property_crimes = breakdown.get('property', 0)
+            other = breakdown.get('other', 0)
+            crime_count = violent + property_crimes
 
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -1583,33 +1653,20 @@ def display_crime_section(lat: float, lon: float):
             with col2:
                 st.metric("Rating", rating)
             with col3:
-                st.metric("Incidents", total_crimes)
+                st.metric("Crimes (V+P)", crime_count)
 
             # Crime breakdown
-            breakdown = safety_score.get('breakdown', {})
             if breakdown:
-                st.markdown("### Crime Breakdown (2.0 mile radius)")
+                st.markdown("### Crime Breakdown (2-mile radius)")
 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    violent = breakdown.get('violent', breakdown.get('VIOLENT', 0))
                     st.metric("Violent Crimes", violent)
                 with col2:
-                    property_crimes = breakdown.get('property', breakdown.get('PROPERTY', 0))
                     st.metric("Property Crimes", property_crimes)
                 with col3:
-                    other = breakdown.get('other', breakdown.get('OTHER', 0))
-                    st.metric("Other Incidents", other)
-
-            # Context messaging
-            if total_crimes == 0:
-                st.success("✅ **Very Safe** - No reported incidents in the specified time period and radius.")
-            elif total_crimes <= 5:
-                st.success(f"✅ **Safe** - {total_crimes} reported incidents. Low crime area.")
-            elif total_crimes <= 15:
-                st.info(f"🟡 **Moderate** - {total_crimes} reported incidents. Average for the area.")
-            else:
-                st.warning(f"⚠️ **Higher Crime** - {total_crimes} reported incidents. Exercise normal caution.")
+                    st.metric("Service Calls / Other", other)
+                st.caption("Score based on violent + property crimes only. Service calls (police dispatches, alarms, civil disputes) shown for context.")
 
             # Incident details with map
             with st.expander("📋 View Individual Incidents"):
@@ -2026,15 +2083,10 @@ def display_emergency_services_section(lat: float, lon: float):
         # ── Response time estimates ──
         with st.expander("⏱️ Response Time Estimates"):
             fire_resp = response.get('fire_response', {})
-            police_resp = response.get('police_response', {})
             if fire_resp.get('estimated_minutes'):
-                st.markdown(f"- **Fire:** ~{fire_resp['estimated_minutes']:.0f} min from {fire_resp.get('station_name', 'nearest station')} ({fire_resp.get('distance_miles', 0):.1f} mi)")
-            if police_resp.get('estimated_minutes'):
-                st.markdown(f"- **Police:** ~{police_resp['estimated_minutes']:.0f} min from {police_resp.get('station_name', 'nearest station')} ({police_resp.get('distance_miles', 0):.1f} mi)")
-            note = response.get('note', '')
-            if note:
-                st.caption(note)
-            st.caption("Estimates based on average emergency vehicle speed of 20 mph. Actual times vary by time of day and traffic.")
+                st.markdown(f"- **Fire (estimate):** ~{fire_resp['estimated_minutes']:.0f} min from {fire_resp.get('station_name', 'nearest station')} ({fire_resp.get('distance_miles', 0):.1f} mi)")
+            st.markdown("- **Police:** ~7 min avg (Priority 1)")
+            st.caption("Fire estimate based on distance to nearest station. Police response: *Source: Fairfax County Police Department Annual Report (county-wide average; actual times vary by patrol coverage).*")
 
     except Exception as e:
         st.info("Emergency services data is currently unavailable.")
@@ -2086,10 +2138,12 @@ def display_location_quality_section(lat: float, lon: float, address: str):
         pass
 
     power_data = {}
+    power_by_type = {}
     try:
         from core.fairfax_utilities_analysis import FairfaxUtilitiesAnalysis
         ua = FairfaxUtilitiesAnalysis()
         power_data = ua.check_proximity(lat, lon, distance_threshold_miles=1.0)
+        power_by_type = ua.get_utility_types_nearby(lat, lon, radius_miles=1.0)
     except Exception:
         pass
 
@@ -2325,6 +2379,18 @@ Mortgage lenders do not require flood insurance.
 
     # Metro Access expander
     with st.expander("🚇 Metro Access Details"):
+        # WMATA Metro "M" logo
+        st.markdown(
+            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+            '<svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">'
+            '<circle cx="18" cy="18" r="17" fill="#0060A9" stroke="#003B6F" stroke-width="1"/>'
+            '<text x="18" y="25" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" '
+            'font-weight="900" font-size="22" fill="white">M</text>'
+            '</svg>'
+            '<span style="font-size:1.1em;font-weight:600">Washington Metropolitan Area Transit Authority</span>'
+            '</div>',
+            unsafe_allow_html=True
+        )
         if metro_data and metro_data.get('station_name'):
             m_col1, m_col2, m_col3 = st.columns(3)
             with m_col1:
@@ -2355,20 +2421,52 @@ Mortgage lenders do not require flood insurance.
         closest = power_data.get('closest_utility')
         utilities_nearby = power_data.get('utilities_within_threshold', [])
         line_count = len(utilities_nearby)
+
+        # Get electric vs gas breakdown
+        elec = power_by_type.get('electric', {}) if power_by_type else {}
+        gas = power_by_type.get('gas', {}) if power_by_type else {}
+        elec_count = elec.get('count', 0)
+        gas_count = gas.get('count', 0)
+        elec_dist = elec.get('closest_distance')
+        gas_dist = gas.get('closest_distance')
+
         if within and closest:
             c_dist = closest.get('distance_miles', 0)
             c_type = closest.get('utility_type', 'Unknown')
             if c_dist < 0.1:
-                st.markdown(f"⚡ **Power Infrastructure/Major Power Lines:**")
+                st.markdown("⚡ **Power Infrastructure/Major Power Lines:**")
                 st.error(f"🔴 High Impact — Nearest: {c_type} at {c_dist:.2f} miles")
             elif c_dist < 0.5:
                 st.markdown(f"⚡ **Power Infrastructure:** 🟡 Moderate — Nearest: {c_type} at {c_dist:.2f} mi")
             else:
                 st.markdown(f"⚡ **Power Infrastructure:** 🟢 Low Impact — Nearest: {c_type} at {c_dist:.2f} mi")
-            if line_count > 0:
+
+            # Show breakdown by type
+            details = []
+            if elec_count > 0 and elec_dist is not None:
+                # GIS layer is "Major Power Lines" = transmission-class
+                operators = ', '.join(elec.get('operators', []))
+                details.append(f"⚡ Electric (transmission-class): {elec_count} line(s) — nearest at {elec_dist:.2f} mi ({operators})")
+            if gas_count > 0 and gas_dist is not None:
+                operators = ', '.join(gas.get('operators', []))
+                details.append(f"🔥 Gas: {gas_count} line(s) — nearest at {gas_dist:.2f} mi ({operators})")
+
+            if details:
+                for d in details:
+                    st.markdown(f"&nbsp;&nbsp;{d}")
+            elif line_count > 0:
                 st.markdown(f"{line_count} line(s) within 1 mile")
         else:
-            st.markdown("✅ **Power Lines:** No major lines within 1 mile")
+            # No lines within threshold — still show if electric exists further out
+            if elec_count > 0 and elec_dist is not None:
+                st.markdown(f"⚡ **Power Infrastructure:** 🟢 Nearest electric (transmission-class): {elec_dist:.2f} mi")
+                if gas_count > 0 and gas_dist is not None:
+                    st.markdown(f"&nbsp;&nbsp;🔥 Gas: {gas_count} line(s) — nearest at {gas_dist:.2f} mi")
+            elif gas_count > 0 and gas_dist is not None:
+                st.markdown(f"⚡ **Power Infrastructure:** 🟢 Low Impact — Nearest: gas at {gas_dist:.2f} mi / {gas_count} line(s) within 1 mile")
+                st.markdown("&nbsp;&nbsp;No major electric transmission lines within 1 mile")
+            else:
+                st.markdown("✅ **Power Lines:** No major lines within 1 mile")
 
     st.markdown("---")
 
@@ -2702,18 +2800,18 @@ def display_cell_towers_section(lat: float, lon: float):
         if all_nearby is not None and len(all_nearby) > 0:
             with st.expander(f"View All Nearby Towers ({len(all_nearby)} within 2 mi)", expanded=False):
                 cols = [c for c in ['distance_miles', 'structure_type_desc', 'height_feet', 'city'] if c in all_nearby.columns]
-                # Add coordinates if available
+                # Reverse geocode tower coordinates to approximate addresses
                 if 'latitude' in all_nearby.columns and 'longitude' in all_nearby.columns:
-                    all_nearby['coords'] = all_nearby.apply(
-                        lambda r: f"{r['latitude']:.4f}, {r['longitude']:.4f}"
-                        if pd.notna(r.get('latitude')) and pd.notna(r.get('longitude')) else '',
-                        axis=1
+                    all_nearby['approx_location'] = all_nearby.apply(
+                        lambda r: _reverse_geocode_tower(r['latitude'], r['longitude'])
+                        if pd.notna(r.get('latitude')) and pd.notna(r.get('longitude'))
+                        else '', axis=1
                     )
-                    cols.append('coords')
+                    cols.append('approx_location')
                 display_df = all_nearby[cols].copy()
                 col_map = {'distance_miles': 'Distance (mi)',
                            'structure_type_desc': 'Type', 'height_feet': 'Height (ft)',
-                           'city': 'City', 'coords': 'Coordinates'}
+                           'city': 'City', 'approx_location': 'Approximate Location'}
                 display_df = display_df.rename(columns=col_map)
                 if 'Distance (mi)' in display_df.columns:
                     display_df['Distance (mi)'] = display_df['Distance (mi)'].apply(lambda x: f"{x:.2f}")
@@ -2721,7 +2819,7 @@ def display_cell_towers_section(lat: float, lon: float):
                     display_df['Height (ft)'] = display_df['Height (ft)'].apply(
                         lambda x: f"{x:.0f}" if pd.notna(x) and x > 0 else "Unknown"
                     )
-                st.dataframe(display_df, use_container_width=True, hide_index=True)
+                st.dataframe(display_df, width='stretch', hide_index=True)
 
         st.caption(f"📶 {towers_2mi} cell towers within 2 miles of this property.")
         st.caption("Source: FCC Antenna Structure Registration, Fairfax County GIS")
@@ -3556,29 +3654,17 @@ def display_economic_indicators_section():
         else:
             st.info("📈 **Major Employers:** Data loading from Fairfax County ACFR")
 
-        # Year tabs
-        tab_years = ["2025", "2024", "2023", "2022", "2021"]
-        tabs = st.tabs(tab_years + ["Earlier"])
+        # Year tabs — show all years with data, newest first
+        available_years = sorted(employer_year_dfs.keys(), reverse=True)
+        if available_years:
+            tab_labels = [str(y) for y in available_years]
+            tabs = st.tabs(tab_labels)
 
-        for i, tab in enumerate(tabs[:-1]):  # All except "Earlier"
-            year = int(tab_years[i])
-            with tab:
-                if year in employer_year_dfs:
+            for tab, year in zip(tabs, available_years):
+                with tab:
                     st.dataframe(employer_year_dfs[year], width='stretch', hide_index=True)
-                else:
-                    st.write("Data not available for this year.")
-
-        # "Earlier" tab with dropdown
-        with tabs[-1]:
-            earlier_year = st.selectbox(
-                "Select year",
-                range(2020, 2007, -1),
-                key="fairfax_earlier_year_select"
-            )
-            if earlier_year in employer_year_dfs:
-                st.dataframe(employer_year_dfs[earlier_year], width='stretch', hide_index=True)
-            else:
-                st.info(f"No employer data available for {earlier_year}")
+        else:
+            st.info("No employer data available.")
 
         st.caption("Source: Fairfax County Annual Comprehensive Financial Reports (ACFR)")
 
@@ -4074,25 +4160,13 @@ def display_development_section(lat: float, lon: float):
                 lat, lon, radius_miles=radius, months_back=24
             )
 
-        # Adaptive time window for new construction map
-        NEW_CONSTRUCTION = ['residential_new', 'commercial_new']
+        # Use all permits for the map, not just new construction
+        map_permits = permits_24mo
 
-        permits_12mo = analyzer.get_permits_near_point(
-            lat, lon, radius_miles=radius, months_back=12
-        )
-        new_construction_12mo = permits_12mo[
-            permits_12mo['permit_category'].isin(NEW_CONSTRUCTION)
-        ]
-
-        if len(new_construction_12mo) >= 5:
-            map_permits = new_construction_12mo
-            map_window = 12
-        else:
-            new_construction_24mo = permits_24mo[
-                permits_24mo['permit_category'].isin(NEW_CONSTRUCTION)
-            ]
-            map_permits = new_construction_24mo
-            map_window = 24
+        # Store for reuse in zoning section
+        st.session_state['_permits_24mo'] = permits_24mo
+        st.session_state['_permits_radius'] = radius
+        map_window = 24
 
         # Development pressure (recalibrated)
         pressure = analyzer.calculate_development_pressure(
@@ -4190,52 +4264,162 @@ def display_development_section(lat: float, lon: float):
                     "Transit Station Area, and Tysons Corner Urban Center."
                 )
 
-        # ── Development Activity Map (Leaflet via Folium) ──
+        # ── Development Activity Map (Plotly) ──
         st.markdown("### Development Activity Map")
-        st.markdown("🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other Construction")
+        st.markdown("🔴 Data Center | 🟠 Fiber/Telecom | 🟣 Infrastructure | 🟢 Other")
 
+        # Show nearest permit distance if > 1 mile
+        if len(map_permits) > 0 and 'distance_miles' in map_permits.columns:
+            nearest_dist = map_permits['distance_miles'].min()
+            if nearest_dist > 1.0:
+                st.markdown(f"*ℹ️ Nearest permit activity: {nearest_dist:.1f} mi from subject property*")
+
+        PERMIT_PLOTLY_COLORS = {
+            'data_center': 'red', 'fiber': 'orange', 'infrastructure': 'purple',
+            'commercial_new': 'green', 'residential_new': 'green',
+            'commercial_alteration': 'green', 'residential_alteration': 'green',
+            'other': 'green',
+        }
+
+        if len(map_permits) > 0:
+            import plotly.graph_objects as go
+
+            fig = go.Figure()
+
+            # Radius circle (dashed) — approximate circle using lat/lon points
+            import math
+            circle_points = 72
+            radius_miles = radius
+            radius_km = radius_miles * 1.60934
+            circle_lats = []
+            circle_lons = []
+            for i in range(circle_points + 1):
+                angle = 2 * math.pi * i / circle_points
+                dlat = (radius_km / 111.32) * math.cos(angle)
+                dlon = (radius_km / (111.32 * math.cos(math.radians(lat)))) * math.sin(angle)
+                circle_lats.append(lat + dlat)
+                circle_lons.append(lon + dlon)
+
+            fig.add_trace(go.Scattermapbox(
+                lat=circle_lats, lon=circle_lons,
+                mode='lines',
+                line=dict(width=2, color='rgba(0,0,255,0.5)'),
+                name=f'{radius_miles:.0f}-mi radius',
+                hoverinfo='skip',
+                showlegend=True
+            ))
+
+            # Property marker — large red star
+            fig.add_trace(go.Scattermapbox(
+                lat=[lat], lon=[lon],
+                mode='markers',
+                marker=dict(size=22, color='red', symbol='star'),
+                text=['Subject Property'],
+                name='Subject Property',
+                hoverinfo='text',
+                showlegend=True
+            ))
+
+            # Permit markers grouped by category for legend
+            plotted_categories = set()
+            for cat, color in PERMIT_PLOTLY_COLORS.items():
+                cat_data = map_permits[map_permits['permit_category'] == cat]
+                cat_data = cat_data.dropna(subset=['centroid_lat', 'centroid_lon'])
+                if cat_data.empty:
+                    continue
+                plotted_categories.add(cat)
+                hover_text = cat_data.apply(
+                    lambda r: (
+                        f"<b>{r.get('address', '')}</b><br>"
+                        f"{r.get('permit_type', '')}<br>"
+                        f"{r.get('issued_date').strftime('%Y-%m-%d') if pd.notna(r.get('issued_date')) else ''}<br>"
+                        f"{r.get('distance_miles', 0):.2f} mi"
+                    ), axis=1
+                )
+                fig.add_trace(go.Scattermapbox(
+                    lat=cat_data['centroid_lat'],
+                    lon=cat_data['centroid_lon'],
+                    mode='markers',
+                    marker=dict(size=9, color=color),
+                    text=hover_text,
+                    name=f'{cat.replace("_", " ").title()} ({len(cat_data)})',
+                    hoverinfo='text',
+                    showlegend=True
+                ))
+
+            # Also plot any permits with categories not in the color map
+            remaining = map_permits[~map_permits['permit_category'].isin(plotted_categories)]
+            remaining = remaining.dropna(subset=['centroid_lat', 'centroid_lon'])
+            if not remaining.empty:
+                hover_text = remaining.apply(
+                    lambda r: (
+                        f"<b>{r.get('address', '')}</b><br>"
+                        f"{r.get('permit_type', '')}<br>"
+                        f"{r.get('issued_date').strftime('%Y-%m-%d') if pd.notna(r.get('issued_date')) else ''}<br>"
+                        f"{r.get('distance_miles', 0):.2f} mi"
+                    ), axis=1
+                )
+                fig.add_trace(go.Scattermapbox(
+                    lat=remaining['centroid_lat'],
+                    lon=remaining['centroid_lon'],
+                    mode='markers',
+                    marker=dict(size=9, color='green'),
+                    text=hover_text,
+                    name=f'Other ({len(remaining)})',
+                    hoverinfo='text',
+                    showlegend=True
+                ))
+
+            fig.update_layout(
+                mapbox=dict(
+                    style='open-street-map',
+                    center=dict(lat=lat, lon=lon),
+                    zoom=12
+                ),
+                height=450,
+                margin=dict(l=0, r=0, t=0, b=0),
+                showlegend=True,
+                legend=dict(orientation='h', y=-0.02)
+            )
+            st.plotly_chart(fig, width='stretch')
+        else:
+            st.info(f"No permits in the last {map_window} months within {radius:.0f} miles.")
+
+        # ── Full interactive map (Folium — schools, transit, trails) ──
         if FOLIUM_AVAILABLE and len(map_permits) > 0:
-            import folium
-            from streamlit_folium import st_folium
+            with st.expander("🗺️ Full Interactive Map (permits, schools, transit, trails)"):
+                import folium
+                from streamlit_folium import st_folium
 
-            m = folium.Map(location=[lat, lon], zoom_start=13, tiles='OpenStreetMap')
+                m = folium.Map(location=[lat, lon], zoom_start=13, tiles='OpenStreetMap')
 
-            # 2-mile radius circle
-            folium.Circle(
-                location=[lat, lon], radius=3218,
-                color='blue', fill=True, fill_opacity=0.05, weight=1,
-                tooltip="2-mile radius"
-            ).add_to(m)
+                folium.Circle(
+                    location=[lat, lon], radius=3218,
+                    color='blue', fill=True, fill_opacity=0.05, weight=1,
+                    tooltip="2-mile radius"
+                ).add_to(m)
 
-            # Property marker
-            folium.Marker(
-                [lat, lon],
-                popup="<b>Subject Property</b>",
-                icon=folium.Icon(color='red', icon='home', prefix='fa'),
-                tooltip="Subject Property"
-            ).add_to(m)
+                folium.Marker(
+                    [lat, lon],
+                    popup="<b>Subject Property</b>",
+                    icon=folium.Icon(color='red', icon='home', prefix='fa'),
+                    tooltip="Subject Property"
+                ).add_to(m)
 
-            # Permits layer
-            permits_group = folium.FeatureGroup(name='🏗️ Major Projects', show=True)
-            PERMIT_COLORS = {
-                'data_center': 'red', 'fiber': 'orange', 'infrastructure': 'purple',
-                'commercial_new': 'green', 'residential_new': 'green', 'other': 'gray',
-            }
-            for _, row in map_permits.iterrows():
-                p_lat = row.get('centroid_lat')
-                p_lon = row.get('centroid_lon')
-                if pd.notna(p_lat) and pd.notna(p_lon):
-                    cat = row.get('permit_category', 'other')
-                    color = PERMIT_COLORS.get(cat, 'gray')
-                    addr = row.get('address', '')
-                    ptype = row.get('permit_type', '')
-                    folium.CircleMarker(
-                        location=[p_lat, p_lon], radius=5,
-                        color=color, fill=True, fillColor=color, fillOpacity=0.6,
-                        popup=f"<b>{addr}</b><br>{ptype}",
-                        tooltip=ptype
-                    ).add_to(permits_group)
-            permits_group.add_to(m)
+                permits_group = folium.FeatureGroup(name='🏗️ Permits', show=True)
+                for _, row in map_permits.iterrows():
+                    p_lat = row.get('centroid_lat')
+                    p_lon = row.get('centroid_lon')
+                    if pd.notna(p_lat) and pd.notna(p_lon):
+                        cat = row.get('permit_category', 'other')
+                        color = PERMIT_PLOTLY_COLORS.get(cat, 'gray')
+                        folium.CircleMarker(
+                            location=[p_lat, p_lon], radius=5,
+                            color=color, fill=True, fillColor=color, fillOpacity=0.6,
+                            popup=f"<b>{row.get('address', '')}</b><br>{row.get('permit_type', '')}",
+                            tooltip=row.get('permit_type', '')
+                        ).add_to(permits_group)
+                permits_group.add_to(m)
 
             # Schools layer
             schools_group = folium.FeatureGroup(name='🏫 Schools', show=True)
@@ -4518,21 +4702,6 @@ def display_development_section(lat: float, lon: float):
 
             st_folium(m, width=None, height=500, use_container_width=True, returned_objects=[])
 
-        elif not FOLIUM_AVAILABLE and PLOTLY_AVAILABLE and len(map_permits) > 0:
-            # Fallback to Plotly scatter map
-            map_df = map_permits.copy()
-            map_df['date'] = map_df['issued_date'].dt.strftime('%Y-%m-%d').fillna('N/A')
-            fig = px.scatter_map(
-                map_df, lat='centroid_lat', lon='centroid_lon',
-                color='permit_type', hover_name='address',
-                height=500, map_style='open-street-map',
-            )
-            fig.update_layout(margin=dict(l=0, r=0, t=0, b=0),
-                              map=dict(center=dict(lat=lat, lon=lon), zoom=12))
-            st.plotly_chart(fig, width='stretch')
-        else:
-            st.info(f"No new construction permits in the last {map_window} months within {radius:.0f} miles.")
-
         # ── Permit type breakdown ──
         st.markdown("### Permit Type Breakdown (24 Months)")
         type_counts = permits_24mo['permit_type'].value_counts()
@@ -4584,14 +4753,37 @@ def display_development_section(lat: float, lon: float):
             tbl['Issued'] = tbl['issued_date'].dt.strftime('%Y-%m-%d')
             tbl['Dist'] = tbl['distance_miles'].round(2).astype(str) + ' mi'
 
-            display_cols = ['Issued', 'permit_type', 'address', 'city',
-                            'development_center', 'Dist']
-            col_names = ['Date', 'Type', 'Address', 'City',
-                         'Planning District', 'Distance']
+            # Project name — truncate at 80 chars
+            if 'project_name' in tbl.columns:
+                tbl['Project'] = tbl['project_name'].fillna('').astype(str).str[:80]
+            else:
+                tbl['Project'] = ''
+
+            # Permit link URL
+            if 'link_url' in tbl.columns:
+                tbl['Link'] = tbl['link_url'].fillna('').astype(str)
+            else:
+                tbl['Link'] = ''
+
+            display_cols = ['Issued', 'permit_type', 'Project', 'address', 'city',
+                            'Dist', 'Link']
+            col_names = ['Date', 'Type', 'Project', 'Address', 'City',
+                         'Distance', 'Link']
 
             show = tbl[display_cols].copy()
             show.columns = col_names
-            st.dataframe(show, width='stretch', hide_index=True)
+            st.dataframe(
+                show,
+                width='stretch',
+                hide_index=True,
+                column_config={
+                    "Link": st.column_config.LinkColumn(
+                        "Permit",
+                        display_text="View",
+                        help="View permit on Fairfax County portal"
+                    )
+                }
+            )
 
         st.caption(
             f"Source: Fairfax County Permit Portal (PLUS System), "
@@ -4680,30 +4872,43 @@ including permitted uses, building heights, setbacks, and density limits.
                     else:
                         st.info(f"📍 **{overlay_type}** overlay applies to this property")
 
+            # === COMPREHENSIVE PLAN DESIGNATION ===
+            try:
+                from core.fairfax_comprehensive_plan_analysis import get_comp_plan_designation
+                comp_plan = get_comp_plan_designation(lat, lon, zoning_code=zone_code)
+                if comp_plan.get('land_use_category'):
+                    st.markdown("### Comprehensive Plan Designation")
+                    st.markdown(f"**{comp_plan['land_use_category']}**")
+                    st.caption(f"Source: {comp_plan.get('source', 'Fairfax County 2030 Comprehensive Plan')}")
+                    if comp_plan.get('narrative'):
+                        st.markdown(comp_plan['narrative'])
+                    area_name = comp_plan.get('planning_area_name')
+                    area_url = comp_plan.get('planning_area_url', '')
+                    if comp_plan.get('in_planning_area') and area_name:
+                        if area_url:
+                            st.markdown(f"📍 Within **{area_name}** — [View Area Plan]({area_url})")
+                        else:
+                            st.markdown(f"📍 Within **{area_name}**")
+                    elif area_name and comp_plan.get('planning_area_distance_mi'):
+                        dist = comp_plan['planning_area_distance_mi']
+                        if area_url:
+                            st.markdown(f"📍 {dist} mi from **{area_name}** — [View Area Plan]({area_url})")
+                        else:
+                            st.markdown(f"📍 {dist} mi from **{area_name}**")
+            except Exception as e:
+                import logging
+                logging.warning(f"Comprehensive plan section error: {e}")
+
             # === RECENT CONSTRUCTION ACTIVITY ===
             st.markdown("### Recent Construction Activity")
-            try:
-                permits_analyzer = FairfaxPermitsAnalysis()
-                nearby_permits = permits_analyzer.get_permits_near_point(lat, lon, radius_miles=1.0, months_back=24)
-
-                if len(nearby_permits) > 0:
-                    total_permits = len(nearby_permits)
-                    residential_new = len(nearby_permits[nearby_permits['permit_category'] == 'residential_new']) if 'permit_category' in nearby_permits.columns else 0
-                    commercial = len(nearby_permits[nearby_permits['permit_category'].str.contains('commercial', na=False)]) if 'permit_category' in nearby_permits.columns else 0
-
-                    st.markdown(f"""
-**{total_permits} building permits** issued within 1 mile in the past 24 months.
-
-This indicates {"active" if total_permits > 20 else "moderate" if total_permits > 5 else "low"} construction activity in the area.
-""")
-                    if residential_new > 0:
-                        st.markdown(f"• **{residential_new}** new residential construction permits")
-                    if commercial > 0:
-                        st.markdown(f"• **{commercial}** commercial permits")
-                else:
-                    st.info("No recent building permits found within 1 mile (past 24 months).")
-            except Exception as e:
-                st.caption("💡 Permit data unavailable")
+            cached_permits = st.session_state.get('_permits_24mo')
+            cached_radius = st.session_state.get('_permits_radius', 2)
+            if cached_permits is not None and len(cached_permits) > 0:
+                commercial = len(cached_permits[cached_permits['permit_category'].str.contains('commercial', na=False)]) if 'permit_category' in cached_permits.columns else 0
+                residential = len(cached_permits[cached_permits['permit_category'].str.contains('residential', na=False)]) if 'permit_category' in cached_permits.columns else 0
+                st.markdown(f"{commercial} commercial permits and {residential} residential permits within {cached_radius:.0f} miles in the past 24 months.")
+            else:
+                st.caption("No recent permit activity found nearby.")
 
             # Technical Reference
             st.markdown("---")
@@ -5116,7 +5321,7 @@ def display_valuation_section(address: str, lat: float, lon: float, sqft_result:
                         return 'background-color: #f8d7da; color: #721c24'
 
                 # Apply styling and display
-                styled_df = df.style.applymap(style_quality, subset=['Quality'])
+                styled_df = df.style.map(style_quality, subset=['Quality'])
                 st.dataframe(
                     styled_df,
                     width='stretch',
@@ -5443,14 +5648,9 @@ def display_footer():
 def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
     """Display property value analysis.
 
-    Uses full valuation orchestrator when API keys are configured,
-    falls back to local parquet comparable sales data otherwise.
+    Always uses local Fairfax parquet comparable sales data.
+    ATTOM/valuation pipeline is not used for Fairfax county comps.
     """
-    # If full valuation pipeline is available, delegate to display_valuation_section
-    if VALUATION_AVAILABLE:
-        display_valuation_section(address, lat, lon, sqft_result=None)
-        return
-
     st.markdown("## 💰 Property Value Analysis")
 
     # Property Details subsection — from Fairfax tax records parquet
@@ -5504,6 +5704,18 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
         st.markdown(f"**{len(comps)} comparable sales** found within 0.5 miles (Fairfax County Commissioner of Revenue, 2020-2025)")
 
         # Build display data with quality scoring
+        # Normalize the subject address for matching
+        def _normalize_addr(s):
+            import re
+            if not s:
+                return ""
+            s = s.upper()
+            s = re.sub(r'[^\w\s]', ' ', s)  # strip all punctuation
+            s = re.sub(r'\s+', ' ', s).strip()
+            return s
+
+        norm_subject = _normalize_addr(address)
+
         display_data = []
         for comp in comps:
             sale_date_str = comp.get('sale_date', '')
@@ -5537,34 +5749,33 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
             else:
                 quality_label = "Fair"
 
+            comp_addr = comp.get('address', comp.get('parid', 'N/A'))
+            sale_type = comp.get('sale_type', '—')
+            is_subject = bool(norm_subject and norm_subject in _normalize_addr(comp_addr))
+            if is_subject:
+                comp_addr = f"⭐ {comp_addr}"
+                sale_type = "Subject Property"
+
             display_data.append({
-                'Address': comp.get('address', comp.get('parid', 'N/A')),
+                'Address': comp_addr,
                 'Price': f"${comp.get('sale_price', 0):,.0f}",
                 'Sale Date': display_date,
                 'Distance': f"{dist:.2f} mi",
-                'Sale Type': comp.get('sale_type', '—'),
+                'Sale Type': sale_type,
                 'Quality': quality_label,
                 '_sort_score': avg_score,
+                '_is_subject': is_subject,
             })
 
-        display_data.sort(key=lambda x: x['_sort_score'], reverse=True)
+        display_data.sort(key=lambda x: (-x['_is_subject'], -x['_sort_score']))
         for row in display_data:
             del row['_sort_score']
+            del row['_is_subject']
 
         df = pd.DataFrame(display_data)
-
-        def style_quality(val):
-            if val == 'Excellent':
-                return 'background-color: #d4edda; color: #155724'
-            elif val == 'Good':
-                return 'background-color: #fff3cd; color: #856404'
-            else:
-                return 'background-color: #f8d7da; color: #721c24'
-
-        styled_df = df.style.applymap(style_quality, subset=['Quality'])
         st.dataframe(
-            styled_df,
-            use_container_width=True,
+            df,
+            width='stretch',
             hide_index=True,
             height=min(400, 50 + len(display_data) * 35)
         )
@@ -5642,7 +5853,7 @@ def _display_historical_sales_trends():
                 margin=dict(l=60, r=20, t=40, b=40),
                 showlegend=False,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
             # Key stats
             first_yr = yearly.iloc[0]
@@ -6034,7 +6245,6 @@ def render_report(address: str, lat: float, lon: float):
         status.empty()
 
         # Display all sections in order
-        st.success(f"✓ Analysis complete for: **{address}**")
         st.markdown("---")
 
         # 1. School Assignments + Performance Trends (inline charts)

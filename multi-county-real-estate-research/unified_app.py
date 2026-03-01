@@ -159,7 +159,7 @@ def main():
     with col2:
         st.write("")  # Spacer
         st.write("")  # Spacer
-        analyze_button = st.button("🔍 Analyze Property", type="primary", use_container_width=True)
+        analyze_button = st.button("🔍 Analyze Property", type="primary", width="stretch")
 
     # ========== ADVANCED OPTIONS ==========
     with st.expander("⚙️ Advanced Options"):

@@ -2,3 +2,6 @@
 *
 !README.md
 !.gitignore
+# Preserve geocode cache between CI runs
+!geocoded/
+!geocoded/address_cache.parquet

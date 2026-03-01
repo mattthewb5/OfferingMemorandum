@@ -319,7 +319,7 @@ def render_data_table(
         df = pd.DataFrame(data)
         if columns:
             df = df[[c for c in columns if c in df.columns]]
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df, width='stretch')
     except Exception as e:
         # Fallback to simple display
         for item in data[:10]:

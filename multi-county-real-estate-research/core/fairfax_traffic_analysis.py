@@ -116,23 +116,46 @@ class FairfaxTrafficAnalysis:
             axis=1
         )
 
-        # Filter by radius and sort
-        nearby = df[df['distance_miles'] <= radius_miles].sort_values('distance_miles')
+        # Filter by radius
+        nearby = df[df['distance_miles'] <= radius_miles].copy()
 
-        results = []
-        for _, row in nearby.iterrows():
-            results.append({
-                'road_name': row['road_name'],
-                'route_name': row.get('route_name', ''),
-                'adt': int(row['adt']),
-                'traffic_level': row['traffic_level'],
-                'peak_hour_estimate': int(row.get('peak_hour_estimate', row['adt'] * 0.1)),
-                'distance_miles': round(row['distance_miles'], 3),
-                'latitude': row['latitude'],
-                'longitude': row['longitude']
+        if nearby.empty:
+            return []
+
+        # Deduplicate: for each road name, pick the best representative ADT.
+        # When a road has multiple segments, outlier ADT values (e.g. SC-7812's
+        # 18K on a 2K subdivision road) get filtered by taking the median.
+        # Prefer newer data and quality "G" (measured) over "R" (estimated).
+        deduped_rows = []
+        for road_name, group in nearby.groupby('road_name'):
+            if len(group) >= 3:
+                # Multiple segments: use median ADT to filter outliers
+                representative_adt = int(group['adt'].median())
+            else:
+                # Few segments: prefer quality "G" and newer data
+                g_quality = group[group['data_quality'] == 'G']
+                if len(g_quality) > 0:
+                    representative_adt = int(g_quality['adt'].median())
+                else:
+                    representative_adt = int(group['adt'].median())
+
+            # Use the closest segment for location/distance
+            closest = group.sort_values('distance_miles').iloc[0]
+            deduped_rows.append({
+                'road_name': road_name,
+                'route_name': closest.get('route_name', ''),
+                'adt': representative_adt,
+                'traffic_level': self._categorize_adt(representative_adt),
+                'peak_hour_estimate': int(representative_adt * 0.1),
+                'distance_miles': round(closest['distance_miles'], 3),
+                'latitude': closest['latitude'],
+                'longitude': closest['longitude']
             })
 
-        return results
+        # Sort by distance
+        deduped_rows.sort(key=lambda x: x['distance_miles'])
+
+        return deduped_rows
 
     def calculate_traffic_exposure_score(self, lat: float, lon: float) -> Dict:
         """

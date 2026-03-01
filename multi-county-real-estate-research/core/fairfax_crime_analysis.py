@@ -143,18 +143,17 @@ class FairfaxCrimeAnalysis:
         Higher scores = safer areas.
 
         Scoring algorithm:
-        - Start at 100
-        - Violent crime: -5 points each
-        - Property crime: -2 points each
-        - Other incidents: -0.5 points each
-        - Floor at 0, ceiling at 100
+        - Only violent + property crimes drive the score (service calls excluded)
+        - Density-normalized: crimes per square mile, per month
+        - Violent weighted 3x heavier than property
+        - "Other" (service calls, alarms, etc.) tracked for context only
 
         Rating scale:
-        - 85-100: Very Safe
-        - 70-84: Safe
-        - 50-69: Moderate
-        - 30-49: Caution Advised
-        - 0-29: High Crime Area
+        - 80-100: Very Safe
+        - 60-79: Safe
+        - 40-59: Moderate
+        - 20-39: Caution Advised
+        - 0-19: High Crime Area
 
         Args:
             lat: Latitude
@@ -171,6 +170,8 @@ class FairfaxCrimeAnalysis:
                 - radius_miles: float
                 - months_back: int
         """
+        import math
+
         # Get nearby crimes in time window
         nearby = self.get_crimes_near_point(lat, lon, radius_miles, months_back)
 
@@ -190,23 +191,44 @@ class FairfaxCrimeAnalysis:
         property_count = breakdown.get('property', 0)
         other_count = breakdown.get('other', 0)
 
-        # Calculate weighted score
-        score = 100
-        score -= violent_count * 5
-        score -= property_count * 2
-        score -= other_count * 0.5
+        # Score based on weighted crime count — only violent + property
+        # Violent weighted 3x heavier than property
+        weighted_crimes = violent_count * 3 + property_count
 
-        # Clamp to 0-100 range
+        # Scale for search radius: normalize to a 2-mile radius baseline
+        # so scores are comparable regardless of radius used
+        baseline_area = math.pi * 2.0 ** 2  # ~12.57 sq mi
+        actual_area = math.pi * radius_miles ** 2
+        if actual_area > 0:
+            weighted_crimes = weighted_crimes * (baseline_area / actual_area)
+
+        # Map weighted count to score (0-100)
+        # Calibrated benchmarks (2-mi radius, 6 months):
+        #   Great Falls: ~8 weighted → score ~85
+        #   Herndon suburb: ~34 weighted → score ~65
+        #   Dunn Loring: ~135 weighted → score ~38
+        #   Tysons: ~179 weighted → score ~25
+        if weighted_crimes <= 10:
+            score = 90 - weighted_crimes * 0.5
+        elif weighted_crimes <= 50:
+            # 10 → 85, 50 → 55
+            score = 85 - (weighted_crimes - 10) * (30.0 / 40.0)
+        elif weighted_crimes <= 200:
+            # 50 → 55, 200 → 15
+            score = 55 - (weighted_crimes - 50) * (40.0 / 150.0)
+        else:
+            score = max(0, 15 - (weighted_crimes - 200) * 0.1)
+
         score = max(0, min(100, int(score)))
 
         # Assign rating
-        if score >= 85:
+        if score >= 80:
             rating = 'Very Safe'
-        elif score >= 70:
+        elif score >= 60:
             rating = 'Safe'
-        elif score >= 50:
+        elif score >= 40:
             rating = 'Moderate'
-        elif score >= 30:
+        elif score >= 20:
             rating = 'Caution Advised'
         else:
             rating = 'High Crime Area'

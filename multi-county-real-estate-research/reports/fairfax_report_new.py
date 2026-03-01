@@ -4872,6 +4872,33 @@ including permitted uses, building heights, setbacks, and density limits.
                     else:
                         st.info(f"📍 **{overlay_type}** overlay applies to this property")
 
+            # === COMPREHENSIVE PLAN DESIGNATION ===
+            try:
+                from core.fairfax_comprehensive_plan_analysis import get_comp_plan_designation
+                comp_plan = get_comp_plan_designation(lat, lon, zoning_code=zone_code)
+                if comp_plan.get('land_use_category'):
+                    st.markdown("### Comprehensive Plan Designation")
+                    st.markdown(f"**{comp_plan['land_use_category']}**")
+                    st.caption(f"Source: {comp_plan.get('source', 'Fairfax County 2030 Comprehensive Plan')}")
+                    if comp_plan.get('narrative'):
+                        st.markdown(comp_plan['narrative'])
+                    area_name = comp_plan.get('planning_area_name')
+                    area_url = comp_plan.get('planning_area_url', '')
+                    if comp_plan.get('in_planning_area') and area_name:
+                        if area_url:
+                            st.markdown(f"📍 Within **{area_name}** — [View Plan PDF]({area_url})")
+                        else:
+                            st.markdown(f"📍 Within **{area_name}**")
+                    elif area_name and comp_plan.get('planning_area_distance_mi'):
+                        dist = comp_plan['planning_area_distance_mi']
+                        if area_url:
+                            st.markdown(f"📍 {dist} mi from **{area_name}** — [View Plan PDF]({area_url})")
+                        else:
+                            st.markdown(f"📍 {dist} mi from **{area_name}**")
+            except Exception as e:
+                import logging
+                logging.warning(f"Comprehensive plan section error: {e}")
+
             # === RECENT CONSTRUCTION ACTIVITY ===
             st.markdown("### Recent Construction Activity")
             cached_permits = st.session_state.get('_permits_24mo')

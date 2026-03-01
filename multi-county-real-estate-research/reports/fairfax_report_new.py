@@ -4886,13 +4886,13 @@ including permitted uses, building heights, setbacks, and density limits.
                     area_url = comp_plan.get('planning_area_url', '')
                     if comp_plan.get('in_planning_area') and area_name:
                         if area_url:
-                            st.markdown(f"📍 Within **{area_name}** — [View Plan PDF]({area_url})")
+                            st.markdown(f"📍 Within **{area_name}** — [View Area Plan]({area_url})")
                         else:
                             st.markdown(f"📍 Within **{area_name}**")
                     elif area_name and comp_plan.get('planning_area_distance_mi'):
                         dist = comp_plan['planning_area_distance_mi']
                         if area_url:
-                            st.markdown(f"📍 {dist} mi from **{area_name}** — [View Plan PDF]({area_url})")
+                            st.markdown(f"📍 {dist} mi from **{area_name}** — [View Area Plan]({area_url})")
                         else:
                             st.markdown(f"📍 {dist} mi from **{area_name}**")
             except Exception as e:
@@ -5655,7 +5655,6 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
     if VALUATION_AVAILABLE:
         display_valuation_section(address, lat, lon, sqft_result=None)
         return
-
     st.markdown("## 💰 Property Value Analysis")
 
     # Property Details subsection — from Fairfax tax records parquet

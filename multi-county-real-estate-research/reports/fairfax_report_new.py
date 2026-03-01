@@ -5705,8 +5705,14 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
 
         # Build display data with quality scoring
         # Normalize the subject address for matching
-        def _normalize_addr(a: str) -> str:
-            return ' '.join(a.upper().split()) if a else ''
+        def _normalize_addr(s):
+            import re
+            if not s:
+                return ""
+            s = s.upper()
+            s = re.sub(r'[^\w\s]', ' ', s)  # strip all punctuation
+            s = re.sub(r'\s+', ' ', s).strip()
+            return s
 
         norm_subject = _normalize_addr(address)
 

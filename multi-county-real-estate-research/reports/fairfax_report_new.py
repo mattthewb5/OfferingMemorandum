@@ -4947,6 +4947,7 @@ have minimal development pressure — valued for their stability and mature tree
 
 def display_valuation_section(address: str, lat: float, lon: float, sqft_result: dict):
     """Display property valuation section with MLS square footage."""
+    st.info(f"🔍 DEBUG: Taking ATTOM/valuation path | ATTOM_CLIENT={'set' if ATTOM_CLIENT else 'None'}")
     st.markdown("## 💰 Property Value Analysis")
 
     if not VALUATION_AVAILABLE:
@@ -5651,10 +5652,12 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
     Uses full valuation orchestrator when API keys are configured,
     falls back to local parquet comparable sales data otherwise.
     """
+    st.info(f"🔍 DEBUG: lat={lat:.6f}, lon={lon:.6f} | VALUATION_AVAILABLE={VALUATION_AVAILABLE}")
     # If full valuation pipeline is available, delegate to display_valuation_section
     if VALUATION_AVAILABLE:
         display_valuation_section(address, lat, lon, sqft_result=None)
         return
+    st.info(f"🔍 DEBUG: Taking local parquet path")
     st.markdown("## 💰 Property Value Analysis")
 
     # Property Details subsection — from Fairfax tax records parquet
@@ -5693,6 +5696,7 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
         from core.fairfax_sales_analysis import get_nearby_sales
 
         comps = get_nearby_sales(lat, lon, radius_miles=0.5, limit=10)
+        st.info(f"🔍 DEBUG: Sales query returned {len(comps) if comps is not None else 'None'} results")
 
         if not comps:
             # Try wider radius

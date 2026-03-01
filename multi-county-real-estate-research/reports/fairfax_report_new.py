@@ -5745,9 +5745,10 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
 
             comp_addr = comp.get('address', comp.get('parid', 'N/A'))
             sale_type = comp.get('sale_type', '—')
-            is_subject = (norm_subject and norm_subject in _normalize_addr(comp_addr))
+            is_subject = bool(norm_subject and norm_subject in _normalize_addr(comp_addr))
             if is_subject:
-                sale_type = f"⭐ Subject Property"
+                comp_addr = f"⭐ {comp_addr}"
+                sale_type = "Subject Property"
 
             display_data.append({
                 'Address': comp_addr,
@@ -5761,33 +5762,13 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
             })
 
         display_data.sort(key=lambda x: (-x['_is_subject'], -x['_sort_score']))
-        subject_flags = [row['_is_subject'] for row in display_data]
         for row in display_data:
             del row['_sort_score']
             del row['_is_subject']
 
         df = pd.DataFrame(display_data)
-
-        def _highlight_subject_row(row):
-            if subject_flags[row.name]:
-                return ['background-color: #fff8dc; font-weight: bold'] * len(row)
-            return [''] * len(row)
-
-        def style_quality(val):
-            if val == 'Excellent':
-                return 'background-color: #d4edda; color: #155724'
-            elif val == 'Good':
-                return 'background-color: #fff3cd; color: #856404'
-            else:
-                return 'background-color: #f8d7da; color: #721c24'
-
-        styled_df = (
-            df.style
-            .apply(_highlight_subject_row, axis=1)
-            .map(style_quality, subset=['Quality'])
-        )
         st.dataframe(
-            styled_df,
+            df,
             width='stretch',
             hide_index=True,
             height=min(400, 50 + len(display_data) * 35)

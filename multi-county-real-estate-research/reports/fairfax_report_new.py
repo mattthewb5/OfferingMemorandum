@@ -5704,6 +5704,12 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
         st.markdown(f"**{len(comps)} comparable sales** found within 0.5 miles (Fairfax County Commissioner of Revenue, 2020-2025)")
 
         # Build display data with quality scoring
+        # Normalize the subject address for matching
+        def _normalize_addr(a: str) -> str:
+            return ' '.join(a.upper().split()) if a else ''
+
+        norm_subject = _normalize_addr(address)
+
         display_data = []
         for comp in comps:
             sale_date_str = comp.get('sale_date', '')
@@ -5737,21 +5743,35 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
             else:
                 quality_label = "Fair"
 
+            comp_addr = comp.get('address', comp.get('parid', 'N/A'))
+            sale_type = comp.get('sale_type', '—')
+            is_subject = (norm_subject and norm_subject in _normalize_addr(comp_addr))
+            if is_subject:
+                sale_type = f"⭐ Subject Property"
+
             display_data.append({
-                'Address': comp.get('address', comp.get('parid', 'N/A')),
+                'Address': comp_addr,
                 'Price': f"${comp.get('sale_price', 0):,.0f}",
                 'Sale Date': display_date,
                 'Distance': f"{dist:.2f} mi",
-                'Sale Type': comp.get('sale_type', '—'),
+                'Sale Type': sale_type,
                 'Quality': quality_label,
                 '_sort_score': avg_score,
+                '_is_subject': is_subject,
             })
 
-        display_data.sort(key=lambda x: x['_sort_score'], reverse=True)
+        display_data.sort(key=lambda x: (-x['_is_subject'], -x['_sort_score']))
+        subject_flags = [row['_is_subject'] for row in display_data]
         for row in display_data:
             del row['_sort_score']
+            del row['_is_subject']
 
         df = pd.DataFrame(display_data)
+
+        def _highlight_subject_row(row):
+            if subject_flags[row.name]:
+                return ['background-color: #fff8dc; font-weight: bold'] * len(row)
+            return [''] * len(row)
 
         def style_quality(val):
             if val == 'Excellent':
@@ -5761,7 +5781,11 @@ def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
             else:
                 return 'background-color: #f8d7da; color: #721c24'
 
-        styled_df = df.style.map(style_quality, subset=['Quality'])
+        styled_df = (
+            df.style
+            .apply(_highlight_subject_row, axis=1)
+            .map(style_quality, subset=['Quality'])
+        )
         st.dataframe(
             styled_df,
             width='stretch',

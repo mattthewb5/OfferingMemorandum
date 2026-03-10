@@ -7,6 +7,7 @@ data with parcel centroid coordinates.
 Data Sources:
 - combined_sales.parquet: 78,300 sales records (Loudoun Commissioner of Revenue)
 - parcel_xy.parquet: 132,208 parcel centroids from LOGIS ArcGIS (layer 9)
+- logis_addresses.parquet: 141,971 addresses from LOGIS Master Address List (table 8)
 
 Usage:
     from core.loudoun_sales_analysis import get_nearby_sales
@@ -28,6 +29,7 @@ DATA_DIR = BASE_DIR / "data" / "loudoun"
 
 SALES_PATH = DATA_DIR / "sales" / "combined_sales.parquet"
 PARCEL_XY_PATH = DATA_DIR / "parcels" / "parcel_xy.parquet"
+ADDRESS_PATH = DATA_DIR / "addresses" / "logis_addresses.parquet"
 CACHE_DIR = DATA_DIR / "sales" / "cache"
 
 # Cache TTL: 30 days in seconds
@@ -65,6 +67,47 @@ def _cache_is_valid(cache_path: Path) -> bool:
         return False
     age = time.time() - cache_path.stat().st_mtime
     return age < CACHE_TTL
+
+
+def _load_address_lookup() -> Dict[str, str]:
+    """
+    Load LOGIS Master Address List as a dict mapping PA_MCPI -> street address.
+
+    Returns empty dict if address file is missing (graceful degradation).
+    """
+    if not ADDRESS_PATH.exists():
+        return {}
+    addr_df = pd.read_parquet(ADDRESS_PATH)
+    # Build lookup: AM_MCPI -> "43422 CLOISTER PL, LEESBURG, VA 20176"
+    lookup = {}
+    for _, row in addr_df.iterrows():
+        mcpi = row.get("AM_MCPI", "")
+        street = str(row.get("AM_STD_FULL_ADDRESS", "")).strip()
+        town = str(row.get("AM_TOWN", "")).strip()
+        zipcode = row.get("AM_ZIP")
+        if mcpi and street:
+            if town and zipcode:
+                lookup[mcpi] = f"{street}, {town}, VA {int(zipcode)}"
+            elif town:
+                lookup[mcpi] = f"{street}, {town}"
+            else:
+                lookup[mcpi] = street
+    return lookup
+
+
+# Module-level lazy cache for address lookup
+_address_lookup_cache: Optional[Dict[str, str]] = None
+
+
+def _get_address(mcpi: str) -> str:
+    """Look up street address for a parcel ID. Falls back to formatted parcel ID."""
+    global _address_lookup_cache
+    if _address_lookup_cache is None:
+        _address_lookup_cache = _load_address_lookup()
+    addr = _address_lookup_cache.get(mcpi, "")
+    if addr:
+        return addr.title()
+    return f"Parcel {mcpi}" if mcpi else "Unknown"
 
 
 def _load_joined_data() -> pd.DataFrame:
@@ -191,9 +234,10 @@ def get_nearby_sales(
         else:
             sale_date = None
 
+        mcpi = row.get("PARID_STR", row.get("PA_MCPI", ""))
         results.append({
-            "parid": row.get("PARID_STR", row.get("PA_MCPI", "")),
-            "address": row.get("PA_MCPI", ""),
+            "parid": mcpi,
+            "address": _get_address(mcpi),
             "sale_price": float(row["PRICE"]),
             "sale_date": sale_date,
             "sale_type": row.get("SALE VERIFICATION", ""),
@@ -279,9 +323,10 @@ def get_nearby_sales_summary(
         else:
             sale_date = None
 
+        mcpi = row.get("PARID_STR", row.get("PA_MCPI", ""))
         sales.append({
-            "parid": row.get("PARID_STR", row.get("PA_MCPI", "")),
-            "address": row.get("PA_MCPI", ""),
+            "parid": mcpi,
+            "address": _get_address(mcpi),
             "sale_price": float(row["PRICE"]),
             "sale_date": sale_date,
             "sale_type": row.get("SALE VERIFICATION", ""),
@@ -322,7 +367,7 @@ if __name__ == "__main__":
     comps = get_nearby_sales(test_lat, test_lon, radius_miles=0.5, limit=10)
     for c in comps:
         print(
-            f"  PARID={c['parid']}  ${c['sale_price']:>12,.0f}  "
+            f"  {c['address']:<40s}  ${c['sale_price']:>12,.0f}  "
             f"{c['sale_date']}  {c['distance_miles']:.3f}mi  "
             f"{c['sale_type']}"
         )

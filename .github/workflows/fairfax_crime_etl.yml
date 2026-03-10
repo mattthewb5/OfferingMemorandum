@@ -13,6 +13,11 @@ on:
         required: false
         default: '500'
 
+# Prevent overlapping runs — cancel any in-progress run when a new one starts
+concurrency:
+  group: crime-etl
+  cancel-in-progress: true
+
 jobs:
   update-crime-data:
     runs-on: ubuntu-latest
@@ -24,6 +29,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0  # Full history for proper commits
 
       - name: Set up Python
@@ -46,7 +52,6 @@ jobs:
           python multi-county-real-estate-research/scripts/fairfax_crime_etl.py \
             --fetch-weekly \
             --max-geocode ${{ github.event.inputs.max_geocode || '500' }}
-        continue-on-error: false
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
@@ -68,7 +73,13 @@ jobs:
           git add multi-county-real-estate-research/data/fairfax/crime/processed/
           git add multi-county-real-estate-research/data/fairfax/crime/raw/geocoded/
           git commit -m "Auto-update: Fairfax crime data $(date '+%Y-%m-%d')"
-          git push
+
+          # Pull with rebase to handle any concurrent pushes, then push with retry
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin main && break
+            echo "Push attempt $attempt failed, retrying in $((attempt * 2)) seconds..."
+            sleep $((attempt * 2))
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -77,10 +88,10 @@ jobs:
         run: |
           METADATA_FILE="multi-county-real-estate-research/data/fairfax/crime/processed/metadata.json"
           if [ -f "$METADATA_FILE" ]; then
-            echo "✅ Crime data updated successfully"
+            echo "Crime data updated successfully"
             echo ""
             echo "=== Metadata ==="
             cat "$METADATA_FILE"
           else
-            echo "⚠️ No metadata file found - check if ETL completed"
+            echo "No metadata file found - check if ETL completed"
           fi

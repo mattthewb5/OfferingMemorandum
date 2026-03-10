@@ -4145,6 +4145,114 @@ placing it in the {"most stable 15-20%" if score < 20 else "more stable half" if
 
 
 # =============================================================================
+# SECTION: COMPARABLE SALES (Local Parquet Data)
+# =============================================================================
+
+def display_comparable_sales_section(lat: float, lon: float, address: str = ""):
+    """Display comparable sales from local Loudoun parquet data.
+
+    Uses core.loudoun_sales_analysis to find nearby arms-length sales
+    joined with LOGIS parcel centroids. Mirrors Fairfax pattern exactly.
+    """
+    st.markdown("## 💰 Comparable Sales Analysis")
+
+    st.markdown("### 📊 Nearby Sales")
+    try:
+        from core.loudoun_sales_analysis import get_nearby_sales
+
+        comps = get_nearby_sales(lat, lon, radius_miles=0.5, limit=10)
+
+        if not comps:
+            # Try wider radius
+            comps = get_nearby_sales(lat, lon, radius_miles=1.0, limit=10)
+
+        if not comps:
+            st.info("No recorded arms-length sales found in county records (2020-2025).")
+            st.markdown("---")
+            return
+
+        st.markdown(f"**{len(comps)} comparable sales** found within 0.5 miles (Loudoun County Commissioner of Revenue, 2020-2025)")
+
+        # Quality scoring (mirrors Fairfax pattern)
+        display_data = []
+        for comp in comps:
+            sale_date_str = comp.get('sale_date', '')
+            display_date = sale_date_str or '—'
+            recency_score = 1
+            if sale_date_str:
+                try:
+                    sale_date = datetime.strptime(sale_date_str, '%Y-%m-%d')
+                    display_date = sale_date.strftime('%b %Y')
+                    months_ago = (datetime.now() - sale_date).days / 30
+                    if months_ago <= 6:
+                        recency_score = 3
+                    elif months_ago <= 12:
+                        recency_score = 2
+                except Exception:
+                    pass
+
+            dist = comp.get('distance_miles', 99)
+            if dist < 0.1:
+                dist_score = 3
+            elif dist < 0.25:
+                dist_score = 2
+            else:
+                dist_score = 1
+
+            avg_score = (recency_score + dist_score) / 2
+            if avg_score >= 2.5:
+                quality_label = "Excellent"
+            elif avg_score >= 1.8:
+                quality_label = "Good"
+            else:
+                quality_label = "Fair"
+
+            sale_type = comp.get('sale_type', '—')
+            old_owner = comp.get('old_owner', '')
+            new_owner = comp.get('new_owner', '')
+            parties = ""
+            if old_owner and new_owner:
+                # Truncate long names
+                old_short = old_owner[:25] + "..." if len(old_owner) > 25 else old_owner
+                new_short = new_owner[:25] + "..." if len(new_owner) > 25 else new_owner
+                parties = f"{old_short} → {new_short}"
+            elif new_owner:
+                parties = new_owner[:30]
+
+            display_data.append({
+                'PARID': comp.get('parid', 'N/A'),
+                'Price': f"${comp.get('sale_price', 0):,.0f}",
+                'Sale Date': display_date,
+                'Distance': f"{dist:.2f} mi",
+                'Sale Type': sale_type,
+                'Parties': parties,
+                'Quality': quality_label,
+                '_sort_score': avg_score,
+            })
+
+        display_data.sort(key=lambda x: -x['_sort_score'])
+        for row in display_data:
+            del row['_sort_score']
+
+        import pandas as pd
+        df = pd.DataFrame(display_data)
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True,
+            height=min(400, 50 + len(display_data) * 35)
+        )
+
+        st.caption("**Quality Score:** Based on distance (<0.1mi best) and sale recency (<6 months best)")
+        st.caption("*Source: Loudoun County Commissioner of Revenue — Arms-length sales records 2020–2025*")
+
+    except Exception as e:
+        st.error(f"Comparable sales error: {e}")
+
+    st.markdown("---")
+
+
+# =============================================================================
 # SECTION: PROPERTY VALUATION
 # =============================================================================
 
@@ -4926,6 +5034,9 @@ def render_report(address: str, lat: float, lon: float):
 
         # Zoning
         display_zoning_section(address, lat, lon)
+
+        # Comparable Sales (local parquet data)
+        display_comparable_sales_section(lat, lon, address)
 
         # Valuation (now includes MLS sqft lookup)
         display_valuation_section(address, lat, lon, sqft_result)

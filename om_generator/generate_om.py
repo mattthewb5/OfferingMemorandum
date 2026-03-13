@@ -73,6 +73,43 @@ def main():
     # Inject logo base64
     ctx['wo_logo_base64'] = extract_logo_base64(V3_PATH)
 
+    # ── Live crime data ──────────────────────────────────────────────
+    # Subject property: 9333 Clocktower Place, Fairfax VA 22031
+    SUBJECT_LAT = 38.8462
+    SUBJECT_LON = -77.3064
+
+    from crime_context import build_crime_context
+    live_crime = build_crime_context(SUBJECT_LAT, SUBJECT_LON)
+    ctx['crime'] = live_crime
+
+    # Update the stoplight Crime Safety row to match live score
+    score = int(live_crime['safety_score'])
+    if score >= 80:
+        rating, dot, badge = 'Very Safe', 'sl-green', 'badge-green'
+    elif score >= 60:
+        rating, dot, badge = 'Safe', 'sl-green', 'badge-green'
+    elif score >= 40:
+        rating, dot, badge = 'Moderate', 'sl-amber', 'badge-amber'
+    elif score >= 20:
+        rating, dot, badge = 'Caution Advised', 'sl-red', 'badge-red'
+    else:
+        rating, dot, badge = 'High Crime Area', 'sl-red', 'badge-red'
+
+    for sl in ctx['stoplight_scores']:
+        if sl['label'] == 'Crime Safety':
+            sl['badge_text'] = rating
+            sl['label_detail'] = rating
+            sl['bar_width'] = f"{score}%"
+            sl['bar_color'] = 'var(--green)' if score >= 60 else 'var(--amber)' if score >= 40 else 'var(--red)'
+            sl['dot_class'] = dot
+            sl['badge_class'] = badge
+            break
+
+    print(f"  Crime data wired: score={live_crime['safety_score']}, "
+          f"violent={live_crime['violent_count']}, "
+          f"property={live_crime['property_count']}, "
+          f"total={live_crime['total_incidents']}")
+
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)
 

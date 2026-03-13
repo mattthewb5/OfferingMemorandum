@@ -56,6 +56,10 @@ def build_crime_context(lat: float, lon: float) -> dict:
     """
     analyzer = FairfaxCrimeAnalysis()
 
+    # TODO: Calibrate safety score thresholds against county-wide averages
+    # Run score across sample of Fairfax parcels to establish meaningful
+    # Low / Moderate / High / Severe bands before client-facing use
+
     # Safety score (drives the summary boxes)
     safety = analyzer.calculate_safety_score(
         lat, lon, radius_miles=RADIUS_MILES, months_back=MONTHS_BACK
@@ -85,7 +89,7 @@ def build_crime_context(lat: float, lon: float) -> dict:
             "type": _clean_crime_type(str(row["description"])),
             "type_class": str(row["category"]),
             "classification": category,
-            "address": str(row["address"]),
+            "address": str(row["address"]).split(";")[0].strip(),
             "distance": distance_str,
         })
 

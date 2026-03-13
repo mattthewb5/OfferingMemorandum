@@ -1,0 +1,136 @@
+<!-- ═══════════════════════════════════
+     PAGE 4 — DEVELOPMENT INTELLIGENCE
+════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--wo-blue);"></div>
+  <div style="padding:40px 36px 36px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;">
+      <div><div class="sec-label">Section Three &#9733; NewCo Exclusive</div>
+      <div class="sec-title">{{ footer_section_names[3] }}</div>
+      <div class="gold-rule"></div></div>
+      <span class="score-badge badge-navy" style="margin-top:8px;font-size:7.5px;">Data Not Available in Any Competing OM Platform</span>
+    </div>
+
+    <div style="display:flex;gap:20px;">
+      <!-- LEFT COL -->
+      <div style="flex:1.1;">
+        <!-- Score display — v3: numerical score 18/100 belongs HERE -->
+        <div class="pressure-main">
+          <div>
+            <div class="pressure-num">{{ dev_pressure_score }}</div>
+            <div style="font-size:8px;color:var(--slate-light);">out of 100</div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><div class="sl-dot sl-green"></div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--green);">{{ dev_pressure_label }}</div></div>
+            <p style="font-size:8.5px;line-height:1.6;color:var(--slate);">{{ dev_pressure_narrative }}</p>
+            <div style="margin-top:6px;display:flex;gap:5px;">
+              <span class="score-badge badge-green">Investor Positive</span>
+              <span class="score-badge badge-navy">Supply Constrained</span>
+              <span class="score-badge badge-navy">5&#8211;7 Yr Barrier to Entry</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formula breakdown — v3: THIS is where scores belong -->
+        <div class="formula-box">
+          <div style="font-size:8px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;font-family:var(--sans);">Score Methodology &#8212; 5-Component Composite</div>
+          {% for comp in dev_formula_components %}
+          <div class="formula-row">
+            <div class="formula-name">{{ comp.name }}</div>
+            <div class="formula-weight">{{ comp.weight }}</div>
+            <div class="formula-bar-track"><div class="formula-bar-fill" style="width:{{ comp.bar_width }};background:{{ comp.bar_color }};"></div></div>
+            <div class="formula-score">{{ comp.score_label }}</div>
+          </div>
+{% endfor %}
+          <div style="font-size:7.5px;color:var(--slate-light);margin-top:7px;font-style:italic;">Score: 0 = No pressure (supply constrained &middot; investor positive) | 100 = Extreme pressure (competing supply imminent)</div>
+        </div>
+
+        <!-- Fairfax context — v3: filled with spec data, county context language -->
+        <div style="background:#f5f3ef;border:1px solid rgba(184,150,106,0.25);padding:10px 12px;">
+          <div style="font-size:8px;font-weight:600;color:var(--navy);margin-bottom:6px;font-family:var(--sans);">{{ property_county }} Context &#8212; {{ total_county_permits }} Total Permits in Database</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="padding:7px 9px;background:white;border:1px solid var(--rule);text-align:center;">
+              <div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--navy);">{{ permits_2mi_count }}</div>
+              <div style="font-size:7.5px;color:var(--slate-light);">Permits within 2 mi.<br>(last 24 months)</div>
+            </div>
+            <div style="padding:7px 9px;background:white;border:1px solid var(--rule);text-align:center;">
+              <div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--green);">{{ new_mf_permits_count }}</div>
+              <div style="font-size:7.5px;color:var(--slate-light);">New multifamily permits<br>within 2 mi.</div>
+            </div>
+            <div style="padding:7px 9px;background:white;border:1px solid var(--rule);text-align:center;">
+              <div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--slate);">{{ commercial_permits_count }}</div>
+              <div style="font-size:7.5px;color:var(--slate-light);">Commercial alt. permits<br>(non-competing)</div>
+            </div>
+            <div style="padding:7px 9px;background:white;border:1px solid var(--rule);text-align:center;">
+              <div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--navy);">{{ nearest_permit_distance }}</div>
+              <div style="font-size:7.5px;color:var(--slate-light);">Nearest permit activity<br>to subject property</div>
+            </div>
+          </div>
+          <!-- v3: County context language replaces percentile claim -->
+          <div style="font-size:7.5px;color:var(--slate);font-style:italic;margin-top:8px;line-height:1.55;">{{ permits_context_footnote }}</div>
+        </div>
+      </div>
+
+      <!-- RIGHT COL -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Development map -->
+        <div>
+          <h4 style="margin-bottom:6px;">Development Activity Map (2-Mile Radius)</h4>
+          <div class="mapbox" style="height:200px;flex-direction:column;gap:8px;">
+            <div class="mapbox-label">Interactive Development Map<br><span style="font-size:7px;opacity:0.7;">Permit locations &middot; Metro station &middot; Growth centers</span></div>
+          </div>
+          <div style="font-size:7px;color:var(--slate-light);margin-top:4px;">
+            &#x1F535; Subject Property &nbsp;|&nbsp; &#x1F534; Active permits (residential) &nbsp;|&nbsp; &#x1F7E1; Commercial permits &nbsp;|&nbsp; &#x24C2; Metro station &nbsp;|&nbsp; &#8212; Comp Plan growth boundary
+          </div>
+        </div>
+
+        <!-- Permit activity chart — v3: filled with spec data -->
+        <div>
+          <h4 style="margin-bottom:7px;">Permit Activity by Type &#8212; 2-Mile Radius, 24 Months</h4>
+          <div class="bar-chart">
+            {% for bar in permit_activity_bars %}
+            <div class="bar-row">
+              <div class="bar-rl">{{ bar.label }}</div>
+              <div class="bar-track"><div class="bar-fill {{ bar.fill_class }}" style="width:{{ bar.width }};"></div></div>
+              <div class="bar-pct">{{ bar.count }}</div>
+            </div>
+{% endfor %}
+          </div>
+          <div style="font-size:7.5px;color:var(--slate-light);font-style:italic;margin-top:5px;">{{ permit_chart_footnote }}</div>
+        </div>
+
+        <!-- Zoning intel — v3: filled placeholders -->
+        <div style="background:rgba(15,31,56,0.04);border:1px solid var(--rule);padding:10px 12px;">
+          <h4 style="margin-bottom:7px;">Zoning Intelligence &#9733;</h4>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);">
+              <span style="font-size:8px;color:var(--slate);">Current Zoning Classification</span>
+              <span style="font-size:8px;font-weight:600;color:var(--navy);">{{ zoning_code_slash }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);">
+              <span style="font-size:8px;color:var(--slate);">Comp Plan Designation</span>
+              <span style="font-size:8px;font-weight:600;color:var(--navy);">{{ comp_plan_designation }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);">
+              <span style="font-size:8px;color:var(--slate);">Distance to Growth Center</span>
+              <span style="font-size:8px;font-weight:600;color:var(--green);">{{ growth_center_distance }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;">
+              <span style="font-size:8px;color:var(--slate);">Upzoning Risk Assessment</span>
+              <span style="font-size:8px;font-weight:600;color:var(--green);">{{ upzoning_risk }}</span>
+            </div>
+          </div>
+          <p style="font-size:8px;color:var(--slate);line-height:1.55;margin-top:8px;">{{ zoning_narrative }}</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="pf-left">{{ footer_section_names[3] }}</div>
+    <div class="pf-center">{{ property_name }} &middot; {{ property_city }}, {{ property_state }} {{ property_zip }}</div>
+    <div style="display:flex;align-items:center;gap:10px;"><div class="wo-mark"><img src="{{ wo_logo_base64 }}" alt="WO"><span class="pf-right">West Oxford Advisors</span></div><span class="pf-right">Page {{ page_numbers[3] }}</span></div>
+  </div>
+</div>
+

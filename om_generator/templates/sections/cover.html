@@ -1,0 +1,110 @@
+<!-- ═══════════════════════════════════
+     PAGE 1 — COVER
+════════════════════════════════════ -->
+<div class="page">
+  <!-- DARK TOP HALF -->
+  <div style="height:530px;background:linear-gradient(155deg,#0c1b32 0%,#1a3357 50%,#0d1a2e 100%);position:relative;overflow:hidden;">
+    <div style="position:absolute;inset:0;background:repeating-linear-gradient(110deg,transparent,transparent 64px,rgba(184,150,106,0.025) 64px,rgba(184,150,106,0.025) 66px);"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--wo-blue);"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:rgba(184,150,106,0.35);"></div>
+
+    <!-- West Oxford logo top-right -->
+    <div style="position:absolute;top:24px;right:36px;text-align:right;">
+      <img src="{{ wo_logo_base64 }}" style="height:34px;opacity:0.85;" alt="West Oxford Advisors">
+      <div style="font-family:var(--sans);font-size:7.5px;color:rgba(255,255,255,0.4);letter-spacing:0.12em;text-transform:uppercase;margin-top:4px;">Exclusively Offered By</div>
+    </div>
+
+    <!-- Confidential badge -->
+    <div style="position:absolute;top:26px;left:36px;">
+      <div style="border:1px solid rgba(255,255,255,0.18);padding:3px 10px;font-size:7px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);font-family:var(--sans);">Confidential</div>
+    </div>
+
+    <!-- Center property identity -->
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-52%);text-align:center;width:600px;">
+      <div style="font-family:var(--sans);font-size:8px;font-weight:600;letter-spacing:0.26em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;">Investment Offering Memorandum</div>
+      <div style="font-family:var(--serif);font-size:52px;font-weight:600;color:white;line-height:1.08;margin-bottom:10px;">{{ property_name }}</div>
+      <div style="width:44px;height:2px;background:var(--wo-blue);margin:14px auto;"></div>
+      <div style="font-family:var(--sans);font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:0.04em;">{{ property_address }} &middot; {{ property_city }}, {{ property_state }} {{ property_zip }}</div>
+      <div style="font-family:var(--sans);font-size:9px;color:rgba(255,255,255,0.32);margin-top:4px;letter-spacing:0.06em;">{{ property_county }} &middot; {{ submarket_name }} Submarket &middot; {{ transit_corridor }}</div>
+    </div>
+
+    <!-- Image area label -->
+    <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.18);font-family:var(--sans);">{{ hero_image_label }}</div>
+  </div>
+
+  <!-- WHITE BOTTOM HALF -->
+  <div style="height:526px;background:white;display:flex;flex-direction:column;">
+    <!-- KPI strip — v3: all placeholders replaced with spec numbers -->
+    <div style="display:flex;gap:1px;background:var(--rule);">
+      <div class="kpi-dark" style="flex:1.4;">
+        <div class="kl">Asking Price</div>
+        <div class="kv">{{ asking_price_display }}</div>
+        <div class="ks">{{ price_per_unit_display }} / Unit</div>
+      </div>
+      <div class="kpi-dark">
+        <div class="kl">Total Units</div>
+        <div class="kv">{{ total_units }}</div>
+        <div class="ks">{{ stories }} Stories &middot; {{ floor_plan_count }} Floor Plans</div>
+      </div>
+      <div class="kpi-dark">
+        <div class="kl">Cap Rate</div>
+        <div class="kv">{{ t12_cap_rate }}</div>
+        <div class="ks">T-12 In-Place</div>
+      </div>
+      <div class="kpi-dark">
+        <div class="kl">Net Oper. Income</div>
+        <div class="kv">{{ t12_noi_short }}</div>
+        <div class="ks">Trailing 12 Months</div>
+      </div>
+      <div class="kpi-dark">
+        <div class="kl">Year Built</div>
+        <div class="kv">{{ year_built }}</div>
+        <div class="ks">{{ management_company_short }} Managed</div>
+      </div>
+      <div class="kpi-dark">
+        <div class="kl">Avg. Monthly Rent</div>
+        <div class="kv">{{ avg_monthly_rent }}</div>
+        <div class="ks">{{ min_unit_sf }}&#8211;{{ max_unit_sf }} SF Units</div>
+      </div>
+    </div>
+
+    <!-- Property summary -->
+    <div style="padding:24px 36px 0;display:flex;gap:28px;align-items:flex-start;flex:1;">
+      <div style="flex:1.6;">
+        <div class="sec-label">Property Overview</div>
+        <p>{{ property_overview_text }}</p>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="score-badge badge-navy">{{ property_county }}</span>
+          <span class="score-badge badge-navy">{{ metro_badge_text }} &middot; {{ metro_distance }}</span>
+          <span class="score-badge badge-navy">{{ university_name_short }} &middot; {{ university_distance }}</span>
+          <span class="score-badge badge-gold">Value-Add Opportunity</span>
+          <span class="score-badge badge-green">Low Dev. Pressure</span>
+        </div>
+      </div>
+      <div class="vdiv" style="height:110px;margin-top:10px;"></div>
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px 16px;padding-top:12px;">
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Total Units</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ total_units }} Units</div></div>
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Avg. Unit Size</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ avg_unit_sf }} SF avg</div></div>
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Rentable Area</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ total_rentable_sf }} SF</div></div>
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Zoning</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ zoning_code }}</div></div>
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Utility Structure</div><div style="font-size:9px;font-weight:600;color:var(--navy);">Tenant-Paid: Electric + Gas<br><span style="color:var(--slate-light);font-weight:400;">Landlord-Paid: Water / Common Area</span></div></div>
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Management</div><div style="font-size:9px;font-weight:600;color:var(--navy);">Bozzuto Mgmt Co.<br><span style="color:var(--slate-light);font-weight:400;">Institutional Operator</span></div></div>
+      </div>
+    </div>
+
+    <!-- Photo strip -->
+    <div style="margin:16px 36px 0;display:flex;gap:6px;">
+      <div class="mapbox" style="height:82px;flex:2;"><div class="mapbox-label">{{ photo_labels[0] }}</div></div>
+      <div class="mapbox" style="height:82px;flex:1;"><div class="mapbox-label">{{ photo_labels[1] }}</div></div>
+      <div class="mapbox" style="height:82px;flex:1;"><div class="mapbox-label">{{ photo_labels[2] }}</div></div>
+      <div class="mapbox" style="height:82px;flex:1;"><div class="mapbox-label">{{ photo_labels[3] }}</div></div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div class="pf-left">{{ property_name }} &middot; {{ property_address }} &middot; {{ property_city }}, {{ property_state_abbr }} {{ property_zip }}</div>
+    <div class="pf-center">Investment Offering Memorandum &middot; Confidential</div>
+    <div class="wo-mark"><img src="{{ wo_logo_base64 }}" alt="WO"><span class="pf-right">{{ broker_name }}</span></div>
+  </div>
+</div>
+

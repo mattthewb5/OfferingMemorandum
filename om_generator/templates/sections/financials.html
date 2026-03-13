@@ -1,0 +1,185 @@
+<!-- ═══════════════════════════════════
+     PAGE 3 — FINANCIAL ANALYSIS
+════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--wo-blue);"></div>
+  <div style="padding:40px 36px 36px;">
+    <div class="sec-label">Section Two</div>
+    <div class="sec-title">{{ footer_section_names[2] }}</div>
+    <div class="gold-rule"></div>
+
+    <!-- Unit Mix Table — v3: full spec data -->
+    <h4 style="margin-bottom:7px;">Unit Mix &amp; In-Place Rents</h4>
+    <table class="dtable" style="margin-bottom:5px;">
+      <thead>
+        <tr>
+          <th>Unit Type</th>
+          <th class="r">Count</th>
+          <th class="r">Pct</th>
+          <th class="r">Avg SF</th>
+          <th class="r">In-Place Rent</th>
+          <th class="r">Mkt Rent (RentCast)</th>
+          <th class="r">Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for unit in unit_mix %}
+        <tr><td class="strong">{{ unit.type }}</td><td class="r">{{ unit.count }}</td><td class="r">{{ unit.pct }}</td><td class="r">{{ unit.avg_sf }}</td><td class="r">{{ unit.in_place_rent }}</td><td class="r" style="color:var(--green);">{{ unit.market_rent }}</td><td class="r" style="color:var(--wo-blue);">{{ unit.gap_dollar }} ({{ unit.gap_pct }})</td></tr>
+{% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td><strong>Portfolio</strong></td><td class="r"><strong>{{ total_units }}</strong></td><td class="r"></td><td class="r"><strong>{{ avg_unit_sf }} avg</strong></td><td class="r"><strong>{{ avg_monthly_rent }} avg</strong></td><td class="r"><strong style="color:var(--green);">{{ portfolio_avg_market_rent }} avg</strong></td><td class="r"><strong style="color:var(--wo-blue);">{{ portfolio_avg_gap }} ({{ portfolio_rent_gap_pct }})</strong></td></tr>
+      </tfoot>
+    </table>
+    <div style="font-size:7.5px;color:var(--slate-light);font-style:italic;margin-bottom:16px;">Full {{ total_units }}-unit rent roll available upon execution of confidentiality agreement. Market rent data sourced via RentCast API for ZIP {{ property_zip }}.</div>
+
+    <!-- Income/Expense two column + Utility benchmark -->
+    <div style="display:flex;gap:14px;margin-bottom:14px;">
+      <!-- Two-col financials — v3: fully populated from spec -->
+      <div style="flex:1.8;">
+        <div style="display:flex;gap:1px;background:var(--rule);">
+          <div style="flex:1;">
+            <div class="col-lbl lbl-actual">&#9888; Trailing 12-Month Actuals &#8212; T-12</div>
+            <table class="ftable">
+              <tbody>
+                <tr><td>Gross Potential Rent</td><td>{{ t12.gpr }}</td></tr>
+                <tr class="indent"><td>Vacancy Loss ({{ t12.vacancy_pct }})</td><td style="color:#9b1c1c;">({{ t12.vacancy_loss }})</td></tr>
+                <tr class="indent"><td>Credit / Bad Debt ({{ t12.credit_loss_pct }})</td><td style="color:#9b1c1c;">({{ t12.credit_loss }})</td></tr>
+                <tr class="cat"><td>Effective Gross Income</td><td>{{ t12.egi }}</td></tr>
+                <tr><td style="padding-top:6px;">Real Estate Taxes</td><td>({{ t12.real_estate_taxes }})</td></tr>
+                <tr><td>Insurance</td><td>({{ t12.insurance }})</td></tr>
+                <tr><td>Repairs &amp; Maintenance</td><td>({{ t12.repairs }})</td></tr>
+                <tr><td>Property Management ({{ t12.mgmt_pct }})</td><td>({{ t12.management }})</td></tr>
+                <tr><td>Utilities &#8212; Landlord-Paid</td><td>({{ t12.utilities }})</td></tr>
+                <tr><td>Administrative</td><td>({{ t12.admin }})</td></tr>
+                <tr><td>Reserves ({{ reserves_per_unit }}/unit)</td><td>({{ t12.reserves }})</td></tr>
+                <tr class="noi"><td>Net Operating Income</td><td>{{ t12.noi }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="flex:1;">
+            <div class="col-lbl lbl-proforma">Pro Forma Year 1 &#8212; Stabilized</div>
+            <table class="ftable">
+              <tbody>
+                <tr><td>Gross Potential Rent</td><td>{{ pf.gpr }}</td></tr>
+                <tr class="indent"><td>Vacancy Loss ({{ pf.vacancy_pct }})</td><td style="color:#9b1c1c;">({{ pf.vacancy_loss }})</td></tr>
+                <tr class="indent"><td>Credit / Bad Debt ({{ t12.credit_loss_pct }})</td><td style="color:#9b1c1c;">({{ pf.credit_loss }})</td></tr>
+                <tr class="cat"><td>Effective Gross Income</td><td>{{ pf.egi }}</td></tr>
+                <tr><td style="padding-top:6px;">Real Estate Taxes</td><td>({{ pf.real_estate_taxes }})</td></tr>
+                <tr><td>Insurance</td><td>({{ pf.insurance }})</td></tr>
+                <tr><td>Repairs &amp; Maintenance</td><td>({{ pf.repairs }})</td></tr>
+                <tr><td>Property Management ({{ t12.mgmt_pct }})</td><td>({{ pf.management }})</td></tr>
+                <tr><td>Utilities &#8212; Landlord-Paid</td><td>({{ pf.utilities }})</td></tr>
+                <tr><td>Administrative</td><td>({{ pf.admin }})</td></tr>
+                <tr><td>Reserves ({{ reserves_per_unit }}/unit)</td><td>({{ pf.reserves }})</td></tr>
+                <tr class="noi"><td>Net Operating Income</td><td style="color:var(--gold-light);">{{ pf.noi }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- v3 Change 4: Gray footnote replaces red credibility warning -->
+        <div style="background:rgba(15,31,56,0.04);border:1px solid var(--rule);padding:5px 10px;margin-top:4px;">
+          <div style="font-size:7.5px;color:var(--slate);font-style:italic;line-height:1.6;"><em>Metric labeling convention: All figures are labeled T-12 Actual or Pro Forma YR1 throughout this document. Mixing trailing actuals with forward projections without clear labels is the most common source of OM credibility errors in the industry (PropRise, 2024). Pro Forma assumes {{ rent_growth_assumption }} rent growth on below-market units at lease renewal.</em></div>
+        </div>
+      </div>
+
+      <!-- Utility benchmark sidebar — v3 Change 2: landlord benchmark only -->
+      <div style="flex:0.8;display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <h4 style="margin-bottom:7px;">Landlord Utility Expense Benchmark</h4>
+          <div class="util-box">
+            <div style="font-size:7.5px;color:var(--slate-light);font-style:italic;margin-bottom:6px;">Landlord-paid utilities: water, sewer, and common area electric. Benchmarked against NoVA multifamily industry averages.</div>
+            <div class="util-row">
+              <div><div class="util-label">Subject Property (T-12)</div><div class="util-source">{{ t12.utilities }} / {{ total_units }} units</div></div>
+              <div class="util-val">{{ utility_per_unit }}/unit/yr</div>
+            </div>
+            <div class="util-row">
+              <div><div class="util-label">NoVA MF Benchmark (Low)</div><div class="util-source">Industry average range</div></div>
+              <div class="util-val">{{ utility_benchmark_low }}/unit/yr</div>
+            </div>
+            <div class="util-row">
+              <div><div class="util-label">NoVA MF Benchmark (High)</div><div class="util-source">Industry average range</div></div>
+              <div class="util-val">{{ utility_benchmark_high }}/unit/yr</div>
+            </div>
+            <div class="util-row" style="border-top:2px solid var(--gold);margin-top:4px;padding-top:6px;">
+              <div><div class="util-label" style="font-weight:600;color:var(--navy);">Assessment</div><div class="util-source">{{ utility_per_unit }} within {{ utility_benchmark_low }}&#8211;{{ utility_benchmark_high }} range</div></div>
+              <div class="util-val" style="color:var(--green);">{{ utility_assessment }}</div>
+            </div>
+          </div>
+          <div style="font-size:7px;color:var(--slate-light);font-style:italic;margin-top:4px;line-height:1.55;">Utility expense ({{ t12.utilities }} T-12 Actual) reflects landlord-paid water, sewer, and common area electric only &#8212; approximately {{ utility_per_unit }}/unit/year. Individual unit electric and gas are metered directly to tenants by Dominion Energy and Washington Gas respectively and do not appear in the property&#8217;s operating statement.</div>
+        </div>
+
+        <div>
+          <h4 style="margin-bottom:7px;">5-Year Cash Flow Projection</h4>
+          <table style="width:100%;border-collapse:collapse;font-size:8px;font-family:var(--sans);">
+            <thead>
+              <tr style="background:var(--navy);">
+                <th style="padding:5px 7px;font-size:7px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);text-align:left;font-weight:600;">Metric</th>
+                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">YR1</th>
+                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">YR3</th>
+                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">YR5</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--rule);"><td style="padding:5px 7px;color:var(--navy);">EGI</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr1_egi }}</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr3_egi }}</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr5_egi }}</td></tr>
+              <tr style="border-bottom:1px solid var(--rule);"><td style="padding:5px 7px;color:var(--navy);">NOI</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr1_noi }}</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr3_noi }}</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr5_noi }}</td></tr>
+              <tr style="border-bottom:1px solid var(--rule);"><td style="padding:5px 7px;color:var(--navy);">Debt Svc</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">({{ cashflow.yr1_debt_svc }})</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">({{ cashflow.yr1_debt_svc }})</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">({{ cashflow.yr1_debt_svc }})</td></tr>
+              <tr style="background:#f0ede8;"><td style="padding:5px 7px;font-weight:600;color:var(--navy);">Cash Flow</td><td style="padding:5px 7px;text-align:right;font-weight:600;color:var(--green);">{{ cashflow.yr1_cashflow }}</td><td style="padding:5px 7px;text-align:right;font-weight:600;color:var(--green);">{{ cashflow.yr3_cashflow }}</td><td style="padding:5px 7px;text-align:right;font-weight:600;color:var(--green);">{{ cashflow.yr5_cashflow }}</td></tr>
+            </tbody>
+          </table>
+          <div style="font-size:7px;color:var(--slate-light);font-style:italic;margin-top:4px;">Assumes {{ financing.ltv }} LTV financing at {{ financing.interest_rate }} interest, {{ financing.amortization }}-yr amortization. DSCR: {{ financing.dscr }}&times;. Pro Forma only.</div>
+        </div>
+
+        <!-- Key Metrics sidebar -->
+        <div style="background:var(--bg);border:1px solid var(--rule);padding:8px 10px;">
+          <h4 style="margin-bottom:5px;">Key Metrics</h4>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Asking Price</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ asking_price_full }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Price / Unit</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ price_per_unit_display }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">T-12 Cap Rate</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ t12_cap_rate }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Pro Forma Cap Rate</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ proforma_cap_rate }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="font-size:8px;color:var(--slate);">OpEx Ratio</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ opex_ratio }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRE Comps — v3: populated with spec data -->
+    <h4 style="margin-bottom:7px;">Comparable Sales &#8212; Multifamily / Commercial</h4>
+    <div style="background:#fafaf8;border:1px solid var(--rule);padding:10px 14px;">
+      <div style="display:flex;gap:20px;align-items:flex-start;">
+        <div style="flex:1;">
+          <div style="font-size:8.5px;font-weight:600;color:var(--navy);margin-bottom:4px;">Commercial Sales Comps &#8212; {{ comps_submarket_display }} Submarket</div>
+          <p style="font-size:8.5px;line-height:1.6;">Multifamily building sales comparables sourced from Virginia RETR deed transfer records via Fairfax County GIS parcel layer cross-reference. Recent transactions in the Vienna/Merrifield submarket demonstrate institutional pricing consistent with the subject property&#8217;s asking basis.</p>
+        </div>
+        <div style="flex:0.6;padding:8px 10px;background:rgba(42,82,160,0.05);border:1px solid rgba(42,82,160,0.15);">
+          <div style="font-size:7.5px;font-weight:600;color:var(--wo-blue);margin-bottom:5px;letter-spacing:0.08em;text-transform:uppercase;">Data Sources</div>
+          <div style="font-size:8px;color:var(--slate);line-height:1.8;">&#10003; Virginia RETR (deed transfers)<br>&#10003; Fairfax Co. Land Records GIS<br>&#8857; CREXi (activation pending)<br>&#8857; ATTOM multifamily (pending)</div>
+        </div>
+      </div>
+      <table class="dtable" style="margin-top:10px;">
+        <thead>
+          <tr>
+            <th>Property Name / Address</th>
+            <th class="r">Units</th>
+            <th class="r">Sale Price</th>
+            <th class="r">Price / Unit</th>
+            <th class="r">Est. Cap</th>
+            <th>Sale Date</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comp in comps %}
+          <tr><td class="strong">{{ comp.name }}</td><td class="r">{{ comp.units }}</td><td class="r">{{ comp.sale_price }}</td><td class="r">{{ comp.price_per_unit }}</td><td class="r">{{ comp.cap_rate }}</td><td>{{ comp.sale_date }}</td><td><span class="score-badge badge-navy">{{ comp.source }}</span></td></tr>
+{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <div class="pf-left">{{ footer_section_names[2] }}</div>
+    <div class="pf-center">{{ property_name }} &middot; {{ property_city }}, {{ property_state }} {{ property_zip }}</div>
+    <div style="display:flex;align-items:center;gap:10px;"><div class="wo-mark"><img src="{{ wo_logo_base64 }}" alt="WO"><span class="pf-right">West Oxford Advisors</span></div><span class="pf-right">Page {{ page_numbers[2] }}</span></div>
+  </div>
+</div>
+

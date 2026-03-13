@@ -1,0 +1,127 @@
+<!-- ═══════════════════════════════════
+     PAGE 2 — EXECUTIVE SUMMARY
+════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--wo-blue);"></div>
+  <div style="padding:40px 36px 36px;">
+    <div class="sec-label">Section One</div>
+    <div class="sec-title">{{ footer_section_names[1] }}</div>
+    <div class="gold-rule"></div>
+
+    <div style="display:flex;gap:26px;">
+      <!-- LEFT: narrative + highlights -->
+      <div style="flex:1.65;">
+        <!-- AI thesis -->
+        <div style="background:#f5f3ef;border-left:3px solid var(--wo-blue);padding:13px 15px;margin-bottom:16px;">
+          <div style="font-size:7.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--wo-blue);margin-bottom:7px;font-family:var(--sans);">Investment Thesis &#8212; AI Generated</div>
+          <p style="font-size:9.5px;line-height:1.7;color:var(--navy);">{{ investment_thesis_text }}</p>
+          <div style="font-size:7px;color:rgba(42,82,160,0.55);margin-top:7px;font-style:italic;font-family:var(--sans);">&#8857; Synthesized by NewCo AI Platform from permit, zoning, demographic, and market data &middot; {{ report_date }}</div>
+        </div>
+
+        <!-- Value-add thesis box — v3: populated with spec numbers -->
+        <div class="value-add-box" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="font-size:8px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--wo-blue);font-family:var(--sans);">{{ embedded_value_display }} Embedded Value &#8212; {{ portfolio_rent_gap_pct }} Mark-to-Market Opportunity</div>
+            <span class="score-badge badge-gold">RentCast Market Data</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <div style="padding:8px 10px;background:white;border:1px solid rgba(42,82,160,0.15);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:3px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">1 BR / 1 BA ({{ unit_mix[0].count }} units)</div>
+              <div style="font-size:8.5px;color:var(--slate);">In-Place: <strong style="color:var(--navy);">{{ unit_mix[0].in_place_rent }}</strong></div>
+              <div style="font-size:8.5px;color:var(--slate);">Market Avg: <strong style="color:var(--green);">{{ unit_mix[0].market_rent }}</strong></div>
+              <div style="font-size:8px;color:var(--wo-blue);font-weight:600;margin-top:3px;">Gap: {{ unit_mix[0].gap_dollar }} ({{ unit_mix[0].gap_pct }})</div>
+            </div>
+            <div style="padding:8px 10px;background:white;border:1px solid rgba(42,82,160,0.15);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:3px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">2 BR / 2 BA ({{ unit_mix[1].count }} units)</div>
+              <div style="font-size:8.5px;color:var(--slate);">In-Place: <strong style="color:var(--navy);">{{ unit_mix[1].in_place_rent }}</strong></div>
+              <div style="font-size:8.5px;color:var(--slate);">Market Avg: <strong style="color:var(--green);">{{ unit_mix[1].market_rent }}</strong></div>
+              <div style="font-size:8px;color:var(--wo-blue);font-weight:600;margin-top:3px;">Gap: {{ unit_mix[1].gap_dollar }} ({{ unit_mix[1].gap_pct }})</div>
+            </div>
+            <div style="padding:8px 10px;background:white;border:1px solid rgba(42,82,160,0.15);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:3px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">3 BR / 2 BA ({{ unit_mix[2].count }} units)</div>
+              <div style="font-size:8.5px;color:var(--slate);">In-Place: <strong style="color:var(--navy);">{{ unit_mix[2].in_place_rent }}</strong></div>
+              <div style="font-size:8.5px;color:var(--slate);">Market Avg: <strong style="color:var(--green);">{{ unit_mix[2].market_rent }}</strong></div>
+              <div style="font-size:8px;color:var(--wo-blue);font-weight:600;margin-top:3px;">Gap: {{ unit_mix[2].gap_dollar }} ({{ unit_mix[2].gap_pct }})</div>
+            </div>
+          </div>
+          <div style="font-size:7.5px;color:var(--slate-light);margin-top:7px;font-style:italic;">~{{ below_market_units }} below-market units &times; {{ avg_gap_per_unit }}/unit/month avg gap &times; 12 = {{ annual_noi_potential }}/yr additional NOI. At {{ value_cap_rate }} cap rate = {{ embedded_value_display }} implied embedded value.</div>
+        </div>
+
+        <h4 style="margin-bottom:10px;">Investment Highlights</h4>
+
+        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[0] }}</div></div>
+
+        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[1] }}</div></div>
+
+        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[2] }}</div></div>
+
+        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[3] }}</div></div>
+
+        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[4] }}</div></div>
+
+        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[5] }}</div></div>
+      </div>
+
+      <div class="vdiv"></div>
+
+      <!-- RIGHT: metrics + scores -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+
+        <div>
+          <h4 style="margin-bottom:7px;">Key Financial Metrics</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);">
+            <div class="kpi-light"><div class="kl">Asking Price</div><div class="kv">{{ asking_price_short }}</div></div>
+            <div class="kpi-light"><div class="kl">T-12 Cap Rate <span style="text-transform:none;letter-spacing:0;">(Actual)</span></div><div class="kv">{{ t12_cap_rate }}</div></div>
+            <div class="kpi-light"><div class="kl">Pro Forma Cap Rate</div><div class="kv">{{ proforma_cap_rate }}</div><div class="ks">Stabilized YR 1</div></div>
+            <div class="kpi-light"><div class="kl">T-12 NOI <span style="text-transform:none;letter-spacing:0;">(Actual)</span></div><div class="kv">{{ t12_noi_short }}</div></div>
+            <div class="kpi-light"><div class="kl">Total Units</div><div class="kv">{{ total_units }}</div></div>
+            <div class="kpi-light"><div class="kl">Price / Unit</div><div class="kv">{{ price_per_unit_display }}</div></div>
+          </div>
+          <div style="font-size:7px;color:var(--red);font-weight:600;padding:4px 0;font-family:var(--sans);">&#9888; Cap rate labels distinguish T-12 Actual vs. Pro Forma throughout this document.</div>
+        </div>
+
+        <hr class="rule">
+
+        <!-- Stoplight scores — v3 Change 3: NO numerical scores on exec summary -->
+        <div>
+          <h4 style="margin-bottom:9px;">NewCo Location Intelligence Scores</h4>
+          <div>
+            {% for score in stoplight_scores %}
+            <div class="score-row">
+              <div style="display:flex;align-items:center;gap:6px;"><div class="sl-dot {{ score.dot_class }}"></div><div class="score-label">{{ score.label }} &#8212; <strong>{{ score.label_detail }}</strong></div></div>
+              <div class="score-right">
+                <div class="score-bar-track"><div class="score-bar-fill bar-primary" style="width:{{ score.bar_width }};{% if score.bar_color %}background:{{ score.bar_color }};{% endif %}"></div></div>
+                <span class="score-badge {{ score.badge_class }}">{{ score.badge_text }}</span>
+              </div>
+            </div>
+{% endfor %}
+          </div>
+          <div style="font-size:7px;color:var(--slate-light);margin-top:5px;font-style:italic;">&#x1F7E2; Green = strong investment attribute &middot; &#x1F7E1; Amber = consider in underwriting &middot; &#x1F534; Red = risk factor</div>
+        </div>
+
+        <hr class="rule">
+
+        <!-- Property specs -->
+        <div>
+          <h4 style="margin-bottom:7px;">Property Details</h4>
+          <div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate-light);">Address</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ property_address_short }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate-light);">Submarket</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ submarket_name }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate-light);">Zoning</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ zoning_display }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate-light);">Metro Station</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ metro_station_name }} &#8212; 1.3 mi</span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate-light);">Year Built / Mgr.</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ year_built }} / {{ management_company_short }} Mgmt</span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0;"><span style="font-size:8px;color:var(--slate-light);">Utility Structure</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ utility_structure_short }}</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div class="pf-left">{{ footer_section_names[1] }}</div>
+    <div class="pf-center">{{ property_name }} &middot; {{ property_city }}, {{ property_state }} {{ property_zip }}</div>
+    <div style="display:flex;align-items:center;gap:10px;"><div class="wo-mark"><img src="{{ wo_logo_base64 }}" alt="WO"><span class="pf-right">West Oxford Advisors</span></div><span class="pf-right">Page {{ page_numbers[1] }}</span></div>
+  </div>
+</div>
+

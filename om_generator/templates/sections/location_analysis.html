@@ -1,0 +1,177 @@
+<!-- ═══════════════════════════════════
+     PAGE 6 — LOCATION ANALYSIS
+════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--wo-blue);"></div>
+  <div style="padding:40px 36px 36px;">
+    <div class="sec-label">Section Five &#9733; NewCo Exclusive</div>
+    <div class="sec-title">{{ footer_section_names[5] }}</div>
+    <div class="gold-rule"></div>
+
+    <div style="display:flex;gap:20px;">
+      <!-- LEFT COL -->
+      <div style="flex:1.05;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Map -->
+        <div>
+          <h4 style="margin-bottom:6px;">Location Context Map</h4>
+          <div class="mapbox" style="height:195px;flex-direction:column;gap:8px;">
+            <div class="mapbox-label">Property Location Map<br><span style="font-size:7px;opacity:0.7;">Schools &middot; Metro &middot; Police &middot; Fire &middot; Permits &middot; Radius rings</span></div>
+          </div>
+          <div style="font-size:7px;color:var(--slate-light);margin-top:4px;">
+            &#x1F535; {{ property_name }} &nbsp;|&nbsp; &#x1F3EB; Schools (name labeled) &nbsp;|&nbsp; &#x24C2; Metro (Silver Line) &nbsp;|&nbsp; &#x1F692; Fire station &nbsp;|&nbsp; &#x1F693; Police &nbsp;|&nbsp; &#8212; 1mi / 2mi radius
+          </div>
+        </div>
+
+        <!-- Travel times -->
+        <div>
+          <h4 style="margin-bottom:7px;">Drive Times from {{ property_name }}</h4>
+          <div class="travel-grid">
+            {% for dt in drive_times %}
+            <div class="tc"><div><div class="tc-dest">{{ dt.destination }}</div><div class="tc-mi">{{ dt.distance }}</div></div><div class="tc-time">{{ dt.time }}</div></div>
+{% endfor %}
+          </div>
+        </div>
+
+        <!-- Traffic — v3: filled with spec data -->
+        <div style="background:#f5f3ef;border:1px solid rgba(184,150,106,0.25);padding:10px 12px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;">
+            <h4 style="margin-bottom:0;">Traffic Volumes &#9733; (VDOT)</h4>
+            <span class="score-badge badge-gold">Retail Visibility Data</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="padding:7px 9px;background:white;border:1px solid var(--rule);text-align:center;">
+              <div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--navy);">{{ traffic.primary_road_count }}</div>
+              <div style="font-size:7.5px;color:var(--slate-light);">{{ traffic.primary_road_name }}<br>Daily Vehicle Count</div>
+            </div>
+            <div style="padding:7px 9px;background:white;border:1px solid var(--rule);text-align:center;">
+              <div style="font-family:var(--serif);font-size:20px;font-weight:600;color:var(--navy);">{{ traffic.secondary_road_count }}</div>
+              <div style="font-size:7.5px;color:var(--slate-light);">{{ traffic.secondary_road_name }}<br>Daily Vehicle Count</div>
+            </div>
+          </div>
+          <div style="font-size:7.5px;color:var(--slate-light);margin-top:6px;font-style:italic;">Source: VDOT Traffic Volume API &middot; Annual Daily Traffic (ADT)</div>
+        </div>
+
+        <!-- Crime section — v3: filled with spec data -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+            <h4 style="margin-bottom:0;">Crime Analysis &#9733;</h4>
+            <div style="display:flex;align-items:center;gap:5px;"><div class="sl-dot sl-green"></div><span class="score-badge badge-green">{{ crime.safety_score }}/100 Safety Score</span></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:7px;">
+            <div style="flex:1;padding:7px;background:var(--green-light);border:1px solid rgba(45,106,79,0.2);text-align:center;">
+              <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--green);">{{ crime.safety_score }}</div>
+              <div style="font-size:7px;color:var(--green);">Safety Score</div>
+            </div>
+            <div style="flex:1;padding:7px;background:var(--red-light);border:1px solid rgba(155,28,28,0.2);text-align:center;">
+              <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--red);">{{ crime.violent_count }}</div>
+              <div style="font-size:7px;color:var(--red);">Violent Incidents</div>
+            </div>
+            <div style="flex:1;padding:7px;background:var(--amber-light);border:1px solid rgba(180,83,9,0.2);text-align:center;">
+              <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--amber);">{{ crime.property_count }}</div>
+              <div style="font-size:7px;color:var(--amber);">Property Crimes</div>
+            </div>
+            <div style="flex:1;padding:7px;background:var(--bg);border:1px solid var(--rule);text-align:center;">
+              <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--slate);">{{ crime.total_incidents }}</div>
+              <div style="font-size:7px;color:var(--slate-light);">Total Incidents</div>
+            </div>
+          </div>
+          <table class="crime-table">
+            <thead>
+              <tr><th>Date</th><th>Type</th><th>Classification</th><th>Block Address</th><th>Distance</th></tr>
+            </thead>
+            <tbody>
+              {% for inc in crime.incidents %}
+              <tr><td>{{ inc.date }}</td><td><span class="crime-type-{{ inc.type_class }}">{{ inc.type }}</span></td><td>{{ inc.classification }}</td><td>{{ inc.address }}</td><td>{{ inc.distance }}</td></tr>
+{% endfor %}
+            </tbody>
+          </table>
+          <div style="font-size:7px;color:var(--slate-light);margin-top:4px;font-style:italic;">{{ crime.footnote }}</div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COL -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Schools — v3: filled with spec data -->
+        <div>
+          <h4 style="margin-bottom:7px;">School Performance &#9733; (Virginia SOL Data)</h4>
+          <div style="display:flex;gap:6px;margin-bottom:6px;">
+            {% for school in schools %}
+            <div class="school-card">
+              <div class="sc-level">{{ school.level }}</div>
+              <div class="sc-name">{{ school.name }}</div>
+              <div class="sc-stats">
+                <div><div class="sc-stat-label">SOL Pass</div><div class="sc-stat-val" style="color:var(--green);">{{ school.sol_pass }}</div></div>
+                <div><div class="sc-stat-label">State Avg</div><div class="sc-stat-val" style="color:var(--slate);">{{ school.state_avg }}</div></div>
+                <div><div class="sc-stat-label">Rating</div><div class="sc-stat-val" style="color:var(--green);">{{ school.delta }}</div></div>
+              </div>
+            </div>
+{% endfor %}
+          </div>
+          <div style="font-size:7.5px;color:var(--slate-light);font-style:italic;">{{ school_footnote }}</div>
+        </div>
+
+        <!-- Healthcare -->
+        <div>
+          <h4 style="margin-bottom:7px;">Healthcare Access &#9733; (CMS Quality Data)</h4>
+          <div style="background:var(--green-light);border:1px solid rgba(45,106,79,0.25);padding:9px 12px;margin-bottom:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <div style="font-size:8px;font-weight:600;color:var(--green);margin-bottom:2px;">{{ healthcare.primary_label }}</div>
+                <div style="font-family:var(--serif);font-size:14px;font-weight:600;color:var(--navy);">{{ healthcare.name }} &middot; {{ healthcare.distance }} &middot; {{ healthcare.drive_time }}</div>
+                <div style="font-size:8px;color:var(--slate);margin-top:3px;">{{ healthcare.certifications }}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--green);">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <div style="font-size:7px;color:var(--slate-light);">CMS 5-Star</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+              <div style="background:white;padding:5px 7px;border-radius:2px;text-align:center;">
+                <div style="font-size:9px;font-weight:600;color:var(--navy);">{{ healthcare.births_per_year }}</div>
+                <div style="font-size:7px;color:var(--slate-light);">Births / Year</div>
+              </div>
+              <div style="background:white;padding:5px 7px;border-radius:2px;text-align:center;">
+                <div style="font-size:9px;font-weight:600;color:var(--green);">{{ healthcare.csection_rate }}</div>
+                <div style="font-size:7px;color:var(--slate-light);">C-Section Rate &#10003;</div>
+              </div>
+              <div style="background:white;padding:5px 7px;border-radius:2px;text-align:center;">
+                <div style="font-size:9px;font-weight:600;color:var(--navy);">{{ healthcare.employee_count }}</div>
+                <div style="font-size:7px;color:var(--slate-light);">Inova Employees</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="padding:6px 9px;background:var(--bg);border:1px solid var(--rule);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">URGENT CARE CENTERS</div>
+              <div style="font-size:10px;font-weight:600;color:var(--navy);">{{ healthcare.urgent_care_count }}</div>
+            </div>
+            <div style="padding:6px 9px;background:var(--bg);border:1px solid var(--rule);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">PHARMACIES</div>
+              <div style="font-size:10px;font-weight:600;color:var(--navy);">{{ healthcare.pharmacy_count }}</div>
+            </div>
+            <div style="padding:6px 9px;background:var(--bg);border:1px solid var(--rule);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">TOTAL RATED FACILITIES</div>
+              <div style="font-size:10px;font-weight:600;color:var(--navy);">{{ healthcare.total_facilities }}</div>
+            </div>
+            <div style="padding:6px 9px;background:var(--bg);border:1px solid var(--rule);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">HEALTHCARE SCORE</div>
+              <div style="font-size:10px;font-weight:600;color:var(--green);">{{ healthcare.score }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- v3 Change 2: Tenant Utility Burden panel REMOVED per spec -->
+        <!-- "Industry standard OMs do not include tenant-paid utility estimates. This is not OM information." -->
+
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="pf-left">{{ footer_section_names[5] }}</div>
+    <div class="pf-center">{{ property_name }} &middot; {{ property_city }}, {{ property_state }} {{ property_zip }}</div>
+    <div style="display:flex;align-items:center;gap:10px;"><div class="wo-mark"><img src="{{ wo_logo_base64 }}" alt="WO"><span class="pf-right">West Oxford Advisors</span></div><span class="pf-right">Page {{ page_numbers[5] }}</span></div>
+  </div>
+</div>

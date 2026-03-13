@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offering Memorandum — {{ property_name }} — v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f1f38;
+    --navy-mid: #1a3357;
+    --wo-blue: #2a52a0;
+    --gold: #b8966a;
+    --gold-light: #d4b48a;
+    --slate: #4a5568;
+    --slate-light: #718096;
+    --rule: #e2e8f0;
+    --bg: #f7f6f4;
+    --white: #ffffff;
+    --green: #2d6a4f;
+    --green-light: #d1fae5;
+    --amber: #b45309;
+    --amber-light: #fef3c7;
+    --red: #9b1c1c;
+    --red-light: #fee2e2;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'DM Sans', -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #ccc9c3; font-family: var(--sans); font-size: 10px; color: #2d3748; -webkit-font-smoothing: antialiased; }
+
+  .page { width: 816px; min-height: 1056px; background: var(--white); margin: 32px auto; position: relative; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12); }
+  .page-footer { position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: var(--navy); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
+  .pf-left { font-family: var(--sans); font-size: 7.5px; font-weight: 500; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; text-transform: uppercase; }
+  .pf-center { font-family: var(--serif); font-size: 9.5px; color: rgba(255,255,255,0.6); font-style: italic; }
+  .pf-right { font-family: var(--sans); font-size: 7.5px; color: rgba(255,255,255,0.4); }
+  .wo-mark { display: inline-flex; align-items: center; gap: 5px; }
+  .wo-mark img { height: 16px; opacity: 0.5; }
+
+  /* Typography */
+  .sec-label { font-family: var(--sans); font-size: 8px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 5px; }
+  .sec-title { font-family: var(--serif); font-weight: 600; font-size: 22px; color: var(--navy); line-height: 1.15; margin-bottom: 10px; }
+  .sub-title { font-family: var(--serif); font-weight: 600; font-size: 14px; color: var(--navy); margin-bottom: 6px; }
+  h4 { font-family: var(--sans); font-size: 8.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--navy); margin-bottom: 6px; }
+  p { font-family: var(--sans); font-size: 9.5px; line-height: 1.65; color: var(--slate); }
+  .gold-rule { width: 36px; height: 2px; background: var(--gold); margin-bottom: 16px; }
+  hr.rule { border: none; border-top: 1px solid var(--rule); margin: 12px 0; }
+
+  /* Stoplight Scores */
+  .score-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+  .score-row:last-child { border-bottom: none; }
+  .score-label { font-family: var(--sans); font-size: 8.5px; color: var(--slate); }
+  .score-right { display: flex; align-items: center; gap: 8px; }
+  .score-bar-track { width: 72px; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 3px; }
+  .score-val { font-family: var(--serif); font-size: 13px; font-weight: 600; width: 40px; text-align: right; }
+  .score-denom { font-size: 8px; font-weight: 400; color: var(--slate-light); }
+  .score-badge { display: inline-flex; align-items: center; gap: 3px; padding: 1px 5px; border-radius: 2px; font-size: 6.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-navy { background: rgba(15,31,56,0.08); color: var(--navy); border: 1px solid rgba(15,31,56,0.12); }
+  .badge-gold { background: rgba(184,150,106,0.12); color: var(--gold); border: 1px solid rgba(184,150,106,0.25); }
+
+  /* Stoplight dot */
+  .sl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sl-green { background: #22c55e; }
+  .sl-amber { background: #f59e0b; }
+  .sl-red { background: #ef4444; }
+
+  /* KPI boxes */
+  .kpi-dark { background: var(--navy); color: white; padding: 12px 14px; flex: 1; }
+  .kpi-dark .kl { font-size: 7px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+  .kpi-dark .kv { font-family: var(--serif); font-size: 19px; font-weight: 600; color: white; line-height: 1; }
+  .kpi-dark .ks { font-size: 7.5px; color: var(--gold-light); margin-top: 2px; }
+  .kpi-light { background: var(--bg); border: 1px solid var(--rule); padding: 10px 12px; flex: 1; }
+  .kpi-light .kl { font-size: 7px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--slate-light); margin-bottom: 3px; }
+  .kpi-light .kv { font-family: var(--serif); font-size: 17px; font-weight: 600; color: var(--navy); line-height: 1; }
+  .kpi-light .ks { font-size: 7.5px; color: var(--slate-light); margin-top: 2px; }
+
+  /* Tables */
+  .dtable { width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: 8.5px; }
+  .dtable thead tr { background: var(--navy); }
+  .dtable thead th { padding: 6px 9px; font-weight: 600; font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.65); text-align: left; }
+  .dtable thead th.r { text-align: right; }
+  .dtable tbody tr { border-bottom: 1px solid var(--rule); }
+  .dtable tbody tr:nth-child(even) { background: #fafaf9; }
+  .dtable tbody td { padding: 6px 9px; color: var(--slate); }
+  .dtable tbody td.r { text-align: right; }
+  .dtable tbody td.strong { font-weight: 600; color: var(--navy); }
+  .dtable tfoot td { padding: 7px 9px; font-weight: 600; font-size: 8.5px; color: var(--navy); background: #f0ede8; border-top: 2px solid var(--gold); }
+  .dtable tfoot td.r { text-align: right; }
+
+  /* Financial table */
+  .ftable { width: 100%; border-collapse: collapse; font-size: 8.5px; font-family: var(--sans); }
+  .ftable td { padding: 4px 9px; border-bottom: 1px solid var(--rule); color: var(--slate); }
+  .ftable td:last-child { text-align: right; }
+  .ftable tr.cat td { background: #f5f3ef; font-weight: 600; color: var(--navy); font-size: 8px; padding: 5px 9px; border-top: 1px solid rgba(184,150,106,0.25); }
+  .ftable tr.noi td { background: var(--navy); color: white; font-weight: 600; font-size: 9px; }
+  .ftable tr.indent td:first-child { padding-left: 18px; color: var(--slate-light); }
+  .col-lbl { font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; padding: 4px 9px; }
+  .lbl-actual { background: rgba(184,150,106,0.1); color: var(--gold); }
+  .lbl-proforma { background: rgba(15,31,56,0.07); color: var(--navy); }
+
+  /* Highlight bullet */
+  .hl-bullet { display: flex; gap: 10px; margin-bottom: 9px; align-items: flex-start; }
+  .hl-marker { width: 3px; min-height: 13px; background: var(--gold); flex-shrink: 0; margin-top: 3px; }
+  .hl-text { font-size: 9.5px; line-height: 1.5; color: var(--slate); }
+  .hl-text strong { color: var(--navy); font-weight: 600; }
+
+  /* Column divider */
+  .vdiv { width: 1px; background: var(--rule); flex-shrink: 0; }
+
+  /* Map placeholder */
+  .mapbox { background: #e8ecf0; border: 1px solid var(--rule); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .mapbox::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent, transparent 18px, rgba(15,31,56,0.025) 18px, rgba(15,31,56,0.025) 20px); }
+  .mapbox-label { font-size: 8px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate-light); position: relative; z-index: 1; text-align: center; }
+
+  /* Travel grid */
+  .travel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+  .tc { background: white; padding: 7px 10px; display: flex; justify-content: space-between; align-items: center; }
+  .tc-dest { font-size: 8px; color: var(--slate); }
+  .tc-mi { font-size: 7px; color: var(--slate-light); }
+  .tc-time { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--navy); }
+
+  /* School card */
+  .school-card { border: 1px solid var(--rule); padding: 9px 11px; flex: 1; }
+  .sc-level { font-size: 7px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 2px; }
+  .sc-name { font-family: var(--serif); font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 5px; }
+  .sc-stats { display: flex; gap: 8px; }
+  .sc-stat-label { font-size: 7px; color: var(--slate-light); margin-bottom: 1px; }
+  .sc-stat-val { font-size: 9.5px; font-weight: 600; }
+
+  /* Bar chart */
+  .bar-chart { display: flex; flex-direction: column; gap: 5px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; }
+  .bar-rl { font-size: 8px; color: var(--slate); width: 130px; flex-shrink: 0; text-align: right; }
+  .bar-track { flex: 1; height: 13px; background: #eeecea; border-radius: 1px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 1px; }
+  .bar-primary { background: var(--navy); }
+  .bar-light { background: rgba(15,31,56,0.25); }
+  .bar-pct { font-size: 7.5px; font-weight: 600; color: var(--navy); width: 28px; text-align: right; }
+
+  /* Employer row */
+  .emp-row { display: flex; align-items: center; padding: 5px 10px; border-bottom: 1px solid var(--rule); gap: 8px; }
+  .emp-row:last-child { border-bottom: none; }
+  .emp-rank { font-family: var(--serif); font-size: 11px; color: var(--gold); width: 14px; flex-shrink: 0; }
+  .emp-name { font-size: 8.5px; font-weight: 500; color: var(--navy); flex: 1.2; }
+  .emp-sector { font-size: 7.5px; color: var(--slate-light); flex: 1; }
+  .emp-count { font-size: 8.5px; font-weight: 600; color: var(--navy); text-align: right; flex-shrink: 0; }
+
+  /* Dev pressure */
+  .pressure-main { display: flex; align-items: center; gap: 16px; padding: 14px 16px; background: #f0faf5; border-left: 3px solid var(--green); margin-bottom: 14px; }
+  .pressure-num { font-family: var(--serif); font-size: 58px; font-weight: 700; color: var(--green); line-height: 1; }
+
+  /* Formula box */
+  .formula-box { background: #f5f3ef; border: 1px solid rgba(184,150,106,0.3); padding: 11px 14px; margin-bottom: 14px; }
+  .formula-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid rgba(184,150,106,0.15); }
+  .formula-row:last-child { border-bottom: none; }
+  .formula-name { font-size: 8.5px; color: var(--navy); font-weight: 500; flex: 1.5; }
+  .formula-weight { font-family: var(--serif); font-size: 13px; font-weight: 600; color: var(--gold); width: 32px; text-align: center; }
+  .formula-bar-track { flex: 1; height: 8px; background: #e2d9cb; border-radius: 2px; overflow: hidden; }
+  .formula-bar-fill { height: 100%; border-radius: 2px; }
+  .formula-score { font-size: 8px; font-weight: 600; color: var(--green); width: 50px; text-align: right; }
+
+  /* Utility box */
+  .util-box { background: rgba(15,31,56,0.04); border: 1px solid var(--rule); padding: 10px 12px; }
+  .util-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--rule); }
+  .util-row:last-child { border-bottom: none; }
+  .util-label { font-size: 8.5px; color: var(--slate); }
+  .util-val { font-size: 8.5px; font-weight: 600; color: var(--navy); }
+  .util-source { font-size: 7px; color: var(--slate-light); font-style: italic; }
+
+  /* Crime table */
+  .crime-table { width: 100%; border-collapse: collapse; font-size: 8px; font-family: var(--sans); }
+  .crime-table thead tr { background: rgba(155,28,28,0.08); }
+  .crime-table thead th { padding: 5px 8px; font-size: 7px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--red); text-align: left; }
+  .crime-table tbody tr { border-bottom: 1px solid var(--rule); }
+  .crime-table tbody td { padding: 5px 8px; color: var(--slate); }
+  .crime-table tbody td:first-child { font-weight: 500; color: var(--navy); }
+  .crime-type-violent { color: var(--red); font-weight: 600; font-size: 7.5px; }
+  .crime-type-property { color: var(--amber); font-weight: 600; font-size: 7.5px; }
+
+  /* Value-add box */
+  .value-add-box { background: rgba(42,82,160,0.05); border: 1px solid rgba(42,82,160,0.2); padding: 12px 14px; margin-bottom: 14px; }
+
+</style>
+</head>
+<body>
+
+{% include "sections/cover.html" %}
+{% include "sections/executive_summary.html" %}
+{% include "sections/financials.html" %}
+{% include "sections/development_intelligence.html" %}
+{% include "sections/market_overview.html" %}
+{% include "sections/location_analysis.html" %}
+</body>
+</html>

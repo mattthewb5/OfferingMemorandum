@@ -24,6 +24,9 @@ Thumbs.db
 # Claude Code
 .claude/
 
+# OM Generator output (regenerable)
+om_generator/om_output.html
+
 # Data (keep structure, ignore large downloads)
 # Uncomment these if you don't want to commit data files
 # data/performance/*.csv

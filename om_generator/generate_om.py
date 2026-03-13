@@ -75,8 +75,9 @@ def main():
 
     # ── Live crime data ──────────────────────────────────────────────
     # Subject property: 9333 Clocktower Place, Fairfax VA 22031
-    SUBJECT_LAT = 38.8462
-    SUBJECT_LON = -77.3064
+    # Geocoded via US Census Bureau geocoder (geocoding.geo.census.gov)
+    SUBJECT_LAT = 38.8731
+    SUBJECT_LON = -77.2689
 
     from crime_context import build_crime_context
     live_crime = build_crime_context(SUBJECT_LAT, SUBJECT_LON)

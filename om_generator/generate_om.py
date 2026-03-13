@@ -25,7 +25,7 @@ DEFAULT_OUTPUT = os.path.join(SCRIPT_DIR, 'om_output.html')
 
 def extract_logo_base64(v3_path):
     """Extract the West Oxford logo base64 string from the v3 prototype."""
-    with open(v3_path, 'r') as f:
+    with open(v3_path, 'r', encoding='utf-8') as f:
         content = f.read()
     match = re.search(r'(data:image/png;base64,[A-Za-z0-9+/=]+)', content)
     if not match:
@@ -85,7 +85,7 @@ def main():
     html = template.render(**ctx)
 
     # Write output
-    with open(args.output, 'w') as f:
+    with open(args.output, 'w', encoding='utf-8') as f:
         f.write(html)
 
     print(f"OM generated: {args.output} ({len(html):,} chars)")

@@ -1,0 +1,142 @@
+<!-- ═══════════════════════════════════
+     PAGE 5 — MARKET OVERVIEW
+════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--wo-blue);"></div>
+  <div style="padding:40px 36px 36px;">
+    <div class="sec-label">Section Four</div>
+    <div class="sec-title">{{ footer_section_names[4] }}</div>
+    <div class="gold-rule"></div>
+
+    <div style="display:flex;gap:20px;">
+      <!-- LEFT COL -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Demographic KPIs — v3: all placeholders filled -->
+        <div>
+          <h4 style="margin-bottom:8px;">Demographic Snapshot &#8212; 3-Mile Radius (Census ACS 5-Year)</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+            <div style="padding:10px 12px;background:var(--navy);color:white;">
+              <div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:4px;">Median HH Income</div>
+              <div style="font-family:var(--serif);font-size:22px;font-weight:600;">{{ demo.median_income }}</div>
+              <div style="font-size:7.5px;color:var(--gold-light);">{{ demo.income_multiplier }}&times; National Median</div>
+            </div>
+            <div style="padding:10px 12px;background:var(--navy);color:white;">
+              <div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:4px;">Population (3-mi)</div>
+              <div style="font-family:var(--serif);font-size:22px;font-weight:600;">{{ demo.population }}</div>
+              <div style="font-size:7.5px;color:var(--gold-light);">{{ demo.population_growth }}</div>
+            </div>
+            <div style="padding:8px 10px;background:var(--bg);border:1px solid var(--rule);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">Bachelor&#8217;s Degree+</div>
+              <div style="font-family:var(--serif);font-size:16px;font-weight:600;color:var(--navy);">{{ demo.bachelors_pct }}</div>
+              <div style="font-size:7.5px;color:var(--slate-light);">vs. {{ demo.state_bachelors_pct }} VA statewide</div>
+            </div>
+            <div style="padding:8px 10px;background:var(--bg);border:1px solid var(--rule);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">Median Age</div>
+              <div style="font-family:var(--serif);font-size:16px;font-weight:600;color:var(--navy);">{{ demo.median_age }}</div>
+              <div style="font-size:7.5px;color:var(--slate-light);">Prime renter cohort 25&#8211;44</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Income distribution — v3: filled with spec data -->
+        <div>
+          <h4 style="margin-bottom:7px;">Household Income Distribution &#8212; 3-Mile Radius</h4>
+          <div class="bar-chart">
+            {% for bar in demo.income_distribution %}
+            <div class="bar-row"><div class="bar-rl">{{ bar.label }}</div><div class="bar-track"><div class="bar-fill {{ bar.fill_class }}" style="width:{{ bar.pct }};"></div></div><div class="bar-pct">{{ bar.pct }}</div></div>
+{% endfor %}
+          </div>
+          <div style="font-size:7.5px;color:var(--slate-light);margin-top:4px;font-style:italic;">{{ demo.income_source_footnote }}</div>
+        </div>
+
+        <!-- Fairfax market summary -->
+        <div style="background:rgba(42,82,160,0.05);border:1px solid rgba(42,82,160,0.2);padding:11px 13px;">
+          <h4 style="margin-bottom:7px;color:var(--wo-blue);">{{ property_county }} Multifamily Market Context</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px;">
+            <div style="padding:6px 8px;background:white;border:1px solid rgba(42,82,160,0.15);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">Avg. Mkt. Cap Rate</div>
+              <div style="font-size:11px;font-weight:600;color:var(--navy);">{{ market.avg_cap_rate }}</div>
+            </div>
+            <div style="padding:6px 8px;background:white;border:1px solid rgba(42,82,160,0.15);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">Avg. Price / Unit</div>
+              <div style="font-size:11px;font-weight:600;color:var(--navy);">{{ market.avg_price_per_unit }}</div>
+            </div>
+            <div style="padding:6px 8px;background:white;border:1px solid rgba(42,82,160,0.15);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">County Vacancy Rate</div>
+              <div style="font-size:11px;font-weight:600;color:var(--green);">{{ market.county_vacancy_rate }}</div>
+            </div>
+            <div style="padding:6px 8px;background:white;border:1px solid rgba(42,82,160,0.15);">
+              <div style="font-size:7px;color:var(--slate-light);margin-bottom:2px;">12-Mo Rent Growth</div>
+              <div style="font-size:11px;font-weight:600;color:var(--green);">{{ market.rent_growth_12mo }}</div>
+            </div>
+          </div>
+          <p style="font-size:8.5px;line-height:1.6;color:var(--slate);">{{ market.narrative_text }}</p>
+          <div style="font-size:7.5px;color:var(--slate-light);margin-top:5px;font-style:italic;">{{ market.source_attribution }}</div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COL -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Major employers -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">
+            <h4 style="margin-bottom:0;">Major Employers &#9733; (18-Year Historical Data)</h4>
+            <span class="score-badge badge-gold">NewCo Exclusive</span>
+          </div>
+          <div style="border:1px solid var(--rule);">
+            <div class="emp-row" style="background:#f5f3ef;">
+              <div class="emp-rank">#</div>
+              <div style="font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);flex:1.2;">Employer</div>
+              <div style="font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);flex:1;">Sector</div>
+              <div style="font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);text-align:right;flex-shrink:0;">Employees</div>
+            </div>
+            {% for emp in employers %}
+            <div class="emp-row"><div class="emp-rank">{{ emp.rank }}</div><div class="emp-name">{{ emp.name }}</div><div class="emp-sector">{{ emp.sector }}</div><div class="emp-count">{{ emp.employees }}</div></div>
+{% endfor %}
+          </div>
+          <div style="font-size:7.5px;color:var(--slate-light);margin-top:4px;font-style:italic;">{{ employer_footnote }}</div>
+        </div>
+
+        <!-- Amenities snapshot — v3: filled with spec data -->
+        <div>
+          <h4 style="margin-bottom:7px;">Nearby Amenities &#8212; Google Places (1-Mile Radius)</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+            {% for amenity in amenities %}
+            <div style="padding:8px 10px;background:var(--bg);border:1px solid var(--rule);text-align:center;">
+              <div style="font-family:var(--serif);font-size:18px;font-weight:600;color:var(--navy);">{{ amenity.count }}</div>
+              <div style="font-size:7.5px;color:var(--slate-light);">{{ amenity.label }}</div>
+            </div>
+{% endfor %}
+          </div>
+        </div>
+
+        <!-- Data attribution -->
+        <div style="border:1px solid var(--rule);padding:11px 13px;margin-top:auto;">
+          <div style="font-size:7.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);margin-bottom:8px;">NewCo Data Intelligence &#8212; Sources</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+            {% for source in data_sources %}
+            <div style="font-size:7.5px;color:{{ source.color }};">{{ source.icon }} {{ source.name }}</div>
+{% endfor %}
+          </div>
+          <div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:7.5px;font-weight:600;color:var(--navy);">Market Intelligence by NewCo Platform</div>
+              <div style="font-size:7px;color:var(--slate-light);">Government-source data &middot; Not available in competing OM tools</div>
+            </div>
+            <img src="{{ wo_logo_base64 }}" style="height:22px;opacity:0.55;" alt="NewCo">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <div class="pf-left">{{ footer_section_names[4] }}</div>
+    <div class="pf-center">{{ property_name }} &middot; {{ property_city }}, {{ property_state }} {{ property_zip }}</div>
+    <div style="display:flex;align-items:center;gap:10px;"><div class="wo-mark"><img src="{{ wo_logo_base64 }}" alt="WO"><span class="pf-right">West Oxford Advisors</span></div><span class="pf-right">Page {{ page_numbers[4] }}</span></div>
+  </div>
+</div>
+

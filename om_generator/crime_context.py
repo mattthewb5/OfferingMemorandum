@@ -80,7 +80,7 @@ def build_crime_context(lat: float, lon: float) -> dict:
     # Format incident rows for the template
     incidents = []
     for _, row in notable.iterrows():
-        date_str = row["date"].strftime("%b %Y") if hasattr(row["date"], "strftime") else str(row["date"])
+        date_str = row["date"].strftime("%b %d, %Y") if hasattr(row["date"], "strftime") else str(row["date"])
         distance_str = f"{row['distance_miles']:.1f} mi"
         category = str(row["category"]).capitalize()
 

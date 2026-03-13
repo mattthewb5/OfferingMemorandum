@@ -110,6 +110,16 @@ def main():
           f"property={live_crime['property_count']}, "
           f"total={live_crime['total_incidents']}")
 
+    # ── Live schools data ─────────────────────────────────────────────
+    from schools_context import build_schools_context
+    live_schools = build_schools_context(SUBJECT_LAT, SUBJECT_LON)
+    ctx['schools'] = live_schools['schools']
+    ctx['school_footnote'] = live_schools['school_footnote']
+
+    for s in live_schools['schools']:
+        print(f"  School wired: {s['name']} — SOL {s['sol_pass']}, "
+              f"State Avg {s['state_avg']}, Delta {s['delta']}")
+
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)
 

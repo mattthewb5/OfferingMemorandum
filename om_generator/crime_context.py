@@ -42,7 +42,7 @@ RADIUS_MILES = 1.0
 MONTHS_BACK = 6
 
 
-def build_crime_context(lat: float, lon: float) -> dict:
+def build_crime_context(lat: float, lon: float, county: str = None) -> dict:
     """
     Build the crime context dict matching the structure in context_sample.py.
 

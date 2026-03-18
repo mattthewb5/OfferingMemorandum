@@ -70,7 +70,7 @@ def _get_state_avg(
     return None
 
 
-def build_schools_context(lat: float, lon: float) -> dict:
+def build_schools_context(lat: float, lon: float, county: str = None) -> dict:
     """
     Build the schools context dict matching the structure in context_sample.py.
 

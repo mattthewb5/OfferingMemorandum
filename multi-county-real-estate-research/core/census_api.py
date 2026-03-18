@@ -174,16 +174,19 @@ class CensusClient:
     demographic analysis.
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, acs_year: str = ACS_YEAR):
         """
         Initialize Census API client.
 
         Args:
             api_key: Census API key. If not provided, will attempt to
                     load from config via get_api_key('CENSUS_API_KEY')
+            acs_year: ACS 5-Year vintage year (default: module-level ACS_YEAR "2023").
+                     Use "2018" (or other year) for historical comparisons.
         """
         self.api_key = api_key or get_api_key('CENSUS_API_KEY')
-        self.base_url = f"{CENSUS_API_BASE}/{ACS_YEAR}/{ACS_DATASET}"
+        self.acs_year = acs_year
+        self.base_url = f"{CENSUS_API_BASE}/{acs_year}/{ACS_DATASET}"
         self._session = requests.Session()
 
     def _build_variable_batches(self, max_per_batch: int = 48) -> List[List[str]]:

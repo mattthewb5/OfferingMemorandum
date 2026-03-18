@@ -6,21 +6,69 @@ Assembles a context dictionary, renders the Jinja2 template, and outputs
 a static HTML file visually identical to the v3 prototype.
 
 Usage:
-    python generate_om.py                    # outputs om_output.html
-    python generate_om.py --output my.html   # custom output path
+    python generate_om.py                                          # default test address
+    python generate_om.py "9333 Clocktower Place, Fairfax VA 22031"
+    python generate_om.py "43422 Cloister Pl, Leesburg, VA 20176" --output my.html
 """
 import argparse
 import os
 import re
 import sys
 
+import requests
 from jinja2 import Environment, FileSystemLoader
+from pathlib import Path
 
 # Paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(SCRIPT_DIR, 'templates')
 V3_PATH = os.path.join(SCRIPT_DIR, '..', 'investigation', 'newco_om_v3_regents_park.html')
 DEFAULT_OUTPUT = os.path.join(SCRIPT_DIR, 'om_output.html')
+
+# Add multi-county research package to path (for county_detector)
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
+
+DEFAULT_ADDRESS = "9333 Clocktower Place, Fairfax VA 22031"
+
+
+def geocode_address(address: str):
+    """
+    Geocode an address to (lat, lon) using Google Maps, with Census fallback.
+
+    Returns:
+        Tuple of (lat, lon) or None on failure.
+    """
+    # Try Google Geocoding API first
+    try:
+        from core.api_config import get_api_key
+        api_key = get_api_key('GOOGLE_MAPS_API_KEY')
+        if api_key:
+            url = "https://maps.googleapis.com/maps/api/geocode/json"
+            resp = requests.get(url, params={"address": address, "key": api_key}, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            if data.get("results"):
+                loc = data["results"][0]["geometry"]["location"]
+                return (loc["lat"], loc["lng"])
+    except Exception as e:
+        print(f"  Google geocoding failed ({e}), trying Census fallback...", file=sys.stderr)
+
+    # Census Bureau geocoder fallback
+    try:
+        url = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
+        resp = requests.get(url, params={
+            "address": address, "benchmark": "Public_AR_Current", "format": "json"
+        }, timeout=15)
+        resp.raise_for_status()
+        matches = resp.json().get("result", {}).get("addressMatches", [])
+        if matches:
+            coords = matches[0]["coordinates"]
+            return (coords["y"], coords["x"])
+    except Exception as e:
+        print(f"  Census geocoding failed: {e}", file=sys.stderr)
+
+    return None
 
 
 def extract_logo_base64(v3_path):
@@ -63,8 +111,31 @@ def _encode_entities(val):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate OM HTML from Jinja2 templates')
+    parser.add_argument('address', nargs='?', default=DEFAULT_ADDRESS,
+                        help='Property address to generate OM for')
     parser.add_argument('--output', '-o', default=DEFAULT_OUTPUT, help='Output HTML path')
     args = parser.parse_args()
+
+    address = args.address
+    print(f"Generating OM for: {address}")
+
+    # ── Geocode address ───────────────────────────────────────────────
+    coords = geocode_address(address)
+    if coords is None:
+        print(f"ERROR: Could not geocode address: {address}", file=sys.stderr)
+        print("Please verify the address and try again.", file=sys.stderr)
+        sys.exit(1)
+
+    lat, lon = coords
+    print(f"  Geocoded: {lat:.4f}, {lon:.4f}")
+
+    # ── Detect county ─────────────────────────────────────────────────
+    from utils.county_detector import detect_county
+    county = detect_county(lat, lon)
+    if county == 'unknown':
+        print(f"  Warning: Could not detect county for {lat}, {lon}. Defaulting to fairfax.")
+        county = 'fairfax'
+    print(f"  County: {county}")
 
     # Load context
     from context_sample import get_sample_context
@@ -74,13 +145,8 @@ def main():
     ctx['wo_logo_base64'] = extract_logo_base64(V3_PATH)
 
     # ── Live crime data ──────────────────────────────────────────────
-    # Subject property: 9333 Clocktower Place, Fairfax VA 22031
-    # Geocoded via US Census Bureau geocoder (geocoding.geo.census.gov)
-    SUBJECT_LAT = 38.8731
-    SUBJECT_LON = -77.2689
-
     from crime_context import build_crime_context
-    live_crime = build_crime_context(SUBJECT_LAT, SUBJECT_LON)
+    live_crime = build_crime_context(lat, lon, county)
     ctx['crime'] = live_crime
 
     # Update the stoplight Crime Safety row to match live score
@@ -113,13 +179,28 @@ def main():
 
     # ── Live schools data ─────────────────────────────────────────────
     from schools_context import build_schools_context
-    live_schools = build_schools_context(SUBJECT_LAT, SUBJECT_LON)
+    live_schools = build_schools_context(lat, lon, county)
     ctx['schools'] = live_schools['schools']
     ctx['school_footnote'] = live_schools['school_footnote']
 
     for s in live_schools['schools']:
         print(f"  School wired: {s['name']} — SOL {s['sol_pass']}, "
               f"State Avg {s['state_avg']}, Delta {s['delta']}")
+
+    # ── Live healthcare data ──────────────────────────────────────────
+    from healthcare_context import build_healthcare_context
+    live_healthcare = build_healthcare_context(lat, lon, county)
+    ctx['healthcare'] = live_healthcare['healthcare']
+    print(f"  Healthcare wired: {live_healthcare['healthcare']['name']} — "
+          f"{live_healthcare['healthcare']['distance']}, "
+          f"score={live_healthcare['healthcare']['score']}")
+
+    # ── Live demographics data ────────────────────────────────────────
+    from demographics_context import build_demographics_context
+    demo_ctx = build_demographics_context(lat, lon, county)
+    ctx['demo'] = demo_ctx['demo']
+    print(f"  Demographics wired: income={demo_ctx['demo']['median_income']}, "
+          f"pop={demo_ctx['demo']['population']}")
 
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)

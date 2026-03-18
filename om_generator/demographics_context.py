@@ -216,23 +216,30 @@ def _fetch_state_bachelors_pct(client: CensusClient) -> Optional[float]:
     return None
 
 
-def _compute_population_growth(
-    lat: float, lon: float, county_fips: str, centroids: List[dict],
-    pop_2023: int,
-) -> Optional[str]:
-    """Compute 5-year population growth using 2018 ACS vintage."""
+def _compute_population_growth(county: str, county_fips: str) -> Optional[str]:
+    """Compute 5-year county-level population growth (2018 vs 2023 ACS).
+
+    Uses county-level totals instead of radius-based block group comparison
+    to avoid GEOID mismatches between pre- and post-2020 redistricting vintages.
+    """
     try:
+        client_2023 = CensusClient(acs_year="2023")
+        county_2023 = client_2023.get_county_data(state=STATE_FIPS, county=county_fips)
+        pop_2023 = county_2023.get("total_population") or 0
+
         client_2018 = CensusClient(acs_year="2018")
-        bg_2018 = client_2018.get_block_group_data(state=STATE_FIPS, county=county_fips)
-        selected_2018 = _filter_by_radius(lat, lon, 3.0, centroids, bg_2018)
-        pop_2018 = sum(bg.get("total_population") or 0 for bg in selected_2018)
-        if pop_2018 > 0:
+        county_2018 = client_2018.get_county_data(state=STATE_FIPS, county=county_fips)
+        pop_2018 = county_2018.get("total_population") or 0
+
+        if pop_2018 > 0 and pop_2023 > 0:
             growth = (pop_2023 - pop_2018) / pop_2018 * 100
             sign = "+" if growth >= 0 else ""
             label = "growth" if growth >= 0 else "decline"
-            return f"{sign}{growth:.1f}% 5-yr {label}"
-    except Exception:
-        pass
+            print(f"  Population growth: {county.title()} County "
+                  f"{pop_2018:,} (2018) → {pop_2023:,} (2023) = {sign}{growth:.1f}%")
+            return f"{sign}{growth:.1f}% county 5-yr {label}"
+    except Exception as e:
+        print(f"  Population growth calc failed: {e}", file=sys.stderr)
     return "growth data unavailable"
 
 
@@ -354,8 +361,8 @@ def build_demographics_context(lat: float, lon: float, county: str) -> dict:
         state_ba = _fetch_state_bachelors_pct(client)
         state_ba_str = f"{state_ba}%" if state_ba is not None else "41%"
 
-        # 6. Population growth (2018 vs 2023)
-        pop_growth = _compute_population_growth(lat, lon, county_fips, centroids, total_pop)
+        # 6. Population growth (county-level, 2018 vs 2023)
+        pop_growth = _compute_population_growth(county, county_fips)
 
         # 7. Income distribution brackets
         brackets = _format_brackets(agg["bracket_counts"], agg["bracket_total"])
@@ -372,7 +379,8 @@ def build_demographics_context(lat: float, lon: float, county: str) -> dict:
                 "income_distribution": brackets,
                 "income_source_footnote": (
                     f"Source: U.S. Census Bureau ACS 5-Year Estimates (2019\u20132023), "
-                    f"3-mile radius. Population growth: 2018 vs. 2023 ACS."
+                    f"3-mile radius. Population growth: {county.title()} County "
+                    f"2018 vs. 2023 ACS 5-Year Estimates."
                 ),
             }
         }

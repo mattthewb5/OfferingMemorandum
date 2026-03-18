@@ -755,6 +755,20 @@ def save_metadata(metadata: Dict, output_path: Path) -> None:
 # MAIN ETL FUNCTIONS
 # =============================================================================
 
+def write_run_summary(new_count: int, total_count: int):
+    """Write a run summary JSON so the GitHub Actions workflow can build informative commit messages."""
+    summary_file = PROCESSED_DIR / 'etl_run_summary.json'
+    summary = {
+        'run_timestamp': datetime.now().isoformat(),
+        'new_records': new_count,
+        'total_records': total_count,
+    }
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    with open(summary_file, 'w') as f:
+        json.dump(summary, f, indent=2)
+    logger.info(f"Wrote run summary: {new_count} new/updated, {total_count} total")
+
+
 def run_full_etl(
     start_year: int = 2022,
     end_year: int = 2026,
@@ -806,6 +820,9 @@ def run_full_etl(
     metadata_path = PROCESSED_DIR / "metadata.json"
     save_metadata(metadata, metadata_path)
 
+    # Write run summary for GitHub Actions commit message
+    write_run_summary(len(df), len(df))
+
     # Print summary
     print_summary(df, metadata)
 
@@ -850,6 +867,9 @@ def run_incremental_update(days: int = 7) -> pd.DataFrame:
     # Update metadata
     metadata = create_metadata(df)
     save_metadata(metadata, PROCESSED_DIR / "metadata.json")
+
+    # Write run summary for GitHub Actions commit message
+    write_run_summary(len(new_df), len(df))
 
     logger.info(f"Added/updated {len(new_df):,} permits. Total: {len(df):,}")
 

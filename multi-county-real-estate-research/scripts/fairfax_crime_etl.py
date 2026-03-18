@@ -580,7 +580,7 @@ def save_incidents(df: pd.DataFrame):
     update_metadata(df)
 
 
-def deduplicate_incidents(new_df: pd.DataFrame, existing_df: pd.DataFrame) -> pd.DataFrame:
+def deduplicate_incidents(new_df: pd.DataFrame, existing_df: pd.DataFrame) -> Tuple[pd.DataFrame, int]:
     """
     Deduplicate new incidents against existing data.
 
@@ -589,11 +589,11 @@ def deduplicate_incidents(new_df: pd.DataFrame, existing_df: pd.DataFrame) -> pd
         existing_df: Existing incidents
 
     Returns:
-        Combined DataFrame with duplicates removed
+        Tuple of (combined DataFrame with duplicates removed, count of new unique records added)
     """
     if len(existing_df) == 0:
         logger.info(f"No existing data. Adding all {len(new_df)} new incidents.")
-        return new_df
+        return new_df, len(new_df)
 
     existing_ids = set(existing_df['incident_id'].tolist())
     new_unique = new_df[~new_df['incident_id'].isin(existing_ids)]
@@ -605,7 +605,7 @@ def deduplicate_incidents(new_df: pd.DataFrame, existing_df: pd.DataFrame) -> pd
     combined = pd.concat([existing_df, new_unique], ignore_index=True)
     combined = combined.sort_values('date').reset_index(drop=True)
 
-    return combined
+    return combined, len(new_unique)
 
 
 def update_metadata(df: pd.DataFrame):
@@ -639,6 +639,20 @@ def update_metadata(df: pd.DataFrame):
 # MAIN ETL FUNCTIONS
 # ============================================================================
 
+def write_run_summary(new_count: int, total_count: int):
+    """Write a run summary JSON so the GitHub Actions workflow can build informative commit messages."""
+    summary_file = CONFIG['processed_dir'] / 'etl_run_summary.json'
+    summary = {
+        'run_timestamp': datetime.now().isoformat(),
+        'new_records': new_count,
+        'total_records': total_count,
+    }
+    CONFIG['processed_dir'].mkdir(parents=True, exist_ok=True)
+    with open(summary_file, 'w') as f:
+        json.dump(summary, f, indent=2)
+    logger.info(f"Wrote run summary: {new_count} new, {total_count} total")
+
+
 def run_weekly_etl(geocode: bool = True, max_geocode: int = 100):
     """
     Run weekly API ETL pipeline.
@@ -665,10 +679,13 @@ def run_weekly_etl(geocode: bool = True, max_geocode: int = 100):
 
     # Load existing and deduplicate
     existing_df = load_existing_incidents()
-    combined_df = deduplicate_incidents(unified_df, existing_df)
+    combined_df, new_count = deduplicate_incidents(unified_df, existing_df)
 
     # Save
     save_incidents(combined_df)
+
+    # Write run summary for GitHub Actions commit message
+    write_run_summary(new_count, len(combined_df))
 
     # Summary
     print_summary(combined_df)
@@ -710,6 +727,9 @@ def run_full_refresh(geocode: bool = True, max_geocode: int = 500):
 
         # Save
         save_incidents(combined_df)
+
+        # Write run summary for GitHub Actions commit message
+        write_run_summary(len(combined_df), len(combined_df))
 
         # Summary
         print_summary(combined_df)

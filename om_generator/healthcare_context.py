@@ -213,6 +213,7 @@ def _build_fairfax(lat: float, lon: float) -> dict:
     analyzer = FairfaxHealthcareAnalysis()
 
     # Access score
+    # TODO: calibrate score thresholds against county-wide averages — same issue as crime score (23)
     access = analyzer.calculate_healthcare_access_score(lat, lon)
     score = access["score"]
 

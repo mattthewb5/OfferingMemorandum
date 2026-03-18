@@ -75,8 +75,9 @@ def main():
 
     # ── Live crime data ──────────────────────────────────────────────
     # Subject property: 9333 Clocktower Place, Fairfax VA 22031
-    SUBJECT_LAT = 38.8462
-    SUBJECT_LON = -77.3064
+    # Geocoded via US Census Bureau geocoder (geocoding.geo.census.gov)
+    SUBJECT_LAT = 38.8731
+    SUBJECT_LON = -77.2689
 
     from crime_context import build_crime_context
     live_crime = build_crime_context(SUBJECT_LAT, SUBJECT_LON)
@@ -109,6 +110,16 @@ def main():
           f"violent={live_crime['violent_count']}, "
           f"property={live_crime['property_count']}, "
           f"total={live_crime['total_incidents']}")
+
+    # ── Live schools data ─────────────────────────────────────────────
+    from schools_context import build_schools_context
+    live_schools = build_schools_context(SUBJECT_LAT, SUBJECT_LON)
+    ctx['schools'] = live_schools['schools']
+    ctx['school_footnote'] = live_schools['school_footnote']
+
+    for s in live_schools['schools']:
+        print(f"  School wired: {s['name']} — SOL {s['sol_pass']}, "
+              f"State Avg {s['state_avg']}, Delta {s['delta']}")
 
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)

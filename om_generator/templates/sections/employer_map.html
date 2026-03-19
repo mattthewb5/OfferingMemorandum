@@ -1,0 +1,26 @@
+<!-- Employer Map — Google Static Maps (print-safe) -->
+{% if employer_map_static_url %}
+<div class="employer-map-container" style="margin-top:10px;">
+  <img
+    src="{{ employer_map_static_url }}"
+    alt="Major employer locations map"
+    style="width:100%; border-radius:4px; display:block;"
+  />
+  <div class="map-legend" style="display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:6px; font-family:var(--sans); font-size:7.5px; color:var(--slate);">
+    <span style="display:inline-flex; align-items:center; gap:3px;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:50%; background:#b8966a; color:white; font-size:6px; font-weight:700; flex-shrink:0;">P</span>
+      Subject Property
+    </span>
+    {% for m in employer_map_markers %}
+    <span style="display:inline-flex; align-items:center; gap:3px;">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:12px; height:12px; border-radius:50%; background:#2a52a0; color:white; font-size:6px; font-weight:700; flex-shrink:0;">{{ loop.index if loop.index < 10 else 'A' }}</span>
+      {{ m.name }}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div style="margin-top:10px; padding:16px; background:var(--bg); border:1px solid var(--rule); text-align:center; font-size:8px; color:var(--slate-light);">
+  Employer location map unavailable.
+</div>
+{% endif %}

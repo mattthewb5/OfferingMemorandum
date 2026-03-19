@@ -378,6 +378,14 @@ def get_sample_context():
             {"rank": "7", "name": "DXC Technology", "sector": "IT Services", "employees": "~6,000"},
             {"rank": "8", "name": "Capital One Financial", "sector": "Financial Services", "employees": "~5,500"},
         ],
+        # Employer map (static map — populated by employer_map_context.py)
+        "employer_map_markers": [],
+        "employer_map_markers_json": "[]",
+        "employer_map_center_lat": 38.8627,
+        "employer_map_center_lon": -77.2639,
+        "employer_map_zoom": 11,
+        "employer_map_static_url": None,
+
         "employer_footnote": (
             "\u2605 NewCo employer database covers 18 years of Fairfax County employment data. "
             "Recession-resistant government, healthcare, and defense employers account for "

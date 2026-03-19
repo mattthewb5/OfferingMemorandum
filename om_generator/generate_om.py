@@ -202,6 +202,16 @@ def main():
     print(f"  Demographics wired: income={demo_ctx['demo']['median_income']}, "
           f"pop={demo_ctx['demo']['population']}")
 
+    # ── Employer map (Google Static Maps) ──────────────────────────────
+    from employer_map_context import build_employer_map_context
+    emp_map = build_employer_map_context(lat, lon, county)
+    ctx.update(emp_map)
+    if emp_map.get("employer_map_static_url"):
+        print(f"  Employer map wired: {len(emp_map['employer_map_markers'])} markers, "
+              f"static URL built")
+    else:
+        print("  Employer map: static URL unavailable (no API key or no markers)")
+
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)
 

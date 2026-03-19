@@ -1,9 +1,9 @@
 """
 Employer Map Context Builder for OM Generator
 
-Resolves employer domains (via Claude API), geocodes employer HQs
-(via Google Maps / Census fallback), and builds a marker list for
-the embedded Google Maps JavaScript API map.
+Geocodes employer HQs (via Google Maps / Census fallback) and builds
+a marker list with logo.dev name-based logo URLs for the embedded
+Google Maps JavaScript API map.
 
 Usage:
     from employer_map_context import build_employer_map_context
@@ -12,8 +12,8 @@ Usage:
 
 import json
 import logging
-import os
 import sys
+import urllib.parse
 from pathlib import Path
 
 import requests
@@ -24,9 +24,8 @@ logger = logging.getLogger(__name__)
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
 
-# Cache paths — live inside om_generator/data/ so they are repo-tracked
+# Cache path — geocache lives inside om_generator/data/ so it is repo-tracked
 _DATA_DIR = Path(__file__).resolve().parent / "data"
-_DOMAIN_CACHE_PATH = _DATA_DIR / "employer_domain_cache.json"
 _GEO_CACHE_PATH = _DATA_DIR / "employer_geocache.json"
 
 
@@ -54,52 +53,20 @@ def _save_cache(path: Path, data: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Step 1 — Domain resolution via Claude API
+# Logo URL via logo.dev name endpoint
 # ---------------------------------------------------------------------------
 
-def _resolve_domains(employers: list, cache: dict) -> dict:
-    """Resolve employer names → web domains.  Uses cache, then one batch
-    Claude API call for any uncached names."""
-    uncached = [e for e in employers if e["name"] not in cache]
-    if not uncached:
-        return cache
-
-    try:
-        import anthropic
-
-        client = anthropic.Anthropic()
-        names = [e["name"] for e in uncached]
-
-        prompt = (
-            "Resolve employer names to their primary web domains for logo lookup.\n\n"
-            "Return ONLY a valid JSON object. No preamble, no markdown, no explanation.\n"
-            "Keys are employer names exactly as provided. "
-            'Values are primary domains (e.g. "amazon.com", "loudoun.gov"). '
-            "Use null for any you cannot determine with confidence.\n\n"
-            f"Employers: {json.dumps(names)}"
-        )
-
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=500,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        domain_map = json.loads(response.content[0].text)
-        cache.update(domain_map)
-        _save_cache(_DOMAIN_CACHE_PATH, cache)
-        logger.info("Resolved %d employer domains via Claude API", len(domain_map))
-    except Exception as exc:
-        logger.warning("Domain resolution failed: %s", exc)
-        # Set uncached to None so we don't retry every run
-        for e in uncached:
-            cache.setdefault(e["name"], None)
-        _save_cache(_DOMAIN_CACHE_PATH, cache)
-
-    return cache
+def _logo_url(name: str, token: str) -> str:
+    """Build a logo.dev name-based logo URL with monogram fallback."""
+    encoded = urllib.parse.quote(name)
+    return (
+        f"https://img.logo.dev/name/{encoded}"
+        f"?token={token}&size=40&fallback=monogram"
+    )
 
 
 # ---------------------------------------------------------------------------
-# Step 2 — Geocoding
+# Geocoding
 # ---------------------------------------------------------------------------
 
 def _geocode_employer(name: str, county: str) -> dict | None:
@@ -204,38 +171,32 @@ def build_employer_map_context(
     }
 
     try:
-        # Load caches
-        domain_cache = _load_cache(_DOMAIN_CACHE_PATH)
-        geo_cache = _load_cache(_GEO_CACHE_PATH)
+        from core.api_config import get_api_key
 
-        # Resolve domains
-        domain_cache = _resolve_domains(employers, domain_cache)
+        # Load geocache
+        geo_cache = _load_cache(_GEO_CACHE_PATH)
 
         # Geocode
         geo_cache = _geocode_employers(employers, county, geo_cache)
 
+        # Logo token
+        token = get_api_key("LOGO_DEV_TOKEN")
+        if not token:
+            logger.warning("LOGO_DEV_TOKEN not configured — logo URLs will be None")
+
         # Build markers
-        token = os.environ.get("LOGO_DEV_TOKEN", "")
         markers = []
         for emp in employers:
             geo = geo_cache.get(emp["name"])
             if not geo or not geo.get("lat"):
                 continue
-            domain = domain_cache.get(emp["name"])
-            logo_url = None
-            if domain:
-                if token:
-                    logo_url = f"https://img.logo.dev/{domain}?token={token}&size=40"
-                else:
-                    logo_url = f"https://img.logo.dev/{domain}?size=40"
             markers.append({
                 "name": emp["name"],
                 "sector": emp["sector"],
                 "employees": emp["employees"],
                 "lat": geo["lat"],
                 "lon": geo["lon"],
-                "domain": domain,
-                "logo_url": logo_url,
+                "logo_url": _logo_url(emp["name"], token) if token else None,
             })
 
         return {

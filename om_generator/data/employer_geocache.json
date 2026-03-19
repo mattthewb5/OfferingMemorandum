@@ -1,0 +1,20 @@
+{
+  "Amazon": {"lat": 38.8829, "lon": -77.1716, "source": "seed"},
+  "Booz Allen Hamilton": {"lat": 38.9185, "lon": -77.2311, "source": "seed"},
+  "Capital One": {"lat": 38.8861, "lon": -77.1864, "source": "seed"},
+  "County of Loudoun": {"lat": 39.1157, "lon": -77.5636, "source": "seed"},
+  "Dynalectric": {"lat": 39.0437, "lon": -77.4875, "source": "seed"},
+  "Fairfax County Government": {"lat": 38.8462, "lon": -77.3064, "source": "seed"},
+  "Fairfax County Public Schools": {"lat": 38.8340, "lon": -77.2218, "source": "seed"},
+  "Federal Government": {"lat": 38.8830, "lon": -77.1710, "source": "seed"},
+  "Federal Home Loan Mortgage": {"lat": 38.9029, "lon": -77.2289, "source": "seed"},
+  "George Mason University": {"lat": 38.8316, "lon": -77.3083, "source": "seed"},
+  "Inova Health System": {"lat": 38.8624, "lon": -77.2271, "source": "seed"},
+  "Loudoun County Public Schools": {"lat": 39.1089, "lon": -77.5533, "source": "seed"},
+  "Northrop Grumman": {"lat": 39.0453, "lon": -77.4621, "source": "seed"},
+  "Science Applications International Corporation": {"lat": 38.9530, "lon": -77.3490, "source": "seed"},
+  "U.S. Department of Homeland Security": {"lat": 39.0614, "lon": -77.4486, "source": "seed"},
+  "United Airlines": {"lat": 38.9531, "lon": -77.4565, "source": "seed"},
+  "Verizon": {"lat": 39.0485, "lon": -77.4622, "source": "seed"},
+  "Walmart": {"lat": 39.0764, "lon": -77.4632, "source": "seed"}
+}

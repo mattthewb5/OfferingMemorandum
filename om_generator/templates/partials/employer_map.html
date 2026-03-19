@@ -1,0 +1,123 @@
+<!-- Employer Location Map — Google Maps JavaScript API -->
+{% if employer_map_markers %}
+<div style="margin-top:12px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">
+    <h4 style="margin-bottom:0;">Major Employer Locations</h4>
+    <span class="score-badge badge-navy" style="font-size:6px;">Google Maps</span>
+  </div>
+  <div id="employer-map" style="width:100%;height:420px;border:1px solid var(--rule);background:#e8ecf0;"></div>
+  <div style="font-size:7.5px;color:var(--slate-light);margin-top:4px;font-style:italic;">
+    &#9733; Gold star = subject property. Employer HQ locations geocoded to {{ employer_map_markers | length }} of 10 employers.
+  </div>
+</div>
+
+<script>
+(function() {
+  // Data injected from Python context
+  var markers = {{ employer_map_markers_json }};
+  var centerLat = {{ employer_map_center_lat }};
+  var centerLon = {{ employer_map_center_lon }};
+  var zoom = {{ employer_map_zoom }};
+
+  // Design system colors
+  var NAVY   = '#0f1f38';
+  var BLUE   = '#2a52a0';
+  var GOLD   = '#b8966a';
+
+  window.initEmployerMap = function() {
+    var mapEl = document.getElementById('employer-map');
+    if (!mapEl) return;
+
+    var map = new google.maps.Map(mapEl, {
+      center: { lat: centerLat, lng: centerLon },
+      zoom: zoom,
+      disableDefaultUI: true,
+      zoomControl: true,
+      clickableIcons: false,
+      styles: [
+        { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+        { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+      ]
+    });
+
+    // Subject property — gold star marker
+    new google.maps.Marker({
+      position: { lat: centerLat, lng: centerLon },
+      map: map,
+      title: 'Subject Property',
+      icon: {
+        path: 'M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.77 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z',
+        fillColor: GOLD,
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 1.5,
+        scale: 1.6,
+        anchor: new google.maps.Point(12, 12)
+      },
+      zIndex: 1000
+    });
+
+    // Shared InfoWindow
+    var infoWindow = new google.maps.InfoWindow();
+
+    markers.forEach(function(m, idx) {
+      var icon;
+      if (m.logo_url) {
+        // Logo icon with white background
+        icon = {
+          url: m.logo_url,
+          scaledSize: new google.maps.Size(32, 32),
+          anchor: new google.maps.Point(16, 16)
+        };
+      } else {
+        // Blue circle with first letter
+        var letter = m.name.charAt(0).toUpperCase();
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">' +
+          '<circle cx="16" cy="16" r="15" fill="' + BLUE + '" stroke="#fff" stroke-width="1.5"/>' +
+          '<text x="16" y="21" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="14" font-weight="600" fill="#fff">' + letter + '</text>' +
+          '</svg>';
+        icon = {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+          scaledSize: new google.maps.Size(32, 32),
+          anchor: new google.maps.Point(16, 16)
+        };
+      }
+
+      var marker = new google.maps.Marker({
+        position: { lat: m.lat, lng: m.lon },
+        map: map,
+        title: m.name,
+        icon: icon,
+        zIndex: 100 + idx
+      });
+
+      var contentHtml =
+        '<div style="font-family:DM Sans,sans-serif;min-width:160px;padding:2px 0;">' +
+          '<div style="font-size:12px;font-weight:600;color:' + NAVY + ';margin-bottom:3px;">' + m.name + '</div>' +
+          '<div style="font-size:10px;color:#718096;margin-bottom:2px;">' + m.sector + '</div>' +
+          '<div style="font-size:10px;font-weight:600;color:' + NAVY + ';">' + m.employees + ' employees</div>' +
+        '</div>';
+
+      marker.addListener('click', function() {
+        infoWindow.setContent(contentHtml);
+        infoWindow.open(map, marker);
+      });
+    });
+  };
+
+  // If Google Maps is already loaded, init immediately
+  if (typeof google !== 'undefined' && google.maps) {
+    window.initEmployerMap();
+  }
+})();
+</script>
+{% else %}
+<div style="margin-top:12px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">
+    <h4 style="margin-bottom:0;">Major Employer Locations</h4>
+  </div>
+  <div class="mapbox" style="height:120px;">
+    <div class="mapbox-label">Employer location data unavailable</div>
+  </div>
+</div>
+{% endif %}

@@ -194,5 +194,9 @@
 {% include "sections/development_intelligence.html" %}
 {% include "sections/market_overview.html" %}
 {% include "sections/location_analysis.html" %}
+
+{% if google_maps_api_key %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initEmployerMap" async defer></script>
+{% endif %}
 </body>
 </html>

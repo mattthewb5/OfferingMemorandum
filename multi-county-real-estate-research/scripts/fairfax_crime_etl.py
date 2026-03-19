@@ -118,6 +118,26 @@ def fetch_weekly_crimes(save_raw: bool = True) -> pd.DataFrame:
             response = requests.get(url, timeout=30)
             response.raise_for_status()
             break
+        except requests.HTTPError as e:
+            if response.status_code >= 500:
+                if attempt < CONFIG['max_retries'] - 1:
+                    logger.warning(f"Attempt {attempt + 1} failed (server error {response.status_code}): {e}. Retrying...")
+                    import time
+                    time.sleep(CONFIG['retry_delay_seconds'] * (attempt + 1))
+                else:
+                    logger.warning(f"Upstream server returned {response.status_code} after {CONFIG['max_retries']} attempts — exiting cleanly")
+                    summary_file = CONFIG['processed_dir'] / 'etl_run_summary.json'
+                    CONFIG['processed_dir'].mkdir(parents=True, exist_ok=True)
+                    with open(summary_file, 'w') as f:
+                        json.dump({
+                            'run_timestamp': datetime.now().isoformat(),
+                            'new_records': 0,
+                            'total_records': 0,
+                            'status': 'upstream_unavailable',
+                        }, f, indent=2)
+                    sys.exit(0)
+            else:
+                raise
         except requests.RequestException as e:
             if attempt < CONFIG['max_retries'] - 1:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying...")

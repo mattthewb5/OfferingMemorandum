@@ -202,6 +202,21 @@ def main():
     print(f"  Demographics wired: income={demo_ctx['demo']['median_income']}, "
           f"pop={demo_ctx['demo']['population']}")
 
+    # ── Live employers data ────────────────────────────────────────────
+    from employers_context import build_employers_context
+    emp_ctx = build_employers_context(lat, lon, county)
+    ctx.update(emp_ctx)
+    print(f"  Employers wired: {len(emp_ctx['employers'])} employers, "
+          f"year={emp_ctx['employers_data_year']}")
+
+    # ── Live development intelligence ──────────────────────────────────
+    from development_context import build_development_context
+    dev_ctx = build_development_context(lat, lon, county)
+    ctx.update(dev_ctx)
+    print(f"  Development wired: score={dev_ctx['dev_pressure_score']}, "
+          f"permits_2mi={dev_ctx['permits_2mi_count']}, "
+          f"new_mf={dev_ctx['new_mf_permits_count']}")
+
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)
 

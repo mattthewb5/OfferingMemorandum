@@ -55,6 +55,20 @@ jobs:
           cd $GITHUB_WORKSPACE
           python multi-county-real-estate-research/scripts/fairfax_permits_etl.py
 
+      - name: Read ETL run summary
+        id: etl_summary
+        run: |
+          SUMMARY_FILE="multi-county-real-estate-research/data/fairfax/building_permits/processed/etl_run_summary.json"
+          if [ -f "$SUMMARY_FILE" ]; then
+            NEW_RECORDS=$(python3 -c "import json; print(json.load(open('$SUMMARY_FILE'))['new_records'])")
+            TOTAL_RECORDS=$(python3 -c "import json; print(json.load(open('$SUMMARY_FILE'))['total_records'])")
+            echo "new_records=$NEW_RECORDS" >> $GITHUB_OUTPUT
+            echo "total_records=$TOTAL_RECORDS" >> $GITHUB_OUTPUT
+          else
+            echo "new_records=0" >> $GITHUB_OUTPUT
+            echo "total_records=0" >> $GITHUB_OUTPUT
+          fi
+
       - name: Check for changes
         id: check_changes
         run: |
@@ -71,7 +85,14 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git add multi-county-real-estate-research/data/fairfax/building_permits/processed/
-          git commit -m "Auto-update: Fairfax building permits $(date '+%Y-%m-%d')"
+
+          NEW=${{ steps.etl_summary.outputs.new_records }}
+          TOTAL=${{ steps.etl_summary.outputs.total_records }}
+          if [ "$NEW" -gt 0 ] 2>/dev/null; then
+            git commit -m "Permits data update: $NEW new/updated permits (total: $TOTAL)"
+          else
+            git commit -m "Permits data: metadata refresh (total unchanged at $TOTAL)"
+          fi
 
           # Pull with rebase to handle any concurrent pushes, then push with retry
           for attempt in 1 2 3; do
@@ -85,12 +106,21 @@ jobs:
       - name: Report status
         if: always()
         run: |
+          echo "=== ETL Run Summary ==="
+          SUMMARY_FILE="multi-county-real-estate-research/data/fairfax/building_permits/processed/etl_run_summary.json"
+          if [ -f "$SUMMARY_FILE" ]; then
+            cat "$SUMMARY_FILE"
+          else
+            echo "No run summary found"
+          fi
+          echo ""
+          echo "=== Dataset Metadata ==="
           METADATA_FILE="multi-county-real-estate-research/data/fairfax/building_permits/processed/metadata.json"
           if [ -f "$METADATA_FILE" ]; then
-            echo "Building permits updated successfully"
-            echo ""
-            echo "=== Metadata ==="
             cat "$METADATA_FILE"
           else
             echo "No metadata file found - check if ETL completed"
           fi
+          echo ""
+          echo "=== Data Changed: ${{ steps.check_changes.outputs.changed }} ==="
+          echo "=== New Records: ${{ steps.etl_summary.outputs.new_records }} ==="

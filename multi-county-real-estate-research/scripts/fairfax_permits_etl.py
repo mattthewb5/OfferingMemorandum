@@ -14,6 +14,7 @@ Usage:
 """
 
 import json
+import sys
 import time
 import logging
 import argparse
@@ -291,6 +292,28 @@ def fetch_permits_page(
 
             return data
 
+        except requests.HTTPError as e:
+            if response.status_code >= 500:
+                wait_time = RETRY_BACKOFF ** attempt
+                logger.warning(f"Server error {response.status_code} (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+                if attempt < MAX_RETRIES - 1:
+                    logger.info(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                else:
+                    logger.warning(f"Upstream server returned {response.status_code} after {MAX_RETRIES} attempts — exiting cleanly")
+                    summary_file = PROCESSED_DIR / 'etl_run_summary.json'
+                    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+                    with open(summary_file, 'w') as f:
+                        json.dump({
+                            'run_timestamp': datetime.now().isoformat(),
+                            'new_records': 0,
+                            'total_records': 0,
+                            'status': 'upstream_unavailable',
+                        }, f, indent=2)
+                    sys.exit(0)
+            else:
+                raise
+
         except (requests.RequestException, json.JSONDecodeError) as e:
             wait_time = RETRY_BACKOFF ** attempt
             logger.warning(f"Request failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
@@ -366,6 +389,18 @@ def get_record_count(where_clause: str = "1=1") -> int:
 
     url = f"{API_BASE_URL}/query"
     response = requests.get(url, params=params, timeout=30)
+    if response.status_code >= 500:
+        logger.warning(f"Upstream server returned {response.status_code} for record count — exiting cleanly")
+        summary_file = PROCESSED_DIR / 'etl_run_summary.json'
+        PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+        with open(summary_file, 'w') as f:
+            json.dump({
+                'run_timestamp': datetime.now().isoformat(),
+                'new_records': 0,
+                'total_records': 0,
+                'status': 'upstream_unavailable',
+            }, f, indent=2)
+        sys.exit(0)
     response.raise_for_status()
     data = response.json()
 
@@ -755,6 +790,20 @@ def save_metadata(metadata: Dict, output_path: Path) -> None:
 # MAIN ETL FUNCTIONS
 # =============================================================================
 
+def write_run_summary(new_count: int, total_count: int):
+    """Write a run summary JSON so the GitHub Actions workflow can build informative commit messages."""
+    summary_file = PROCESSED_DIR / 'etl_run_summary.json'
+    summary = {
+        'run_timestamp': datetime.now().isoformat(),
+        'new_records': new_count,
+        'total_records': total_count,
+    }
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    with open(summary_file, 'w') as f:
+        json.dump(summary, f, indent=2)
+    logger.info(f"Wrote run summary: {new_count} new/updated, {total_count} total")
+
+
 def run_full_etl(
     start_year: int = 2022,
     end_year: int = 2026,
@@ -806,6 +855,9 @@ def run_full_etl(
     metadata_path = PROCESSED_DIR / "metadata.json"
     save_metadata(metadata, metadata_path)
 
+    # Write run summary for GitHub Actions commit message
+    write_run_summary(len(df), len(df))
+
     # Print summary
     print_summary(df, metadata)
 
@@ -850,6 +902,9 @@ def run_incremental_update(days: int = 7) -> pd.DataFrame:
     # Update metadata
     metadata = create_metadata(df)
     save_metadata(metadata, PROCESSED_DIR / "metadata.json")
+
+    # Write run summary for GitHub Actions commit message
+    write_run_summary(len(new_df), len(df))
 
     logger.info(f"Added/updated {len(new_df):,} permits. Total: {len(df):,}")
 

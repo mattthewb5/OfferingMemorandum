@@ -27,6 +27,10 @@ Thumbs.db
 # OM Generator output (regenerable)
 om_generator/om_output.html
 om_generator/output_test.html
+om_generator/fairfax_output.html
+om_generator/fairfax_test_output.html
+om_generator/loudoun_output.html
+om_generator/loudoun_test_output.html
 
 # Data (keep structure, ignore large downloads)
 # Uncomment these if you don't want to commit data files

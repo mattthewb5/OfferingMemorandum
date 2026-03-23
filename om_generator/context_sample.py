@@ -273,6 +273,8 @@ def get_sample_context():
         # ============================================================
         "dev_pressure_score": "18",
         "dev_pressure_label": "Low Development Pressure",
+        "dev_pressure_cover_tag": "Low Dev. Pressure",
+        "dev_pressure_badge_class": "badge-green",
         "dev_pressure_narrative": (
             "Minimal competing development activity within the 2-mile radius. No new multifamily "
             "permits filed in the trailing 24 months. Existing PDH/PRC zoning and Fairfax "

@@ -228,6 +228,15 @@ def main():
           f"permits_2mi={dev_ctx['permits_2mi_count']}, "
           f"new_mf={dev_ctx['new_mf_permits_count']}")
 
+    # ── Live traffic data ──────────────────────────────────────────────
+    from traffic_context import build_traffic_context
+    traffic_ctx = build_traffic_context(lat, lon, county)
+    ctx.update(traffic_ctx)
+    print(f"  Traffic wired: {traffic_ctx['traffic']['primary_road_name']} "
+          f"({traffic_ctx['traffic']['primary_road_count']} ADT), "
+          f"{traffic_ctx['traffic']['secondary_road_name']} "
+          f"({traffic_ctx['traffic']['secondary_road_count']} ADT)")
+
     # Update the stoplight Development Pressure row to match live score
     dev_score_int = int(ctx.get("dev_pressure_score", 0))
     if dev_score_int <= 25:

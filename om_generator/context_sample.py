@@ -369,20 +369,30 @@ def get_sample_context():
         # EMPLOYERS
         # ============================================================
         "employers": [
-            {"rank": "1", "name": "Fairfax County Gov\u2019t", "sector": "Public Administration", "employees": "28,126"},
-            {"rank": "2", "name": "Fairfax County Public Schools", "sector": "Education", "employees": "25,000+"},
-            {"rank": "3", "name": "Inova Health System", "sector": "Healthcare", "employees": "26,000+"},
-            {"rank": "4", "name": "George Mason University", "sector": "Higher Education", "employees": "7,500+"},
-            {"rank": "5", "name": "Booz Allen Hamilton", "sector": "Defense / Consulting", "employees": "~13,000"},
-            {"rank": "6", "name": "Leidos Holdings", "sector": "Defense Technology", "employees": "~8,500"},
-            {"rank": "7", "name": "DXC Technology", "sector": "IT Services", "employees": "~6,000"},
-            {"rank": "8", "name": "Capital One Financial", "sector": "Financial Services", "employees": "~5,500"},
+            {"rank": "1", "name": "Fairfax County Gov\u2019t", "sector": "Public Administration", "employees": "28,126", "logo_url": None},
+            {"rank": "2", "name": "Fairfax County Public Schools", "sector": "Education", "employees": "25,000+", "logo_url": None},
+            {"rank": "3", "name": "Inova Health System", "sector": "Healthcare", "employees": "26,000+", "logo_url": None},
+            {"rank": "4", "name": "George Mason University", "sector": "Higher Education", "employees": "7,500+", "logo_url": None},
+            {"rank": "5", "name": "Booz Allen Hamilton", "sector": "Defense / Consulting", "employees": "~13,000", "logo_url": None},
+            {"rank": "6", "name": "Leidos Holdings", "sector": "Defense Technology", "employees": "~8,500", "logo_url": None},
+            {"rank": "7", "name": "DXC Technology", "sector": "IT Services", "employees": "~6,000", "logo_url": None},
+            {"rank": "8", "name": "Capital One Financial", "sector": "Financial Services", "employees": "~5,500", "logo_url": None},
         ],
         "employer_footnote": (
             "\u2605 NewCo employer database covers 18 years of Fairfax County employment data. "
             "Recession-resistant government, healthcare, and defense employers account for "
             "majority of regional employment base."
         ),
+        "employers_data_year": None,
+        "employers_county": "fairfax",
+
+        # Employer map (populated by employer_map_context.py)
+        "employer_map_markers": [],
+        "employer_map_markers_json": "[]",
+        "employer_map_center_lat": 38.8731,
+        "employer_map_center_lon": -77.2689,
+        "employer_map_zoom": 11,
+        "employer_map_static_url": None,
 
         # ============================================================
         # AMENITIES

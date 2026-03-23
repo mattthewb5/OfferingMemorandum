@@ -89,15 +89,17 @@
           <div style="border:1px solid var(--rule);">
             <div class="emp-row" style="background:#f5f3ef;">
               <div class="emp-rank">#</div>
+              <div style="width:24px;flex-shrink:0;"></div>
               <div style="font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);flex:1.2;">Employer</div>
               <div style="font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);flex:1;">Sector</div>
               <div style="font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);text-align:right;flex-shrink:0;">Employees</div>
             </div>
             {% for emp in employers %}
-            <div class="emp-row"><div class="emp-rank">{{ emp.rank }}</div><div class="emp-name">{{ emp.name }}</div><div class="emp-sector">{{ emp.sector }}</div><div class="emp-count">{{ emp.employees }}</div></div>
+            <div class="emp-row"><div class="emp-rank">{{ emp.rank }}</div><div style="width:24px;flex-shrink:0;text-align:center;">{% if emp.logo_url %}<img src="{{ emp.logo_url }}" alt="{{ emp.name }}" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;" onerror="this.style.display='none'" />{% endif %}</div><div class="emp-name">{{ emp.name }}</div><div class="emp-sector">{{ emp.sector }}</div><div class="emp-count">{{ emp.employees }}</div></div>
 {% endfor %}
           </div>
           <div style="font-size:7.5px;color:var(--slate-light);margin-top:4px;font-style:italic;">{{ employer_footnote }}</div>
+          {% include "sections/employer_map.html" %}
         </div>
 
         <!-- Amenities snapshot — v3: filled with spec data -->

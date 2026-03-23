@@ -1,0 +1,28 @@
+<!-- Employer Location Map — Static image for PDF-safe rendering -->
+{% if employer_map_static_url %}
+<div class="employer-map-container" style="margin-top:10px;">
+  <img
+    src="{{ employer_map_static_url }}"
+    alt="Major employer locations map"
+    style="width:100%; border-radius:4px; display:block;"
+  />
+  <div class="map-legend" style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-family:var(--sans);font-size:7.5px;color:var(--navy);">
+    <span class="legend-item" style="display:inline-flex;align-items:center;gap:3px;">
+      <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#b8966a;color:white;font-size:7px;font-weight:700;text-align:center;line-height:12px;">P</span>
+      Subject Property
+    </span>
+    {% for m in employer_map_markers %}
+    {% if m.lat and m.lon %}
+    <span class="legend-item" style="display:inline-flex;align-items:center;gap:3px;">
+      <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#2a52a0;color:white;font-size:7px;font-weight:700;text-align:center;line-height:12px;">{{ loop.index if loop.index < 10 else 'A' }}</span>
+      {{ m.name }}
+    </span>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="map-placeholder" style="margin-top:10px;padding:14px;background:var(--bg);border:1px solid var(--rule);text-align:center;font-size:8px;color:var(--slate-light);font-style:italic;">
+  Employer location map unavailable.
+</div>
+{% endif %}

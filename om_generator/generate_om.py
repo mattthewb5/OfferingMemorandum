@@ -202,6 +202,29 @@ def main():
     print(f"  Demographics wired: income={demo_ctx['demo']['median_income']}, "
           f"pop={demo_ctx['demo']['population']}")
 
+    # ── Live employers data ───────────────────────────────────────────
+    from employers_context import build_employers_context
+    emp_ctx = build_employers_context(lat, lon, county)
+    ctx.update(emp_ctx)
+    print(f"  Employers wired: {len(emp_ctx['employers'])} employers, "
+          f"year={emp_ctx['employers_data_year']}")
+
+    # ── Employer map ──────────────────────────────────────────────────
+    from employer_map_context import build_employer_map_context
+    map_ctx = build_employer_map_context(lat, lon, ctx["employers"], county)
+    ctx.update(map_ctx)
+    has_map = "yes" if map_ctx.get("employer_map_static_url") else "no"
+    print(f"  Employer map wired: {len(map_ctx['employer_map_markers'])} markers, "
+          f"static_url={has_map}")
+
+    # ── Live development data ─────────────────────────────────────────
+    from development_context import build_development_context
+    dev_ctx = build_development_context(lat, lon, county)
+    ctx.update(dev_ctx)
+    print(f"  Development wired: score={dev_ctx['dev_pressure_score']}, "
+          f"permits_2mi={dev_ctx['permits_2mi_count']}, "
+          f"new_mf={dev_ctx['new_mf_permits_count']}")
+
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)
 

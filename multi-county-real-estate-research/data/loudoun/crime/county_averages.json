@@ -1,0 +1,55 @@
+{
+  "computed_date": "2026-03-23",
+  "window_months": 12,
+  "window_start": "2025-02-05",
+  "window_end": "2026-02-05",
+  "per_beat_monthly": {
+    "mean_total": 16.82,
+    "median_total": 13.0,
+    "mean_violent": 5.07,
+    "median_violent": 4.0,
+    "mean_property": 7.26,
+    "median_property": 5.0,
+    "p25_total": 7.0,
+    "p50_total": 13.0,
+    "p75_total": 23.0,
+    "p90_total": 35.4
+  },
+  "radius_1mi_6mo": {
+    "description": "Distribution of incident counts within 1-mile radius over 6-month window, sampled from 200 geocoded crime locations",
+    "mean": 128.2,
+    "p25": 57.5,
+    "p50": 91.0,
+    "p75": 212.8,
+    "p90": 270.0
+  },
+  "annual_totals": {
+    "2023": 7641,
+    "2024": 7069,
+    "2025": 6745,
+    "2026": 453
+  },
+  "yoy_trend": {
+    "2023_to_2024_pct": -7.49,
+    "2024_to_2025_pct": -4.58,
+    "2025_note": "2025 is partial year (through Feb 5)"
+  },
+  "category_pct": {
+    "PROPERTY": 46.23,
+    "VIOLENT": 30.04,
+    "OTHER": 23.73
+  },
+  "safety_score_thresholds": {
+    "description": "Based on 1-mile radius, 6-month window distribution across Loudoun County",
+    "p25": 57.5,
+    "p50": 91.0,
+    "p75": 212.8,
+    "p90": 270.0,
+    "scoring": {
+      "8_to_10": "< p25 (fewer than 57.5 incidents)",
+      "5_to_7": "p25 to p50 (57.5 to 91.0 incidents)",
+      "3_to_4": "p50 to p75 (91.0 to 212.8 incidents)",
+      "1_to_2": "> p75 (more than 212.8 incidents)"
+    }
+  }
+}

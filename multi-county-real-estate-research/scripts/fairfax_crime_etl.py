@@ -592,6 +592,8 @@ def save_incidents(df: pd.DataFrame):
     processed_dir.mkdir(parents=True, exist_ok=True)
 
     incidents_file = processed_dir / 'incidents.parquet'
+    if 'zip' in df.columns:
+        df['zip'] = pd.to_numeric(df['zip'], errors='coerce')
     df.to_parquet(incidents_file, index=False)
 
     logger.info(f"Saved {len(df)} incidents to {incidents_file}")

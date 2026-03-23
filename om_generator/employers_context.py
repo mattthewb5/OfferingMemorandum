@@ -12,6 +12,7 @@ Usage:
 """
 
 import json
+import os
 import sys
 import types
 from pathlib import Path
@@ -24,6 +25,32 @@ sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
 _DATA_ROOT = _REPO_ROOT / "multi-county-real-estate-research" / "data"
 _FAIRFAX_EMPLOYERS = _DATA_ROOT / "fairfax" / "major_employers.json"
 _LOUDOUN_EMPLOYERS = _DATA_ROOT / "loudoun" / "major_employers.json"
+
+FAIRFAX_EMPLOYER_DOMAINS = {
+    "federal government": "usa.gov",
+    "fairfax county public schools": "fcps.edu",
+    "inova health system": "inova.org",
+    "fairfax county government": "fairfaxcounty.gov",
+    "george mason university": "gmu.edu",
+    "booz allen hamilton": "boozallen.com",
+    "amazon": "amazon.com",
+    "capital one": "capitalone.com",
+    "science applications international corporation": "saic.com",
+    "federal home loan mortgage": "freddiemac.com",
+}
+
+LOUDOUN_EMPLOYER_DOMAINS = {
+    "loudoun county public schools": "lcps.org",
+    "county of loudoun": "loudoun.gov",
+    "amazon": "amazon.com",
+    "amazon web services": "aws.amazon.com",
+    "microsoft": "microsoft.com",
+    "google": "google.com",
+    "meta": "meta.com",
+    "equinix": "equinix.com",
+    "digital realty": "digitalrealty.com",
+    "leidos": "leidos.com",
+}
 
 
 def _get_sort_key(emp: dict) -> int:
@@ -111,19 +138,30 @@ def build_employers_context(lat: float, lon: float, county: str) -> dict:
         # Load sector inference
         _infer_industry = _load_infer_industry(county)
 
+        # Logo domain lookup
+        domain_map = FAIRFAX_EMPLOYER_DOMAINS if county == 'fairfax' else LOUDOUN_EMPLOYER_DOMAINS
+        logo_dev_token = os.environ.get("LOGO_DEV_TOKEN", "")
+
         # Sort by employee count descending, take top 10
         sorted_emps = sorted(employers, key=_get_sort_key, reverse=True)[:10]
 
+        employer_list = []
+        for i, emp in enumerate(sorted_emps):
+            domain = domain_map.get(emp["name"].lower())
+            logo_url = (
+                f"https://img.logo.dev/{domain}?token={logo_dev_token}&size=20&format=png"
+                if domain and logo_dev_token else None
+            )
+            employer_list.append({
+                "rank": str(i + 1),
+                "name": emp["name"],
+                "sector": _infer_industry(emp["name"]),
+                "employees": _format_employees(emp),
+                "logo_url": logo_url,
+            })
+
         return {
-            "employers": [
-                {
-                    "rank": str(i + 1),
-                    "name": emp["name"],
-                    "sector": _infer_industry(emp["name"]),
-                    "employees": _format_employees(emp),
-                }
-                for i, emp in enumerate(sorted_emps)
-            ],
+            "employers": employer_list,
             "employer_footnote": (
                 f"Source: {county.title()} County Annual Comprehensive Financial "
                 f"Report (ACFR), {data_year}. Employee counts represent full-time "

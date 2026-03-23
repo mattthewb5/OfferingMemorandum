@@ -237,6 +237,14 @@ def main():
           f"{traffic_ctx['traffic']['secondary_road_name']} "
           f"({traffic_ctx['traffic']['secondary_road_count']} ADT)")
 
+    # ── Live amenities data ──────────────────────────────────────────
+    from amenities_context import build_amenities_context
+    amenities_ctx = build_amenities_context(lat, lon, county)
+    ctx.update(amenities_ctx)
+    counts = [a['count'] for a in amenities_ctx['amenities']]
+    print(f"  Amenities wired: {len(amenities_ctx['amenities'])} categories, "
+          f"counts={counts}")
+
     # Update the stoplight Development Pressure row to match live score
     dev_score_int = int(ctx.get("dev_pressure_score", 0))
     if dev_score_int <= 25:

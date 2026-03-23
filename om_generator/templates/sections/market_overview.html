@@ -107,9 +107,17 @@
           <h4 style="margin-bottom:7px;">Nearby Amenities &#8212; Google Places (1-Mile Radius)</h4>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
             {% for amenity in amenities %}
-            <div style="padding:8px 10px;background:var(--bg);border:1px solid var(--rule);text-align:center;">
-              <div style="font-family:var(--serif);font-size:18px;font-weight:600;color:var(--navy);">{{ amenity.count }}</div>
-              <div style="font-size:7.5px;color:var(--slate-light);">{{ amenity.label }}</div>
+            <div style="padding:8px 10px;background:var(--bg);border:1px solid var(--rule);">
+              <div style="text-align:center;">
+                <div style="font-family:var(--serif);font-size:18px;font-weight:600;color:var(--navy);">{{ amenity.count }}</div>
+                <div style="font-size:7.5px;color:var(--slate-light);">{{ amenity.label }}</div>
+              </div>
+              {% if amenity.nearest_name and amenity.nearest_name != "\u2014" and amenity.nearest_name != "&#8212;" %}
+              <div style="margin-top:5px;padding-top:4px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:7px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;">{{ amenity.nearest_name }}</div>
+                <div style="font-size:6.5px;color:var(--slate-light);white-space:nowrap;">{{ amenity.nearest_dist }} &middot; {{ amenity.nearest_walk }}</div>
+              </div>
+              {% endif %}
             </div>
 {% endfor %}
           </div>

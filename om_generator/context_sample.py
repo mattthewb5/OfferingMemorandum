@@ -400,12 +400,12 @@ def get_sample_context():
         # AMENITIES
         # ============================================================
         "amenities": [
-            {"count": "34", "label": "Restaurants"},
-            {"count": "6", "label": "Grocery / Market"},
-            {"count": "8", "label": "Fitness / Gym"},
-            {"count": "5", "label": "Parks / Trails"},
-            {"count": "11", "label": "Coffee Shops"},
-            {"count": "22", "label": "Retail Shops"},
+            {"count": "34", "label": "Restaurants", "nearest_name": "Paisano\u2019s Pizza", "nearest_dist": "0.2 mi", "nearest_walk": "4 min"},
+            {"count": "6", "label": "Grocery / Market", "nearest_name": "Giant Food", "nearest_dist": "0.4 mi", "nearest_walk": "8 min"},
+            {"count": "8", "label": "Fitness / Gym", "nearest_name": "Planet Fitness", "nearest_dist": "0.3 mi", "nearest_walk": "6 min"},
+            {"count": "5", "label": "Parks / Trails", "nearest_name": "Daniels Run Park", "nearest_dist": "0.5 mi", "nearest_walk": "10 min"},
+            {"count": "11", "label": "Coffee Shops", "nearest_name": "Starbucks", "nearest_dist": "0.2 mi", "nearest_walk": "4 min"},
+            {"count": "22", "label": "Retail Shops", "nearest_name": "CVS Pharmacy", "nearest_dist": "0.3 mi", "nearest_walk": "5 min"},
         ],
 
         # ============================================================

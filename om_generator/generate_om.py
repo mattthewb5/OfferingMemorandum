@@ -250,6 +250,12 @@ def main():
             sl['badge_class'] = dev_badge_cls
             break
 
+    # Interpolate live data into investment_highlights placeholders
+    ctx['investment_highlights'] = [
+        h.format_map(ctx) if '{' in h else h
+        for h in ctx['investment_highlights']
+    ]
+
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)
 

@@ -262,6 +262,26 @@ def main():
             sl['badge_class'] = dev_badge_cls
             break
 
+    # Flatten schools for investment highlights interpolation
+    if ctx.get('schools') and len(ctx['schools']) >= 3:
+        ctx['hl_elem_name']   = ctx['schools'][0]['name']
+        ctx['hl_elem_sol']    = ctx['schools'][0]['sol_pass']
+        ctx['hl_middle_name'] = ctx['schools'][1]['name']
+        ctx['hl_middle_sol']  = ctx['schools'][1]['sol_pass']
+        ctx['hl_high_name']   = ctx['schools'][2]['name']
+        ctx['hl_high_sol']    = ctx['schools'][2]['sol_pass']
+    else:
+        ctx['hl_elem_name']   = 'Elementary School'
+        ctx['hl_elem_sol']    = 'N/A'
+        ctx['hl_middle_name'] = 'Middle School'
+        ctx['hl_middle_sol']  = 'N/A'
+        ctx['hl_high_name']   = 'High School'
+        ctx['hl_high_sol']    = 'N/A'
+
+    # Flatten demographics for investment highlights interpolation
+    ctx['hl_median_income']     = ctx.get('demo', {}).get('median_income', 'N/A')
+    ctx['hl_income_multiplier'] = ctx.get('demo', {}).get('income_multiplier', 'N/A')
+
     # Interpolate live data into investment_highlights placeholders
     ctx['investment_highlights'] = [
         h.format_map(ctx) if '{' in h else h

@@ -85,21 +85,15 @@ def _graceful_default(county: str) -> dict:
 
 def _build_fairfax(lat: float, lon: float, radius_miles: float) -> dict:
     """Build development context from Fairfax permits data."""
+    import pandas as pd
     from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
 
     analyzer = FairfaxPermitsAnalysis()
-    pressure = analyzer.calculate_development_pressure(
-        lat, lon, radius_miles=radius_miles, months_back=24
-    )
     nearby_df = analyzer.get_permits_near_point(
         lat, lon, radius_miles=radius_miles, months_back=24
     )
 
-    score = pressure["score"]
-    rating = pressure["rating"]
-    trend = pressure["trend"]
     total_county_permits = len(analyzer.permits)
-
     permits_2mi_count = len(nearby_df)
 
     # Categorize permits using permit_category column
@@ -107,7 +101,6 @@ def _build_fairfax(lat: float, lon: float, radius_miles: float) -> dict:
     commercial_new_count = 0
     commercial_alt_count = 0
     residential_reno_count = 0
-    new_construction_count = 0
 
     if not nearby_df.empty and 'permit_category' in nearby_df.columns:
         cat = nearby_df['permit_category']
@@ -115,13 +108,60 @@ def _build_fairfax(lat: float, lon: float, radius_miles: float) -> dict:
         commercial_new_count = int(cat.str.contains('commercial_new', na=False).sum())
         commercial_alt_count = int(cat.str.contains('commercial_renovation', na=False).sum())
         residential_reno_count = int(cat.str.contains('residential_renovation', na=False).sum())
-        new_construction_count = new_mf_count + commercial_new_count
+
+    new_construction_count = new_mf_count + commercial_new_count
 
     # Nearest permit distance
     if not nearby_df.empty and 'distance_miles' in nearby_df.columns:
-        nearest_permit_distance = f"{nearby_df['distance_miles'].min():.1f} miles"
+        nearest_dist = nearby_df['distance_miles'].min()
+        nearest_permit_distance = f"{nearest_dist:.1f} miles"
     else:
+        nearest_dist = radius_miles + 1
         nearest_permit_distance = f"> {radius_miles} miles"
+
+    # Recency: fraction of permits from last 6 months
+    recent_cutoff = pd.Timestamp.now() - pd.Timedelta(days=180)
+    if not nearby_df.empty:
+        recent = nearby_df[
+            (nearby_df['issued_date'] >= recent_cutoff) |
+            ((nearby_df['issued_date'].isna()) & (nearby_df['submitted_date'] >= recent_cutoff))
+        ]
+        recent_count = len(recent)
+    else:
+        recent_count = 0
+
+    # Type-weighted score (same weights as FairfaxPermitsAnalysis)
+    weighted_score = (
+        new_mf_count * 8
+        + commercial_new_count * 3
+        + residential_reno_count * 0.3
+        + commercial_alt_count * 0.5
+    )
+
+    # Compute sub-scores first — these ARE the headline
+    sub = _compute_sub_scores(
+        weighted_score=weighted_score,
+        new_mf_count=new_mf_count,
+        new_construction_count=new_construction_count,
+        permits_2mi_count=permits_2mi_count,
+        recent_count=recent_count,
+        nearest_dist=nearest_dist,
+    )
+    score = sub["volume_pts"] + sub["recency_pts"] + sub["type_pts"] + sub["proximity_pts"] + sub["planning_pts"]
+
+    # Trend from analyzer
+    pressure = analyzer.calculate_development_pressure(
+        lat, lon, radius_miles=radius_miles, months_back=24
+    )
+    trend = pressure["trend"]
+
+    # Rating from score thresholds
+    if score <= 25:
+        rating = "Low"
+    elif score <= 60:
+        rating = "Moderate"
+    else:
+        rating = "High"
 
     return _assemble_result(
         score=score,
@@ -137,6 +177,7 @@ def _build_fairfax(lat: float, lon: float, radius_miles: float) -> dict:
         radius_miles=radius_miles,
         county="fairfax",
         nearby_df=nearby_df,
+        sub_scores=sub,
     )
 
 
@@ -152,8 +193,6 @@ def _build_loudoun(lat: float, lon: float, radius_miles: float) -> dict:
         lat, lon, radius_miles=radius_miles
     )
 
-    score = int(pressure.score)
-    rating = pressure.classification
     trend = pressure.trend
     total_county_permits = pressure.total_permits
     permits_2mi_count = pressure.permits_within_radius
@@ -180,9 +219,46 @@ def _build_loudoun(lat: float, lon: float, radius_miles: float) -> dict:
 
     # Nearest permit distance
     if nearby_permits:
-        nearest_permit_distance = f"{min(p.distance_miles for p in nearby_permits):.1f} miles"
+        nearest_dist = min(p.distance_miles for p in nearby_permits)
+        nearest_permit_distance = f"{nearest_dist:.1f} miles"
     else:
+        nearest_dist = radius_miles + 1
         nearest_permit_distance = f"> {radius_miles} miles"
+
+    # Recency: fraction of permits from last 6 months
+    from datetime import datetime as dt, timedelta
+    recent_cutoff = dt.now() - timedelta(days=180)
+    recent_count = sum(
+        1 for p in nearby_permits
+        if p.issue_date and p.issue_date >= recent_cutoff
+    )
+
+    # Type-weighted score (same weights as Fairfax)
+    weighted_score = (
+        new_mf_count * 8
+        + commercial_new_count * 3
+        + residential_reno_count * 0.3
+        + commercial_alt_count * 0.5
+    )
+
+    # Compute sub-scores first — these ARE the headline
+    sub = _compute_sub_scores(
+        weighted_score=weighted_score,
+        new_mf_count=new_mf_count,
+        new_construction_count=new_construction_count,
+        permits_2mi_count=permits_2mi_count,
+        recent_count=recent_count,
+        nearest_dist=nearest_dist,
+    )
+    score = sub["volume_pts"] + sub["recency_pts"] + sub["type_pts"] + sub["proximity_pts"] + sub["planning_pts"]
+
+    # Rating from score thresholds
+    if score <= 25:
+        rating = "Low"
+    elif score <= 60:
+        rating = "Moderate"
+    else:
+        rating = "High"
 
     return _assemble_result(
         score=score,
@@ -198,56 +274,58 @@ def _build_loudoun(lat: float, lon: float, radius_miles: float) -> dict:
         radius_miles=radius_miles,
         county="loudoun",
         nearby_df=None,
+        sub_scores=sub,
     )
 
 
 def _compute_sub_scores(
-    score: int,
-    permits_2mi_count: int,
-    total_county_permits: int,
+    weighted_score: float,
+    new_mf_count: int,
     new_construction_count: int,
-    nearest_permit_distance: str,
-    nearby_df=None,
+    permits_2mi_count: int,
+    recent_count: int,
+    nearest_dist: float,
 ) -> dict:
-    """Compute the 5 formula sub-scores from raw data."""
+    """Compute the 5 formula sub-scores that compose the headline score.
 
-    # Volume: 30 pts max — ratio of nearby permits to county baseline
-    if total_county_permits > 0:
-        ratio = permits_2mi_count / total_county_permits
-        # Normalize: 0.01% of county = ~30 pts
-        volume_pts = min(30, round(ratio * 30 * 10000))
-    else:
-        volume_pts = 0
+    The headline IS the sum of these components — no independent calculation.
+    """
 
-    # Recency: 20 pts max — fraction of total score from recency
-    # Approximate from overall score contribution
-    recency_pts = min(20, round(score * 0.2))
+    # Volume component (30 pts max) — based on type-weighted permit score
+    # Calibration: 10 new MF (~ws 220) → ~11 pts, 50+ new MF (~ws 550) → ~28 pts
+    volume_pts = min(30, round(weighted_score * 0.05))
 
-    # Type: 20 pts max — new construction ratio
-    if permits_2mi_count > 0:
-        type_pts = min(20, round((new_construction_count / permits_2mi_count) * 20))
+    # Recency component (20 pts max) — fraction of permits from last 6 months
+    recent_ratio = recent_count / max(1, permits_2mi_count)
+    recency_pts = min(20, round(recent_ratio * 25))
+
+    # Type component (20 pts max) — new multifamily share of weighted score
+    if weighted_score > 0:
+        type_pts = min(20, round((new_mf_count * 8) / weighted_score * 20))
     else:
         type_pts = 0
 
-    # Proximity: 15 pts max — closer = higher
-    try:
-        dist_val = float(nearest_permit_distance.split()[0].lstrip('>').strip())
-        if dist_val <= 0.5:
-            proximity_pts = 15
-        elif dist_val <= 1.0:
-            proximity_pts = 10
-        elif dist_val <= 2.0:
-            proximity_pts = 5
-        else:
-            proximity_pts = 0
-    except (ValueError, IndexError):
+    # Proximity component (15 pts max) — distance tiers
+    if nearest_dist <= 0.25:
+        proximity_pts = 15
+    elif nearest_dist <= 0.5:
+        proximity_pts = 12
+    elif nearest_dist <= 1.0:
+        proximity_pts = 8
+    elif nearest_dist <= 1.5:
+        proximity_pts = 4
+    else:
         proximity_pts = 0
+
+    # Planning Zone (15 pts max) — stubbed until zoning module ready
+    planning_pts = 0
 
     return {
         "volume_pts": volume_pts,
         "recency_pts": recency_pts,
         "type_pts": type_pts,
         "proximity_pts": proximity_pts,
+        "planning_pts": planning_pts,
     }
 
 
@@ -265,20 +343,16 @@ def _assemble_result(
     radius_miles: float,
     county: str,
     nearby_df=None,
+    sub_scores: dict = None,
 ) -> dict:
     """Assemble the full development context dict."""
 
     label, color = _score_label_color(score)
 
-    # Sub-scores
-    sub = _compute_sub_scores(
-        score=score,
-        permits_2mi_count=permits_2mi_count,
-        total_county_permits=total_county_permits,
-        new_construction_count=new_construction_count,
-        nearest_permit_distance=nearest_permit_distance,
-        nearby_df=nearby_df,
-    )
+    sub = sub_scores or {
+        "volume_pts": 0, "recency_pts": 0, "type_pts": 0,
+        "proximity_pts": 0, "planning_pts": 0,
+    }
 
     dev_formula_components = [
         {"name": "Permit Volume", "weight": "30%",
@@ -298,9 +372,9 @@ def _assemble_result(
          "bar_color": _bar_color_for_pts(sub['proximity_pts'], 15),
          "score_label": f"{sub['proximity_pts']}/15"},
         {"name": "Planning Zone", "weight": "15%",
-         "bar_width": "0%",
-         "bar_color": "#cccccc",
-         "score_label": "Pending"},
+         "bar_width": f"{round(sub['planning_pts'] / 15 * 100)}%",
+         "bar_color": _bar_color_for_pts(sub['planning_pts'], 15) if sub['planning_pts'] > 0 else "#cccccc",
+         "score_label": f"{sub['planning_pts']}/15" if sub['planning_pts'] > 0 else "Pending"},
     ]
 
     # Permit activity bars

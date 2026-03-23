@@ -62,6 +62,7 @@ def _places_nearby(lat: float, lon: float, included_types: list, api_key: str) -
     body = {
         "includedTypes": included_types,
         "maxResultCount": 20,
+        "rankPreference": "DISTANCE",
         "locationRestriction": {
             "circle": {
                 "center": {"latitude": lat, "longitude": lon},

@@ -24,6 +24,20 @@ from core.api_config import get_api_key
 # Geocache path
 _GEOCACHE_PATH = Path(__file__).resolve().parent / "data" / "employer_geocache.json"
 
+# Known employer HQ addresses for accurate geocoding
+FAIRFAX_EMPLOYER_ADDRESSES = {
+    "federal government": "CIA Headquarters, Langley, McLean, VA 22101",
+    "fairfax county public schools": "8115 Gatehouse Rd, Falls Church, VA 22042",
+    "inova health system": "8110 Gatehouse Rd, Falls Church, VA 22042",
+    "fairfax county government": "12000 Government Center Pkwy, Fairfax, VA 22035",
+    "george mason university": "4400 University Dr, Fairfax, VA 22030",
+    "booz allen hamilton": "8283 Greensboro Dr, McLean, VA 22102",
+    "amazon": "13200 Woodland Park Rd, Herndon, VA 20171",
+    "capital one": "1680 Capital One Dr, McLean, VA 22102",
+    "science applications international corporation": "12010 Sunset Hills Rd, Reston, VA 20190",
+    "federal home loan mortgage": "8200 Jones Branch Dr, McLean, VA 22102",
+}
+
 
 def _load_geocache() -> dict:
     """Load the employer geocode cache from disk."""
@@ -46,10 +60,9 @@ def _save_geocache(cache: dict) -> None:
         print(f"WARNING: Could not save geocache: {e}", file=sys.stderr)
 
 
-def _geocode_employer(name: str, county: str, api_key: str) -> dict:
+def _geocode_employer(query: str, api_key: str) -> dict:
     """Geocode an employer via Google Maps Geocoding API."""
     try:
-        query = f"{name}, {county.title()} County, Virginia"
         url = "https://maps.googleapis.com/maps/api/geocode/json"
         resp = requests.get(
             url,
@@ -62,7 +75,7 @@ def _geocode_employer(name: str, county: str, api_key: str) -> dict:
             loc = data["results"][0]["geometry"]["location"]
             return {"lat": loc["lat"], "lon": loc["lng"], "source": "google"}
     except Exception as e:
-        print(f"WARNING: Geocoding failed for '{name}': {e}", file=sys.stderr)
+        print(f"WARNING: Geocoding failed for '{query}': {e}", file=sys.stderr)
     return {"lat": None, "lon": None, "source": "failed"}
 
 
@@ -134,9 +147,14 @@ def build_employer_map_context(
                   file=sys.stderr)
             return _graceful_default(lat, lon)
 
-        # Load and update geocache
+        # Load geocache and purge stale entries for employers with known addresses
         cache = _load_geocache()
-        cache_updated = False
+        address_map = FAIRFAX_EMPLOYER_ADDRESSES if county == 'fairfax' else {}
+        known_names = set(address_map.keys())
+        purged = [k for k in list(cache.keys()) if k.lower() in known_names]
+        for k in purged:
+            del cache[k]
+        cache_updated = bool(purged)
 
         markers = []
         for emp in employers:
@@ -145,7 +163,9 @@ def build_employer_map_context(
                 continue
 
             if name not in cache:
-                cache[name] = _geocode_employer(name, county, api_key)
+                query = (address_map.get(name.lower())
+                         or f"{name}, {county.title()} County, Virginia")
+                cache[name] = _geocode_employer(query, api_key)
                 cache_updated = True
 
             geo = cache[name]

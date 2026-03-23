@@ -19,7 +19,7 @@ def get_sample_context():
         "property_state": "Virginia",
         "property_state_abbr": "VA",
         "property_zip": "22031",
-        "property_county": "Fairfax County",
+        "property_county": "",
         "submarket_name": "Merrifield&#8211;Vienna",
         "transit_corridor": "Silver Line Corridor",
         "metro_station_name": "Vienna/Fairfax-GMU",

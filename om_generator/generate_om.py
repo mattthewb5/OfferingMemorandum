@@ -141,6 +141,9 @@ def main():
     from context_sample import get_sample_context
     ctx = get_sample_context()
 
+    # Set property_county from detected county
+    ctx['property_county'] = county.title() + ' County'
+
     # Inject logo base64
     ctx['wo_logo_base64'] = extract_logo_base64(V3_PATH)
 

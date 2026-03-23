@@ -225,6 +225,31 @@ def main():
           f"permits_2mi={dev_ctx['permits_2mi_count']}, "
           f"new_mf={dev_ctx['new_mf_permits_count']}")
 
+    # Update the stoplight Development Pressure row to match live score
+    dev_score_int = int(ctx.get("dev_pressure_score", 0))
+    if dev_score_int <= 25:
+        dev_badge, dev_detail = 'Low \u2713', 'Low \u00b7 Supply Constrained'
+        dev_dot, dev_badge_cls = 'sl-green', 'badge-green'
+        dev_bar_color = 'var(--green)'
+    elif dev_score_int <= 60:
+        dev_badge, dev_detail = 'Moderate', 'Moderate'
+        dev_dot, dev_badge_cls = 'sl-amber', 'badge-amber'
+        dev_bar_color = 'var(--amber)'
+    else:
+        dev_badge, dev_detail = 'High \u26a0', 'High \u00b7 Active Pipeline'
+        dev_dot, dev_badge_cls = 'sl-red', 'badge-red'
+        dev_bar_color = 'var(--red)'
+
+    for sl in ctx['stoplight_scores']:
+        if sl['label'] == 'Development Pressure':
+            sl['badge_text'] = dev_badge
+            sl['label_detail'] = dev_detail
+            sl['bar_width'] = f"{dev_score_int}%"
+            sl['bar_color'] = dev_bar_color
+            sl['dot_class'] = dev_dot
+            sl['badge_class'] = dev_badge_cls
+            break
+
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)
 

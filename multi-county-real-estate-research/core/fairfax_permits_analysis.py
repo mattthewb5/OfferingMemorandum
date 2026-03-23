@@ -131,6 +131,12 @@ class FairfaxPermitsAnalysis:
 
         return df.sort_values('distance_miles')
 
+    # Type-weighted scoring constants — competitive relevance to investor
+    NEW_MF_WEIGHT = 8           # new multifamily — direct competition
+    NEW_COMMERCIAL_WEIGHT = 3   # new commercial — area activity signal
+    RENO_RESIDENTIAL_WEIGHT = 0.3  # residential renovation — not competing supply
+    ALT_COMMERCIAL_WEIGHT = 0.5    # commercial alteration — minor signal
+
     def calculate_development_pressure(
         self,
         lat: float,
@@ -141,23 +147,12 @@ class FairfaxPermitsAnalysis:
         """
         Calculate a development pressure score (0-100) for a location.
 
-        Higher scores = more construction activity/development pressure.
+        Uses type-weighted scoring: permits are weighted by competitive
+        relevance to a multifamily investor rather than counted equally.
 
-        Recalibrated scoring (permit count → score):
-            0 permits  →  0   (No activity)
-            1-20       →  1-30  (Low)
-            21-50      → 31-60  (Moderate)
-            51-100     → 61-85  (High)
-            100+       → 86-100 (Very High)
-
-        Bonuses (up to +10 each):
-            - Recency bonus: proportion of permits in last 6 months × 10
-            - New construction bonus: proportion of new builds × 10
-
-        Trend classification:
-        - Increasing: second_half > first_half * 1.2
-        - Decreasing: second_half < first_half * 0.8
-        - Stable: otherwise
+        Anchor calibration:
+            10 new multifamily within 2 mi → ~50/100 (moderate)
+            0 new multifamily, all renos  → ~5-15/100 (supply constrained)
 
         Args:
             lat: Latitude
@@ -171,7 +166,7 @@ class FairfaxPermitsAnalysis:
                 - rating: str ('Low', 'Moderate', 'High', 'Very High')
                 - trend: str ('increasing', 'stable', 'decreasing', 'insufficient_data')
                 - total_permits: int
-                - breakdown: dict (counts by detailed category)
+                - breakdown: dict (counts and weights by category)
                 - radius_miles: float
                 - months_back: int
         """
@@ -190,44 +185,66 @@ class FairfaxPermitsAnalysis:
 
         total_permits = len(nearby)
 
-        # Build category breakdown
-        breakdown = {}
-        category_counts = nearby['permit_category'].value_counts().to_dict()
-        for category, count in category_counts.items():
-            breakdown[category] = {'count': count}
+        # Count each permit bucket using permit_category
+        cat = nearby['permit_category'] if 'permit_category' in nearby.columns else pd.Series(dtype=str)
+        new_mf_count = int(cat.str.contains('residential_new', na=False).sum())
+        new_commercial_count = int(cat.str.contains('commercial_new', na=False).sum())
+        residential_reno_count = int(cat.str.contains('residential_renovation', na=False).sum())
+        commercial_alt_count = int(cat.str.contains('commercial_renovation', na=False).sum())
 
-        # Base score from permit count (piecewise linear)
-        if total_permits <= 20:
-            base_score = (total_permits / 20) * 30
-        elif total_permits <= 50:
-            base_score = 30 + ((total_permits - 20) / 30) * 30
-        elif total_permits <= 100:
-            base_score = 60 + ((total_permits - 50) / 50) * 25
-        else:
-            base_score = 85 + min((total_permits - 100) / 200 * 15, 15)
+        # Weighted score — emphasises competitive supply risk
+        weighted_score = (
+            new_mf_count * self.NEW_MF_WEIGHT
+            + new_commercial_count * self.NEW_COMMERCIAL_WEIGHT
+            + residential_reno_count * self.RENO_RESIDENTIAL_WEIGHT
+            + commercial_alt_count * self.ALT_COMMERCIAL_WEIGHT
+        )
 
-        # Recency bonus: permits in last 6 months
+        # Normalize to 0-85 base (recency + proximity bonuses add up to 15)
+        base_score = min(85, round(weighted_score / 1.2))
+
+        # Recency bonus (up to +10): fraction of permits from last 6 months
         recent_cutoff = pd.Timestamp.now() - pd.Timedelta(days=180)
         recent = nearby[
             (nearby['issued_date'] >= recent_cutoff) |
             ((nearby['issued_date'].isna()) & (nearby['submitted_date'] >= recent_cutoff))
         ]
-        recency_bonus = (len(recent) / max(total_permits, 1)) * 10
+        recency_bonus = round((len(recent) / max(total_permits, 1)) * 10)
 
-        # New construction bonus
-        new_construction = nearby[nearby['permit_category'].isin(
-            ['residential_new', 'commercial_new']
-        )]
-        new_bonus = (len(new_construction) / max(total_permits, 1)) * 10
+        # Proximity bonus (up to +5): distance to nearest permit
+        if 'distance_miles' in nearby.columns and not nearby.empty:
+            nearest_dist = nearby['distance_miles'].min()
+            if nearest_dist <= 0.25:
+                proximity_bonus = 5
+            elif nearest_dist <= 0.5:
+                proximity_bonus = 4
+            elif nearest_dist <= 1.0:
+                proximity_bonus = 3
+            elif nearest_dist <= 1.5:
+                proximity_bonus = 1
+            else:
+                proximity_bonus = 0
+        else:
+            proximity_bonus = 0
 
-        score = min(100, int(base_score + recency_bonus + new_bonus))
+        score = min(100, base_score + recency_bonus + proximity_bonus)
+
+        # Build category breakdown with weights
+        breakdown = {
+            'residential_new': {'count': new_mf_count, 'weight': self.NEW_MF_WEIGHT,
+                                'contribution': round(new_mf_count * self.NEW_MF_WEIGHT, 1)},
+            'commercial_new': {'count': new_commercial_count, 'weight': self.NEW_COMMERCIAL_WEIGHT,
+                               'contribution': round(new_commercial_count * self.NEW_COMMERCIAL_WEIGHT, 1)},
+            'residential_renovation': {'count': residential_reno_count, 'weight': self.RENO_RESIDENTIAL_WEIGHT,
+                                       'contribution': round(residential_reno_count * self.RENO_RESIDENTIAL_WEIGHT, 1)},
+            'commercial_renovation': {'count': commercial_alt_count, 'weight': self.ALT_COMMERCIAL_WEIGHT,
+                                      'contribution': round(commercial_alt_count * self.ALT_COMMERCIAL_WEIGHT, 1)},
+        }
 
         # Rating label
-        if score >= 86:
-            rating = 'Very High'
-        elif score >= 61:
+        if score >= 61:
             rating = 'High'
-        elif score >= 31:
+        elif score >= 26:
             rating = 'Moderate'
         elif score >= 1:
             rating = 'Low'
@@ -270,7 +287,7 @@ class FairfaxPermitsAnalysis:
             'score': score,
             'rating': rating,
             'trend': trend,
-            'total_permits': len(nearby),
+            'total_permits': total_permits,
             'breakdown': breakdown,
             'radius_miles': radius_miles,
             'months_back': months_back

@@ -383,6 +383,16 @@ def get_sample_context():
             "Recession-resistant government, healthcare, and defense employers account for "
             "majority of regional employment base."
         ),
+        "employers_data_year": None,
+        "employers_county": "fairfax",
+
+        # Employer map (populated by employer_map_context.py)
+        "employer_map_markers": [],
+        "employer_map_markers_json": "[]",
+        "employer_map_center_lat": 38.8731,
+        "employer_map_center_lon": -77.2689,
+        "employer_map_zoom": 11,
+        "employer_map_static_url": None,
 
         # ============================================================
         # AMENITIES

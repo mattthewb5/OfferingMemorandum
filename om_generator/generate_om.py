@@ -228,6 +228,23 @@ def main():
           f"permits_2mi={dev_ctx['permits_2mi_count']}, "
           f"new_mf={dev_ctx['new_mf_permits_count']}")
 
+    # ── Live traffic data ──────────────────────────────────────────────
+    from traffic_context import build_traffic_context
+    traffic_ctx = build_traffic_context(lat, lon, county)
+    ctx.update(traffic_ctx)
+    print(f"  Traffic wired: {traffic_ctx['traffic']['primary_road_name']} "
+          f"({traffic_ctx['traffic']['primary_road_count']} ADT), "
+          f"{traffic_ctx['traffic']['secondary_road_name']} "
+          f"({traffic_ctx['traffic']['secondary_road_count']} ADT)")
+
+    # ── Live amenities data ──────────────────────────────────────────
+    from amenities_context import build_amenities_context
+    amenities_ctx = build_amenities_context(lat, lon, county)
+    ctx.update(amenities_ctx)
+    counts = [a['count'] for a in amenities_ctx['amenities']]
+    print(f"  Amenities wired: {len(amenities_ctx['amenities'])} categories, "
+          f"counts={counts}")
+
     # Update the stoplight Development Pressure row to match live score
     dev_score_int = int(ctx.get("dev_pressure_score", 0))
     if dev_score_int <= 25:
@@ -252,6 +269,26 @@ def main():
             sl['dot_class'] = dev_dot
             sl['badge_class'] = dev_badge_cls
             break
+
+    # Flatten schools for investment highlights interpolation
+    if ctx.get('schools') and len(ctx['schools']) >= 3:
+        ctx['hl_elem_name']   = ctx['schools'][0]['name']
+        ctx['hl_elem_sol']    = ctx['schools'][0]['sol_pass']
+        ctx['hl_middle_name'] = ctx['schools'][1]['name']
+        ctx['hl_middle_sol']  = ctx['schools'][1]['sol_pass']
+        ctx['hl_high_name']   = ctx['schools'][2]['name']
+        ctx['hl_high_sol']    = ctx['schools'][2]['sol_pass']
+    else:
+        ctx['hl_elem_name']   = 'Elementary School'
+        ctx['hl_elem_sol']    = 'N/A'
+        ctx['hl_middle_name'] = 'Middle School'
+        ctx['hl_middle_sol']  = 'N/A'
+        ctx['hl_high_name']   = 'High School'
+        ctx['hl_high_sol']    = 'N/A'
+
+    # Flatten demographics for investment highlights interpolation
+    ctx['hl_median_income']     = ctx.get('demo', {}).get('median_income', 'N/A')
+    ctx['hl_income_multiplier'] = ctx.get('demo', {}).get('income_multiplier', 'N/A')
 
     # Interpolate live data into investment_highlights placeholders
     ctx['investment_highlights'] = [

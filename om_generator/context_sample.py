@@ -153,9 +153,9 @@ def get_sample_context():
             '<strong>Vienna Metro Access \u2014 Institutional Rent Premium:</strong> Vienna/Fairfax-GMU Metro station 1.3 miles from property. Silver Line access to Tysons Corner, Reston, Arlington, and Union Station. NoVA research consistently documents 10\u201320% rent premium for walkable Metro proximity, directly supporting above-market rent capture on unit turnover.',
             '<strong>George Mason University Demand Engine:</strong> GMU at 0.9 miles enrolls 39,000+ students with 7,500+ employees. Graduate student and faculty housing demand provides recession-resistant occupancy floor. University enrollment has grown consistently regardless of broader economic cycles.',
             '<strong>Supply-Constrained Location \u2014 Zero Competing Pipeline:</strong> Development Pressure Score of {dev_pressure_score}/100 ({dev_pressure_label}). PDH/PRC zoning with Comprehensive Plan designation unchanged. {new_mf_permits_count} new multifamily permits within 2-mile radius in trailing 24 months. {property_county}\u2019s development review process makes competitive supply additions a 5\u20137 year horizon at minimum.',
-            '<strong>Top-Tier School District \u2014 Family Tenant Retention:</strong> Served by Woodson High School (88% SOL), Frost Middle (81%), and Mantua Elementary (84%) \u2014 all consistently above Virginia SOL state averages. School quality is the #1 stated retention driver for family renters in Fairfax County surveys.',
+            '<strong>Top-Tier School District \u2014 Family Tenant Retention:</strong> Served by {hl_high_name} ({hl_high_sol} SOL), {hl_middle_name} ({hl_middle_sol}), and {hl_elem_name} ({hl_elem_sol}) \u2014 all consistently above Virginia SOL state averages. School quality is the #1 stated retention driver for family renters in {property_county} surveys.',
             '<strong>Inova Fairfax Hospital \u2014 Healthcare Anchor (3.3 mi):</strong> One of the region\u2019s premier healthcare facilities drives consistent demand from medical professionals and health system employees. Inova Health System employment has grown +206% since 2009 (to 26,000+ employees), creating sustained multifamily demand within the care radius.',
-            '<strong>Deep, Diversified Employment \u2014 Recession-Resistant Demand:</strong> 3-mile median household income of $159,400 (2.1\u00d7 national median). Federal government (28,126 county employees), FCPS, George Mason University, and the Tysons/Merrifield technology corridor provide multi-sector employment insulation unavailable in single-industry markets.',
+            '<strong>Deep, Diversified Employment \u2014 Recession-Resistant Demand:</strong> 3-mile median household income of {hl_median_income} ({hl_income_multiplier}\u00d7 national median). Federal government (28,126 county employees), FCPS, George Mason University, and the Tysons/Merrifield technology corridor provide multi-sector employment insulation unavailable in single-industry markets.',
         ],
 
         # ============================================================
@@ -273,6 +273,8 @@ def get_sample_context():
         # ============================================================
         "dev_pressure_score": "18",
         "dev_pressure_label": "Low Development Pressure",
+        "dev_pressure_cover_tag": "Low Dev. Pressure",
+        "dev_pressure_badge_class": "badge-green",
         "dev_pressure_narrative": (
             "Minimal competing development activity within the 2-mile radius. No new multifamily "
             "permits filed in the trailing 24 months. Existing PDH/PRC zoning and Fairfax "
@@ -398,12 +400,12 @@ def get_sample_context():
         # AMENITIES
         # ============================================================
         "amenities": [
-            {"count": "34", "label": "Restaurants"},
-            {"count": "6", "label": "Grocery / Market"},
-            {"count": "8", "label": "Fitness / Gym"},
-            {"count": "5", "label": "Parks / Trails"},
-            {"count": "11", "label": "Coffee Shops"},
-            {"count": "22", "label": "Retail Shops"},
+            {"count": "34", "label": "Restaurants", "nearest_name": "Paisano\u2019s Pizza", "nearest_dist": "0.2 mi", "nearest_walk": "4 min"},
+            {"count": "6", "label": "Grocery / Market", "nearest_name": "Giant Food", "nearest_dist": "0.4 mi", "nearest_walk": "8 min"},
+            {"count": "8", "label": "Fitness / Gym", "nearest_name": "Planet Fitness", "nearest_dist": "0.3 mi", "nearest_walk": "6 min"},
+            {"count": "5", "label": "Parks / Trails", "nearest_name": "Daniels Run Park", "nearest_dist": "0.5 mi", "nearest_walk": "10 min"},
+            {"count": "11", "label": "Coffee Shops", "nearest_name": "Starbucks", "nearest_dist": "0.2 mi", "nearest_walk": "4 min"},
+            {"count": "22", "label": "Retail Shops", "nearest_name": "CVS Pharmacy", "nearest_dist": "0.3 mi", "nearest_walk": "5 min"},
         ],
 
         # ============================================================
@@ -466,19 +468,24 @@ def get_sample_context():
                 "incident log (71 events, 1-mi radius, trailing 12 months) available in Data "
                 "Appendix. Block-level addresses used per privacy standards."
             ),
+            "yoy_trend_pct": "-4.6",
+            "yoy_trend_direction": "down",
+            "yoy_trend_source": "county",
+            "percentile_rank": 34,
+            "trend_narrative": "Loudoun County crime declined 7.5% in 2024 and 4.6% in 2025, with property crime leading the reduction.",
         },
 
         # ============================================================
         # SCHOOLS
         # ============================================================
         "schools": [
-            {"level": "Elementary", "name": "Mantua Elementary", "sol_pass": "84%", "state_avg": "74%", "delta": "+10%"},
-            {"level": "Middle School", "name": "Frost Middle School", "sol_pass": "81%", "state_avg": "71%", "delta": "+10%"},
-            {"level": "High School", "name": "Woodson High School", "sol_pass": "88%", "state_avg": "76%", "delta": "+12%"},
+            {"level": "Elementary", "name": "Sycolin Creek Elementary", "sol_pass": "82%", "state_avg": "74%", "delta": "+8%"},
+            {"level": "Middle School", "name": "Stone Hill Middle", "sol_pass": "79%", "state_avg": "71%", "delta": "+8%"},
+            {"level": "High School", "name": "Briar Woods High", "sol_pass": "85%", "state_avg": "76%", "delta": "+9%"},
         ],
         "school_footnote": (
             "Multi-year SOL pass rate trends available in Data Appendix. School quality is "
-            "the #1 stated retention driver for family renters in Fairfax County. Source: Virginia DOE."
+            "the #1 stated retention driver for family renters in Loudoun County. Source: Virginia DOE (2024-2025)."
         ),
 
         # ============================================================

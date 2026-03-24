@@ -50,6 +50,8 @@ def _graceful_default(county: str) -> dict:
     return {
         "dev_pressure_score": "0",
         "dev_pressure_label": "Data Unavailable",
+        "dev_pressure_cover_tag": "Low Dev. Pressure",
+        "dev_pressure_badge_class": "badge-green",
         "dev_pressure_narrative": "Development pressure data temporarily unavailable.",
         "dev_formula_components": [
             {"name": "Permit Volume", "weight": "30%", "bar_width": "0%",
@@ -429,6 +431,8 @@ def _assemble_result(
     return {
         "dev_pressure_score": str(score),
         "dev_pressure_label": f"{rating} Development Pressure",
+        "dev_pressure_cover_tag": f"{rating[:3]}. Dev. Pressure" if rating == "Moderate" else f"{rating} Dev. Pressure",
+        "dev_pressure_badge_class": "badge-green" if rating == "Low" else "badge-amber" if rating == "Moderate" else "badge-red",
         "dev_pressure_narrative": narrative,
         "dev_formula_components": dev_formula_components,
         "total_county_permits": f"{total_county_permits:,}",

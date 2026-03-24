@@ -1,13 +1,12 @@
 """
 Schools Context Builder for OM Generator
 
-Wires fairfax_schools_analysis.py and fairfax_school_performance_analysis.py
-output into the template variable structure expected by context_sample.py /
-location_analysis.html.
+County-dispatched: routes to LoudounSchoolsAnalysis or the existing Fairfax
+pipeline based on the ``county`` argument.
 
 Usage:
     from schools_context import build_schools_context
-    schools_dict = build_schools_context(lat=38.8462, lon=-77.3064)
+    schools_dict = build_schools_context(lat=38.8462, lon=-77.3064, county="fairfax")
 """
 
 import sys
@@ -20,6 +19,7 @@ sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
 
 from core.fairfax_schools_analysis import FairfaxSchoolsAnalysis
 from core.fairfax_school_performance_analysis import FairfaxSchoolPerformanceAnalysis
+from core.loudoun_schools_analysis import LoudounSchoolsAnalysis
 
 # Virginia statewide SOL averages (VDOE data, used for both Loudoun & Fairfax)
 _STATE_AVG_CSV = (
@@ -35,6 +35,12 @@ _LEVEL_MAP = {
     "elementary": {"label": "Elementary", "school_type": "Elem"},
     "middle": {"label": "Middle School", "school_type": "Middle"},
     "high": {"label": "High School", "school_type": "High"},
+}
+
+# County display names for the footnote
+_COUNTY_DISPLAY = {
+    "fairfax": "Fairfax County",
+    "loudoun": "Loudoun County",
 }
 
 
@@ -70,17 +76,8 @@ def _get_state_avg(
     return None
 
 
-def build_schools_context(lat: float, lon: float, county: str = None) -> dict:
-    """
-    Build the schools context dict matching the structure in context_sample.py.
-
-    Args:
-        lat: Property latitude
-        lon: Property longitude
-
-    Returns:
-        Dict with keys: schools (list of dicts), school_footnote (str)
-    """
+def _build_fairfax_schools(lat: float, lon: float) -> dict:
+    """Fairfax path — existing logic, unchanged."""
     schools_analyzer = FairfaxSchoolsAnalysis()
     perf_analyzer = FairfaxSchoolPerformanceAnalysis()
     state_df = _load_state_averages()
@@ -151,3 +148,23 @@ def build_schools_context(lat: float, lon: float, county: str = None) -> dict:
         "schools": schools,
         "school_footnote": school_footnote,
     }
+
+
+def build_schools_context(lat: float, lon: float, county: str = None) -> dict:
+    """
+    Build the schools context dict matching the structure in context_sample.py.
+
+    Args:
+        lat: Property latitude
+        lon: Property longitude
+        county: 'loudoun' or 'fairfax' (default: fairfax)
+
+    Returns:
+        Dict with keys: schools (list of dicts), school_footnote (str)
+    """
+    if county == "loudoun":
+        analyzer = LoudounSchoolsAnalysis()
+        return analyzer.get_schools(lat, lon)
+
+    # Default: Fairfax (preserves existing behaviour)
+    return _build_fairfax_schools(lat, lon)

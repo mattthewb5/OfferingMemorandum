@@ -1,0 +1,212 @@
+{
+  "_metadata": {
+    "description": "Plain English translations for Fairfax County Comprehensive Plan land use designations",
+    "source": "comp_plan_base_recommendation.geoparquet — land_use_key field",
+    "last_updated": "2026-03-24",
+    "total_designations": 22,
+    "notes": [
+      "Derived from 22 unique land_use_key values in the comp plan base recommendation layer",
+      "Intensity scale: 1=Parks/Open Space/Very Low Res, 2=Low-density residential/Public, 3=Medium-density/RPC, 4=Office/Retail/High-density, 5=Mixed-use/20+ DU/AC"
+    ]
+  },
+  "translations": {
+    ".1-.2 DU/AC": {
+      "official_name": "Very Low-Density Residential (0.1-0.2 DU/AC)",
+      "plain_english": "Rural estate residential",
+      "description": "Very low-density residential area preserving rural and estate character",
+      "typical_uses": ["Estate homes", "Farmettes", "Conservation lots"],
+      "density_range": "0.1-0.2 homes per acre",
+      "character": "Rural estate character",
+      "intensity": 1
+    },
+    ".2-.5 DU/AC": {
+      "official_name": "Low-Density Residential (0.2-0.5 DU/AC)",
+      "plain_english": "Large-lot residential",
+      "description": "Low-density residential with large lots and semi-rural character",
+      "typical_uses": ["Single-family on 2-5 acre lots", "Estate homes"],
+      "density_range": "0.2-0.5 homes per acre",
+      "character": "Large-lot residential",
+      "intensity": 1
+    },
+    ".5-1 DU/AC": {
+      "official_name": "Low-Density Residential (0.5-1 DU/AC)",
+      "plain_english": "Suburban estate residential",
+      "description": "Low-density suburban residential with 1-2 acre lots",
+      "typical_uses": ["Single-family homes on large lots"],
+      "density_range": "0.5-1 home per acre",
+      "character": "Suburban estate residential",
+      "intensity": 1
+    },
+    "1-2 DU/AC": {
+      "official_name": "Low-Density Residential (1-2 DU/AC)",
+      "plain_english": "Standard suburban single-family",
+      "description": "Standard suburban single-family residential at 1-2 units per acre",
+      "typical_uses": ["Single-family homes", "Neighborhood parks"],
+      "density_range": "1-2 homes per acre",
+      "character": "Standard suburban single-family",
+      "intensity": 2
+    },
+    "2-3 DU/AC": {
+      "official_name": "Low-Medium Density Residential (2-3 DU/AC)",
+      "plain_english": "Moderate suburban single-family",
+      "description": "Moderate suburban single-family residential at 2-3 units per acre",
+      "typical_uses": ["Single-family homes on quarter-acre lots"],
+      "density_range": "2-3 homes per acre",
+      "character": "Moderate suburban single-family",
+      "intensity": 2
+    },
+    "3-4 DU/AC": {
+      "official_name": "Medium-Density Residential (3-4 DU/AC)",
+      "plain_english": "Compact single-family or townhouse",
+      "description": "Medium-density residential supporting compact single-family and townhouse development",
+      "typical_uses": ["Single-family", "Townhouses", "Duplexes"],
+      "density_range": "3-4 homes per acre",
+      "character": "Compact suburban residential",
+      "intensity": 3
+    },
+    "4-5 DU/AC": {
+      "official_name": "Medium-Density Residential (4-5 DU/AC)",
+      "plain_english": "Townhouse and attached housing",
+      "description": "Medium-density residential supporting townhouse and attached housing",
+      "typical_uses": ["Townhouses", "Attached single-family"],
+      "density_range": "4-5 homes per acre",
+      "character": "Townhouse and attached housing",
+      "intensity": 3
+    },
+    "5-8 DU/AC": {
+      "official_name": "Medium-High Density Residential (5-8 DU/AC)",
+      "plain_english": "Townhouse and garden-style multifamily",
+      "description": "Medium-high density residential supporting townhouses and garden apartments",
+      "typical_uses": ["Townhouses", "Garden apartments", "Low-rise multifamily"],
+      "density_range": "5-8 homes per acre",
+      "character": "Townhouse and garden multifamily",
+      "intensity": 3
+    },
+    "8-12 DU/AC": {
+      "official_name": "High-Density Residential (8-12 DU/AC)",
+      "plain_english": "Garden apartments and mid-rise multifamily",
+      "description": "High-density residential supporting garden apartments and mid-rise multifamily",
+      "typical_uses": ["Garden apartments", "Mid-rise apartments", "Condominiums"],
+      "density_range": "8-12 homes per acre",
+      "character": "Garden and mid-rise multifamily",
+      "intensity": 4
+    },
+    "12-16 DU/AC": {
+      "official_name": "High-Density Residential (12-16 DU/AC)",
+      "plain_english": "Mid-rise multifamily development",
+      "description": "High-density residential supporting mid-rise multifamily development",
+      "typical_uses": ["Mid-rise apartments", "Condominiums", "Senior housing"],
+      "density_range": "12-16 homes per acre",
+      "character": "Mid-rise multifamily",
+      "intensity": 4
+    },
+    "16-20 DU/AC": {
+      "official_name": "High-Density Residential (16-20 DU/AC)",
+      "plain_english": "Mid-rise to high-rise multifamily",
+      "description": "High-density residential supporting mid-rise to high-rise development",
+      "typical_uses": ["Mid-rise apartments", "High-rise condos", "Mixed-use residential"],
+      "density_range": "16-20 homes per acre",
+      "character": "High-density multifamily",
+      "intensity": 4
+    },
+    "20+ DU/AC": {
+      "official_name": "Very High-Density Residential (20+ DU/AC)",
+      "plain_english": "Urban-density multifamily",
+      "description": "Highest-density residential supporting urban multifamily at 20+ units per acre",
+      "typical_uses": ["High-rise apartments", "Urban condos", "Mixed-use towers"],
+      "density_range": "20+ homes per acre",
+      "character": "Urban-density multifamily",
+      "intensity": 5
+    },
+    "Office": {
+      "official_name": "Office Development",
+      "plain_english": "Commercial office designation",
+      "description": "Area designated for office and professional commercial development",
+      "typical_uses": ["Office buildings", "Corporate campuses", "Professional services"],
+      "density_range": "Commercial/Office",
+      "character": "Commercial office",
+      "intensity": 4
+    },
+    "Industrial": {
+      "official_name": "Industrial",
+      "plain_english": "Industrial designation",
+      "description": "Area designated for industrial, manufacturing, and warehousing uses",
+      "typical_uses": ["Manufacturing", "Warehousing", "Distribution", "Data centers"],
+      "density_range": "Industrial",
+      "character": "Industrial area",
+      "intensity": 1
+    },
+    "Retail and Other": {
+      "official_name": "Retail and Commercial",
+      "plain_english": "Retail and commercial corridor",
+      "description": "Area designated for retail, service, and general commercial uses",
+      "typical_uses": ["Shopping centers", "Restaurants", "Retail stores", "Services"],
+      "density_range": "Commercial/Retail",
+      "character": "Retail and commercial corridor",
+      "intensity": 4
+    },
+    "Mixed Uses": {
+      "official_name": "Mixed-Use Development",
+      "plain_english": "Mixed-use development area",
+      "description": "Highest-value designation supporting integrated retail, office, and residential development",
+      "typical_uses": ["Mixed-use buildings", "Retail below residential", "Office towers", "Entertainment"],
+      "density_range": "Varies — mixed-use",
+      "character": "Integrated mixed-use development",
+      "intensity": 5
+    },
+    "Alternative Uses": {
+      "official_name": "Alternative Uses",
+      "plain_english": "Flexible non-traditional development",
+      "description": "Area designated for flexible, non-traditional development patterns",
+      "typical_uses": ["Adaptive reuse", "Live-work", "Creative office", "Flexible commercial"],
+      "density_range": "Varies",
+      "character": "Flexible non-traditional development",
+      "intensity": 3
+    },
+    "RPC": {
+      "official_name": "Residential Planned Community",
+      "plain_english": "Master-planned community",
+      "description": "Large-scale planned community with mixed housing types and community amenities",
+      "typical_uses": ["Single-family", "Townhouses", "Some apartments", "Community amenities"],
+      "density_range": "Varies by sub-area",
+      "character": "Master-planned community",
+      "intensity": 3
+    },
+    "Public Facilities": {
+      "official_name": "Public Facilities",
+      "plain_english": "Government and institutional use",
+      "description": "Area designated for government buildings, schools, and public infrastructure",
+      "typical_uses": ["Government buildings", "Schools", "Fire stations", "Libraries"],
+      "density_range": "Institutional",
+      "character": "Government/institutional",
+      "intensity": 2
+    },
+    "Public Parks": {
+      "official_name": "Public Parks",
+      "plain_english": "Park and recreation land",
+      "description": "Area designated for public parks, recreation, and open space",
+      "typical_uses": ["Parks", "Recreation fields", "Trails", "Nature preserves"],
+      "density_range": "Open space",
+      "character": "Public park and recreation",
+      "intensity": 1
+    },
+    "Private Open Space": {
+      "official_name": "Private Open Space",
+      "plain_english": "Protected private open space",
+      "description": "Privately owned open space and conservation land",
+      "typical_uses": ["Conservation easements", "Golf courses", "Private preserves"],
+      "density_range": "Open space",
+      "character": "Protected open space",
+      "intensity": 1
+    },
+    "Private Recreation": {
+      "official_name": "Private Recreation",
+      "plain_english": "Private recreational use",
+      "description": "Privately owned recreational facilities and land",
+      "typical_uses": ["Country clubs", "Private recreation centers", "Sports facilities"],
+      "density_range": "Recreation",
+      "character": "Private recreation",
+      "intensity": 1
+    }
+  }
+}

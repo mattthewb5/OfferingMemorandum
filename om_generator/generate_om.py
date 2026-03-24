@@ -220,9 +220,17 @@ def main():
     print(f"  Employer map wired: {len(map_ctx['employer_map_markers'])} markers, "
           f"static_url={has_map}")
 
+    # ── Live zoning data ──────────────────────────────────────────────
+    from zoning_context import build_zoning_context
+    zoning_ctx = build_zoning_context(lat, lon, county)
+    ctx.update(zoning_ctx)
+    print(f"  Zoning wired: {zoning_ctx.get('zoning_code', 'N/A')} | "
+          f"planning_pts={zoning_ctx.get('planning_pts', 0)} | "
+          f"comp_plan={zoning_ctx.get('comp_plan_designation', 'N/A')}")
+
     # ── Live development data ─────────────────────────────────────────
     from development_context import build_development_context
-    dev_ctx = build_development_context(lat, lon, county)
+    dev_ctx = build_development_context(lat, lon, county, zoning_ctx=zoning_ctx)
     ctx.update(dev_ctx)
     print(f"  Development wired: score={dev_ctx['dev_pressure_score']}, "
           f"permits_2mi={dev_ctx['permits_2mi_count']}, "

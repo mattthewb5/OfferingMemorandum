@@ -77,9 +77,16 @@
         <!-- Development map -->
         <div>
           <h4 style="margin-bottom:6px;">Development Activity Map (2-Mile Radius)</h4>
+          {% if dev_map_static_url %}
+          <img src="{{ dev_map_static_url }}"
+               style="width:100%;height:200px;object-fit:cover;
+                      border:1px solid #e2e8f0;border-radius:4px;"
+               alt="Development Activity Map">
+          {% else %}
           <div class="mapbox" style="height:200px;flex-direction:column;gap:8px;">
             <div class="mapbox-label">Interactive Development Map<br><span style="font-size:7px;opacity:0.7;">Permit locations &middot; Metro station &middot; Growth centers</span></div>
           </div>
+          {% endif %}
           <div style="font-size:7px;color:var(--slate-light);margin-top:4px;">
             &#x1F535; Subject Property &nbsp;|&nbsp; &#x1F534; Active permits (residential) &nbsp;|&nbsp; &#x1F7E1; Commercial permits &nbsp;|&nbsp; &#x24C2; Metro station &nbsp;|&nbsp; &#8212; Comp Plan growth boundary
           </div>

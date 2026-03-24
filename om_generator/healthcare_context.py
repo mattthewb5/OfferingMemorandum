@@ -198,7 +198,9 @@ def _graceful_degradation() -> dict:
             "pharmacy_count": "\u2014",
             "total_facilities": "\u2014",
             "score": "\u2014",
-        }
+        },
+        "hospital_lat": None,
+        "hospital_lon": None,
     }
 
 
@@ -296,7 +298,9 @@ def _build_fairfax(lat: float, lon: float) -> dict:
             "pharmacy_count": pharm_str,
             "total_facilities": f"{total} Fairfax County",
             "score": f"{score}/100 {_score_label(score)}",
-        }
+        },
+        "hospital_lat": primary_lat,
+        "hospital_lon": primary_lon,
     }
 
 
@@ -447,7 +451,9 @@ def _build_loudoun(lat: float, lon: float) -> dict:
             "pharmacy_count": pharm_str,
             "total_facilities": f"{total} Loudoun County",
             "score": f"{score}/100 {_score_label(score)}",
-        }
+        },
+        "hospital_lat": primary["latitude"],
+        "hospital_lon": primary["longitude"],
     }
 
 

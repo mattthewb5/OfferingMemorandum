@@ -154,6 +154,13 @@ def main():
     # Inject logo base64
     ctx['wo_logo_base64'] = extract_logo_base64(V3_PATH)
 
+    # ── Photo strip (Street View) ────────────────────────────────────
+    from photo_strip_context import build_photo_strip_context
+    photo_ctx = build_photo_strip_context(lat, lon)
+    ctx.update(photo_ctx)
+    has_photos = sum(1 for u in photo_ctx['photo_urls'] if u)
+    print(f"  Photo strip wired: {has_photos}/4 headings with Street View coverage")
+
     # ── Live crime data ──────────────────────────────────────────────
     from crime_context import build_crime_context
     live_crime = build_crime_context(lat, lon, county)
@@ -243,6 +250,13 @@ def main():
           f"permits_2mi={dev_ctx['permits_2mi_count']}, "
           f"new_mf={dev_ctx['new_mf_permits_count']}")
 
+    # ── Development map ──────────────────────────────────────────────
+    from dev_map_context import build_dev_map_context
+    dev_map_ctx = build_dev_map_context(lat, lon, county, ctx)
+    ctx.update(dev_map_ctx)
+    has_dev_map = "yes" if dev_map_ctx.get("dev_map_static_url") else "no"
+    print(f"  Dev map static_url={has_dev_map}")
+
     # ── Live traffic data ──────────────────────────────────────────────
     from traffic_context import build_traffic_context
     traffic_ctx = build_traffic_context(lat, lon, county)
@@ -259,6 +273,14 @@ def main():
     counts = [a['count'] for a in amenities_ctx['amenities']]
     print(f"  Amenities wired: {len(amenities_ctx['amenities'])} categories, "
           f"counts={counts}")
+
+    # ── Location map ─────────────────────────────────────────────────
+    from location_map_context import build_location_map_context
+    location_map_ctx = build_location_map_context(
+        lat, lon, county, live_schools, live_healthcare, prop_ctx)
+    ctx.update(location_map_ctx)
+    has_loc_map = "yes" if location_map_ctx.get("location_map_static_url") else "no"
+    print(f"  Location map static_url={has_loc_map}")
 
     # Update the stoplight Development Pressure row to match live score
     dev_score_int = int(ctx.get("dev_pressure_score", 0))

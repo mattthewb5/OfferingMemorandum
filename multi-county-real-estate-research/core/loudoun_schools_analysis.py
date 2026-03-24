@@ -96,6 +96,7 @@ class LoudounSchoolsAnalysis:
     def __init__(self):
         self._zones = {}       # level → GeoDataFrame
         self._code_to_name = None  # SCH_CODE → GIS name from school_sites
+        self._code_to_coords = None  # SCH_CODE → {"lat": float, "lon": float}
         self._perf_df = None
 
     # ── lazy loaders ───────────────────────────────────────────────
@@ -118,6 +119,14 @@ class LoudounSchoolsAnalysis:
             self._code_to_name = {
                 feat["properties"]["SCH_CODE"]: feat["properties"]["NAME"]
                 for feat in gj["features"]
+            }
+            self._code_to_coords = {
+                feat["properties"]["SCH_CODE"]: {
+                    "lat": feat["geometry"]["coordinates"][1],
+                    "lon": feat["geometry"]["coordinates"][0],
+                }
+                for feat in gj["features"]
+                if feat.get("geometry") and feat["geometry"].get("coordinates")
             }
         return self._code_to_name
 
@@ -242,6 +251,7 @@ class LoudounSchoolsAnalysis:
 
             display_name = perf_name if perf_name else gis_name.title()
 
+            coords = (self._code_to_coords or {}).get(code, {})
             schools.append(
                 {
                     "level": cfg["label"],
@@ -249,6 +259,8 @@ class LoudounSchoolsAnalysis:
                     "sol_pass": sol_pass_str,
                     "state_avg": state_avg_str,
                     "delta": delta_str,
+                    "lat": coords.get("lat"),
+                    "lon": coords.get("lon"),
                 }
             )
 

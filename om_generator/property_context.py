@@ -216,6 +216,8 @@ def build_property_context(
     metro_station_name = "See broker for transit details"
     metro_badge_text = "Transit"
     metro_distance = "\u2014"
+    mlat = None
+    mlon = None
 
     if api_key:
         metro = _nearest_place(lat, lon, "transit_station", api_key, radius_m=8047)
@@ -272,6 +274,8 @@ def build_property_context(
         "metro_station_name": metro_station_name,
         "metro_badge_text": metro_badge_text,
         "metro_distance": metro_distance,
+        "metro_lat": mlat,
+        "metro_lon": mlon,
         "university_name_short": university_name_short,
         "university_distance": university_distance,
         "report_date": report_date,

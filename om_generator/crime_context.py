@@ -17,6 +17,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
 
 from core.fairfax_crime_analysis import FairfaxCrimeAnalysis
+from core.loudoun_crime_analysis import LoudounCrimeAnalysis
 
 # Severity ordering: violent > property (used for incident sorting)
 _SEVERITY_ORDER = {"violent": 0, "property": 1}
@@ -54,11 +55,15 @@ def build_crime_context(lat: float, lon: float, county: str = None) -> dict:
         Dict with keys: safety_score, violent_count, property_count,
         total_incidents, incidents (list), footnote
     """
-    analyzer = FairfaxCrimeAnalysis()
-
-    # TODO: Calibrate safety score thresholds against county-wide averages
-    # Run score across sample of Fairfax parcels to establish meaningful
-    # Low / Moderate / High / Severe bands before client-facing use
+    # County-based dispatch
+    if county == "loudoun":
+        analyzer = LoudounCrimeAnalysis()
+        address_col = "block_address"
+        description_col = "offense_category"
+    else:
+        analyzer = FairfaxCrimeAnalysis()
+        address_col = "address"
+        description_col = "description"
 
     # Safety score (drives the summary boxes)
     safety = analyzer.calculate_safety_score(
@@ -86,10 +91,10 @@ def build_crime_context(lat: float, lon: float, county: str = None) -> dict:
 
         incidents.append({
             "date": date_str,
-            "type": _clean_crime_type(str(row["description"])),
+            "type": _clean_crime_type(str(row[description_col])),
             "type_class": str(row["category"]),
             "classification": category,
-            "address": str(row["address"]).split(";")[0].strip(),
+            "address": str(row[address_col]).split(";")[0].strip(),
             "distance": distance_str,
         })
 
@@ -103,7 +108,7 @@ def build_crime_context(lat: float, lon: float, county: str = None) -> dict:
         f"Block-level addresses used per privacy standards."
     )
 
-    return {
+    result = {
         "safety_score": str(safety["score"]),
         "violent_count": str(safety["breakdown"]["violent"]),
         "property_count": str(safety["breakdown"]["property"]),
@@ -111,3 +116,14 @@ def build_crime_context(lat: float, lon: float, county: str = None) -> dict:
         "incidents": incidents,
         "footnote": footnote,
     }
+
+    # Option B keys — Loudoun only
+    if county == "loudoun":
+        trend = analyzer.calculate_yoy_trend(lat, lon, radius_miles=RADIUS_MILES)
+        result["yoy_trend_pct"] = trend["yoy_trend_pct"]
+        result["yoy_trend_direction"] = trend["yoy_trend_direction"]
+        result["yoy_trend_source"] = trend["yoy_trend_source"]
+        result["percentile_rank"] = analyzer.calculate_percentile_rank(total)
+        result["trend_narrative"] = analyzer.build_trend_narrative()
+
+    return result

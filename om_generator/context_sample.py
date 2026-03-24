@@ -468,6 +468,11 @@ def get_sample_context():
                 "incident log (71 events, 1-mi radius, trailing 12 months) available in Data "
                 "Appendix. Block-level addresses used per privacy standards."
             ),
+            "yoy_trend_pct": "-4.6",
+            "yoy_trend_direction": "down",
+            "yoy_trend_source": "county",
+            "percentile_rank": 34,
+            "trend_narrative": "Loudoun County crime declined 7.5% in 2024 and 4.6% in 2025, with property crime leading the reduction.",
         },
 
         # ============================================================

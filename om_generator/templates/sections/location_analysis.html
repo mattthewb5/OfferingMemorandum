@@ -56,7 +56,7 @@
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
             <h4 style="margin-bottom:0;">Crime Analysis &#9733;</h4>
-            <div style="display:flex;align-items:center;gap:5px;"><div class="sl-dot sl-green"></div><span class="score-badge badge-green">{{ crime.safety_score }}/100 Safety Score</span></div>
+            <div style="display:flex;align-items:center;gap:5px;"><div class="sl-dot sl-green"></div><span class="score-badge badge-green">{{ crime.safety_score }}/100 Safety Score</span>{% if crime.yoy_trend_pct is defined and crime.yoy_trend_pct is not none %}<span style="margin-left:6px;font-size:8px;font-weight:600;{% if crime.yoy_trend_direction == 'down' %}color:var(--green);{% elif crime.yoy_trend_direction == 'up' %}color:var(--red);{% else %}color:var(--slate-light);{% endif %}">{% if crime.yoy_trend_direction == 'down' %}&#8595;{% elif crime.yoy_trend_direction == 'up' %}&#8593;{% else %}&#8596;{% endif %} {{ crime.yoy_trend_pct|replace('-','') }}% YoY</span>{% endif %}</div>
           </div>
           <div style="display:flex;gap:6px;margin-bottom:7px;">
             <div style="flex:1;padding:7px;background:var(--green-light);border:1px solid rgba(45,106,79,0.2);text-align:center;">
@@ -76,6 +76,7 @@
               <div style="font-size:7px;color:var(--slate-light);">Total Incidents</div>
             </div>
           </div>
+          {% if crime.percentile_rank is defined and crime.percentile_rank is not none %}<div style="font-size:7.5px;color:var(--slate-light);margin-bottom:5px;">This location&rsquo;s 1-mile crime count ranks in the {{ crime.percentile_rank }}{{ 'st' if crime.percentile_rank % 10 == 1 and crime.percentile_rank != 11 else ('nd' if crime.percentile_rank % 10 == 2 and crime.percentile_rank != 12 else ('rd' if crime.percentile_rank % 10 == 3 and crime.percentile_rank != 13 else 'th')) }} percentile countywide.</div>{% endif %}
           <table class="crime-table">
             <thead>
               <tr><th>Date</th><th>Type</th><th>Classification</th><th>Block Address</th><th>Distance</th></tr>
@@ -87,6 +88,7 @@
             </tbody>
           </table>
           <div style="font-size:7px;color:var(--slate-light);margin-top:4px;font-style:italic;">{{ crime.footnote }}</div>
+          {% if crime.trend_narrative is defined and crime.trend_narrative is not none %}<div style="font-size:6.5px;color:var(--slate-light);margin-top:2px;font-style:italic;">{{ crime.trend_narrative }}</div>{% endif %}
         </div>
 
       </div>

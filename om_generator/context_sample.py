@@ -479,13 +479,13 @@ def get_sample_context():
         # SCHOOLS
         # ============================================================
         "schools": [
-            {"level": "Elementary", "name": "Mantua Elementary", "sol_pass": "84%", "state_avg": "74%", "delta": "+10%"},
-            {"level": "Middle School", "name": "Frost Middle School", "sol_pass": "81%", "state_avg": "71%", "delta": "+10%"},
-            {"level": "High School", "name": "Woodson High School", "sol_pass": "88%", "state_avg": "76%", "delta": "+12%"},
+            {"level": "Elementary", "name": "Sycolin Creek Elementary", "sol_pass": "82%", "state_avg": "74%", "delta": "+8%"},
+            {"level": "Middle School", "name": "Stone Hill Middle", "sol_pass": "79%", "state_avg": "71%", "delta": "+8%"},
+            {"level": "High School", "name": "Briar Woods High", "sol_pass": "85%", "state_avg": "76%", "delta": "+9%"},
         ],
         "school_footnote": (
             "Multi-year SOL pass rate trends available in Data Appendix. School quality is "
-            "the #1 stated retention driver for family renters in Fairfax County. Source: Virginia DOE."
+            "the #1 stated retention driver for family renters in Loudoun County. Source: Virginia DOE (2024-2025)."
         ),
 
         # ============================================================

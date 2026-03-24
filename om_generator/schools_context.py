@@ -133,6 +133,8 @@ def _build_fairfax_schools(lat: float, lon: float) -> dict:
                 "sol_pass": sol_pass_str,
                 "state_avg": state_avg_str,
                 "delta": delta_str,
+                "lat": assignment.get("lat"),
+                "lon": assignment.get("lon"),
             }
         )
 

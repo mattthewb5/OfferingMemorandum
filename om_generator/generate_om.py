@@ -141,11 +141,25 @@ def main():
     from context_sample import get_sample_context
     ctx = get_sample_context()
 
-    # Set property_county from detected county
-    ctx['property_county'] = county.title() + ' County'
+    # ── Property identity (must run first) ─────────────────────────────
+    from property_context import build_property_context
+    prop_ctx = build_property_context(address, lat, lon, county)
+    ctx.update(prop_ctx)
+    print(f"  Property wired: {prop_ctx['property_address']}, "
+          f"{prop_ctx['property_city']}, {prop_ctx['property_state_abbr']} "
+          f"{prop_ctx['property_zip']} | county={prop_ctx['property_county']} | "
+          f"metro={prop_ctx['metro_station_name']} ({prop_ctx['metro_distance']}) | "
+          f"uni={prop_ctx['university_name_short']} ({prop_ctx['university_distance']})")
 
     # Inject logo base64
     ctx['wo_logo_base64'] = extract_logo_base64(V3_PATH)
+
+    # ── Photo strip (Street View) ────────────────────────────────────
+    from photo_strip_context import build_photo_strip_context
+    photo_ctx = build_photo_strip_context(lat, lon)
+    ctx.update(photo_ctx)
+    has_photos = sum(1 for u in photo_ctx['photo_urls'] if u)
+    print(f"  Photo strip wired: {has_photos}/4 headings with Street View coverage")
 
     # ── Live crime data ──────────────────────────────────────────────
     from crime_context import build_crime_context
@@ -220,13 +234,28 @@ def main():
     print(f"  Employer map wired: {len(map_ctx['employer_map_markers'])} markers, "
           f"static_url={has_map}")
 
+    # ── Live zoning data ──────────────────────────────────────────────
+    from zoning_context import build_zoning_context
+    zoning_ctx = build_zoning_context(lat, lon, county)
+    ctx.update(zoning_ctx)
+    print(f"  Zoning wired: {zoning_ctx.get('zoning_code', 'N/A')} | "
+          f"planning_pts={zoning_ctx.get('planning_pts', 0)} | "
+          f"comp_plan={zoning_ctx.get('comp_plan_designation', 'N/A')}")
+
     # ── Live development data ─────────────────────────────────────────
     from development_context import build_development_context
-    dev_ctx = build_development_context(lat, lon, county)
+    dev_ctx = build_development_context(lat, lon, county, zoning_ctx=zoning_ctx)
     ctx.update(dev_ctx)
     print(f"  Development wired: score={dev_ctx['dev_pressure_score']}, "
           f"permits_2mi={dev_ctx['permits_2mi_count']}, "
           f"new_mf={dev_ctx['new_mf_permits_count']}")
+
+    # ── Development map ──────────────────────────────────────────────
+    from dev_map_context import build_dev_map_context
+    dev_map_ctx = build_dev_map_context(lat, lon, county, ctx)
+    ctx.update(dev_map_ctx)
+    has_dev_map = "yes" if dev_map_ctx.get("dev_map_static_url") else "no"
+    print(f"  Dev map static_url={has_dev_map}")
 
     # ── Live traffic data ──────────────────────────────────────────────
     from traffic_context import build_traffic_context
@@ -244,6 +273,14 @@ def main():
     counts = [a['count'] for a in amenities_ctx['amenities']]
     print(f"  Amenities wired: {len(amenities_ctx['amenities'])} categories, "
           f"counts={counts}")
+
+    # ── Location map ─────────────────────────────────────────────────
+    from location_map_context import build_location_map_context
+    location_map_ctx = build_location_map_context(
+        lat, lon, county, live_schools, live_healthcare, prop_ctx)
+    ctx.update(location_map_ctx)
+    has_loc_map = "yes" if location_map_ctx.get("location_map_static_url") else "no"
+    print(f"  Location map static_url={has_loc_map}")
 
     # Update the stoplight Development Pressure row to match live score
     dev_score_int = int(ctx.get("dev_pressure_score", 0))

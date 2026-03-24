@@ -195,43 +195,41 @@ class FairfaxCrimeAnalysis:
         # Violent weighted 3x heavier than property
         weighted_crimes = violent_count * 3 + property_count
 
-        # Scale for search radius: normalize to a 2-mile radius baseline
-        # so scores are comparable regardless of radius used
-        baseline_area = math.pi * 2.0 ** 2  # ~12.57 sq mi
-        actual_area = math.pi * radius_miles ** 2
-        if actual_area > 0:
-            weighted_crimes = weighted_crimes * (baseline_area / actual_area)
-
-        # Map weighted count to score (0-100)
-        # Calibrated benchmarks (2-mi radius, 6 months):
-        #   Great Falls: ~8 weighted → score ~85
-        #   Herndon suburb: ~34 weighted → score ~65
-        #   Dunn Loring: ~135 weighted → score ~38
-        #   Tysons: ~179 weighted → score ~25
+        # Map raw weighted count to score (0-100)
+        # Calibrated at radius=1.0mi, months_back=6:
+        #   Great Falls: ~3 weighted → score ~87
+        #   Herndon suburb: ~1 weighted → score ~89
+        #   Clocktower Place: ~42 weighted → score ~60
+        #   Dunn Loring: ~106 weighted → score ~41
+        #   Tysons: ~202 weighted → score ~25
         if weighted_crimes <= 10:
-            score = 90 - weighted_crimes * 0.5
+            # 0 → 90, 10 → 80
+            score = 90 - weighted_crimes * 1.0
         elif weighted_crimes <= 50:
-            # 10 → 85, 50 → 55
-            score = 85 - (weighted_crimes - 10) * (30.0 / 40.0)
-        elif weighted_crimes <= 200:
-            # 50 → 55, 200 → 15
-            score = 55 - (weighted_crimes - 50) * (40.0 / 150.0)
+            # 10 → 80, 50 → 55
+            score = 80 - (weighted_crimes - 10) * (25.0 / 40.0)
+        elif weighted_crimes <= 150:
+            # 50 → 55, 150 → 30
+            score = 55 - (weighted_crimes - 50) * (25.0 / 100.0)
+        elif weighted_crimes <= 300:
+            # 150 → 30, 300 → 15
+            score = 30 - (weighted_crimes - 150) * (15.0 / 150.0)
         else:
-            score = max(0, 15 - (weighted_crimes - 200) * 0.1)
+            score = 5
 
         score = max(0, min(100, int(score)))
 
         # Assign rating
-        if score >= 80:
+        if score >= 75:
             rating = 'Very Safe'
-        elif score >= 60:
+        elif score >= 55:
             rating = 'Safe'
-        elif score >= 40:
+        elif score >= 35:
             rating = 'Moderate'
         elif score >= 20:
-            rating = 'Caution Advised'
+            rating = 'Caution'
         else:
-            rating = 'High Crime Area'
+            rating = 'High Crime'
 
         return {
             'score': score,

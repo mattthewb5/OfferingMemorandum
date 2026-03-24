@@ -1,0 +1,607 @@
+{
+  "_metadata": {
+    "description": "Plain English translations for Fairfax County zoning codes",
+    "source": "Fairfax County GIS Zoning FeatureServer Layer 0",
+    "api_endpoint": "https://services1.arcgis.com/ioennV6PpG5Xodq0/arcgis/rest/services/Zoning/FeatureServer/0",
+    "last_updated": "2026-03-24",
+    "notes": [
+      "74 unique ZONECODE values from Zoning shapefile",
+      "ZONETYPE groups: RESIDENTIAL, COMMERCIAL, INDUSTRIAL, PLANNED UNITS, OTHER, TYSON",
+      "Intensity scale: 1=Low-density rural/estate, 2=Medium residential, 3=High-density res/light commercial, 4=Commercial/mixed-use, 5=High-intensity transit-oriented"
+    ]
+  },
+  "static_translations": {
+    "R-A": {
+      "official_name": "Residential-Agricultural District",
+      "plain_english": "Rural agricultural residential (2-5 acre lots)",
+      "description": "Very low-density residential district preserving agricultural character with large estate lots",
+      "typical_homes": "Farmhouses, estate homes on 2-5 acre lots",
+      "character": "Rural estate residential",
+      "intensity": 1
+    },
+    "R-E": {
+      "official_name": "Residential Estate District",
+      "plain_english": "Large-lot estate residential (2 acre lots)",
+      "description": "Low-density estate residential with large lots and rural character",
+      "typical_homes": "Estate homes on 2+ acre lots",
+      "character": "Large-lot estate residential",
+      "intensity": 1
+    },
+    "R-1": {
+      "official_name": "Residential District R-1",
+      "plain_english": "Low-density residential (1 home/acre)",
+      "description": "Low-density single-family residential at 1 dwelling unit per acre",
+      "typical_homes": "Single-family homes on 1-acre lots",
+      "character": "Low-density single-family",
+      "intensity": 1
+    },
+    "R-2": {
+      "official_name": "Residential District R-2",
+      "plain_english": "Low-density residential (2 homes/acre)",
+      "description": "Low-density single-family residential at 2 dwelling units per acre",
+      "typical_homes": "Single-family homes on half-acre lots",
+      "character": "Low-density single-family",
+      "intensity": 1
+    },
+    "R-3": {
+      "official_name": "Residential District R-3",
+      "plain_english": "Medium-density residential (3 homes/acre)",
+      "description": "Medium-density single-family residential at 3 dwelling units per acre",
+      "typical_homes": "Single-family homes on third-acre lots",
+      "character": "Medium-density single-family",
+      "intensity": 2
+    },
+    "R-4": {
+      "official_name": "Residential District R-4",
+      "plain_english": "Medium-density residential (4 homes/acre)",
+      "description": "Medium-density single-family residential at 4 dwelling units per acre",
+      "typical_homes": "Single-family homes on quarter-acre lots",
+      "character": "Medium-density single-family",
+      "intensity": 2
+    },
+    "R-5": {
+      "official_name": "Residential District R-5",
+      "plain_english": "Medium-density residential (5 homes/acre)",
+      "description": "Medium-density single-family residential at 5 dwelling units per acre",
+      "typical_homes": "Single-family homes, some townhouses",
+      "character": "Medium-density single-family",
+      "intensity": 2
+    },
+    "R-8": {
+      "official_name": "Residential District R-8",
+      "plain_english": "Medium-density residential (8 homes/acre)",
+      "description": "Medium-density residential allowing attached and detached units at 8 per acre",
+      "typical_homes": "Single-family, townhouses",
+      "character": "Medium-density residential",
+      "intensity": 2
+    },
+    "R-10": {
+      "official_name": "Residential District R-10",
+      "plain_english": "Medium-high density residential (10 homes/acre)",
+      "description": "Medium-high density residential at 10 dwelling units per acre",
+      "typical_homes": "Townhouses, garden apartments",
+      "character": "Medium-high density residential",
+      "intensity": 2
+    },
+    "R-12": {
+      "official_name": "Residential District R-12",
+      "plain_english": "Medium-high density residential (12 homes/acre)",
+      "description": "Medium-high density residential at 12 dwelling units per acre",
+      "typical_homes": "Townhouses, garden apartments",
+      "character": "Medium-high density residential",
+      "intensity": 2
+    },
+    "R-15": {
+      "official_name": "Residential District R-15",
+      "plain_english": "High-density residential (15 homes/acre)",
+      "description": "High-density residential allowing multifamily at 15 units per acre",
+      "typical_homes": "Garden apartments, low-rise multifamily",
+      "character": "High-density residential",
+      "intensity": 3
+    },
+    "R-16": {
+      "official_name": "Residential District R-16",
+      "plain_english": "High-density residential (16 homes/acre)",
+      "description": "High-density residential allowing multifamily at 16 units per acre",
+      "typical_homes": "Garden apartments, low-rise multifamily",
+      "character": "High-density residential",
+      "intensity": 3
+    },
+    "R-20": {
+      "official_name": "Residential District R-20",
+      "plain_english": "High-density multifamily (20 homes/acre)",
+      "description": "High-density multifamily residential at 20 dwelling units per acre",
+      "typical_homes": "Mid-rise apartments, condominiums",
+      "character": "High-density multifamily",
+      "intensity": 3
+    },
+    "R-30": {
+      "official_name": "Residential District R-30",
+      "plain_english": "High-density multifamily (30 homes/acre)",
+      "description": "High-density multifamily residential at 30 dwelling units per acre",
+      "typical_homes": "Mid-rise to high-rise apartments",
+      "character": "High-density multifamily",
+      "intensity": 3
+    },
+    "R-C": {
+      "official_name": "Residential-Conservation District",
+      "plain_english": "Conservation-oriented cluster residential",
+      "description": "Residential district allowing cluster development to preserve open space",
+      "typical_homes": "Clustered single-family, conservation lots",
+      "character": "Conservation-oriented residential",
+      "intensity": 2
+    },
+    "R-MHP": {
+      "official_name": "Residential-Mobile Home Park District",
+      "plain_english": "Manufactured housing community",
+      "description": "District designated for manufactured and mobile home park communities",
+      "typical_homes": "Manufactured homes, mobile homes",
+      "character": "Manufactured housing community",
+      "intensity": 2
+    },
+    "RM": {
+      "official_name": "Residential Mixed District",
+      "plain_english": "Mixed residential types",
+      "description": "Residential district allowing a mix of housing types including single-family and multifamily",
+      "typical_homes": "Mix of single-family, townhouses, apartments",
+      "character": "Mixed residential types",
+      "intensity": 3
+    },
+    "RMU": {
+      "official_name": "Residential Mixed-Use District",
+      "plain_english": "Residential with ground-floor commercial",
+      "description": "Mixed-use district combining residential with ground-floor retail and services",
+      "typical_homes": "Apartments above retail, live-work units",
+      "character": "Residential with ground-floor commercial",
+      "intensity": 3
+    },
+    "RS-10": {
+      "official_name": "Residential Studio District RS-10",
+      "plain_english": "Small-unit medium-density residential (10/acre)",
+      "description": "Medium-density residential allowing studio and small units at 10 per acre",
+      "typical_homes": "Studio apartments, small units",
+      "character": "Small-unit medium-density residential",
+      "intensity": 2
+    },
+    "RS-12.5": {
+      "official_name": "Residential Studio District RS-12.5",
+      "plain_english": "Small-unit medium-density residential (12.5/acre)",
+      "description": "Medium-density residential allowing studio and small units at 12.5 per acre",
+      "typical_homes": "Studio apartments, small units",
+      "character": "Small-unit medium-density residential",
+      "intensity": 2
+    },
+    "RS-16": {
+      "official_name": "Residential Studio District RS-16",
+      "plain_english": "Small-unit high-density residential (16/acre)",
+      "description": "High-density residential allowing studio and small units at 16 per acre",
+      "typical_homes": "Studio and one-bedroom apartments",
+      "character": "Small-unit high-density residential",
+      "intensity": 3
+    },
+    "RTH": {
+      "official_name": "Residential Townhouse District",
+      "plain_english": "Townhouse residential",
+      "description": "Residential district designated for townhouse development",
+      "typical_homes": "Townhouses, row homes",
+      "character": "Townhouse residential",
+      "intensity": 3
+    },
+    "RTC": {
+      "official_name": "Residential-Transit Center District",
+      "plain_english": "High-density transit-oriented residential",
+      "description": "High-density residential development near transit stations with mixed-use potential",
+      "typical_homes": "High-rise apartments, transit-oriented condos",
+      "character": "Transit-oriented high-density residential",
+      "intensity": 5
+    },
+    "C-1": {
+      "official_name": "Commercial District C-1",
+      "plain_english": "Neighborhood retail commercial",
+      "description": "Low-intensity neighborhood-serving retail and service commercial",
+      "typical_homes": "N/A — Commercial district",
+      "character": "Neighborhood retail",
+      "intensity": 3
+    },
+    "C-2": {
+      "official_name": "Commercial District C-2",
+      "plain_english": "Limited office commercial",
+      "description": "Limited office and professional service commercial district",
+      "typical_homes": "N/A — Commercial district",
+      "character": "Limited office commercial",
+      "intensity": 3
+    },
+    "C-3": {
+      "official_name": "Commercial District C-3",
+      "plain_english": "General office commercial",
+      "description": "General office and professional commercial with moderate intensity",
+      "typical_homes": "N/A — Commercial district",
+      "character": "General office commercial",
+      "intensity": 4
+    },
+    "C-4": {
+      "official_name": "Commercial District C-4",
+      "plain_english": "High-intensity office commercial",
+      "description": "High-intensity office commercial allowing major office developments",
+      "typical_homes": "N/A — Commercial district",
+      "character": "High-intensity office commercial",
+      "intensity": 4
+    },
+    "C-5": {
+      "official_name": "Commercial District C-5",
+      "plain_english": "General commercial retail",
+      "description": "General commercial and retail district serving community and regional needs",
+      "typical_homes": "N/A — Commercial district",
+      "character": "General commercial retail",
+      "intensity": 4
+    },
+    "C-6": {
+      "official_name": "Commercial District C-6",
+      "plain_english": "High-intensity commercial corridor",
+      "description": "High-intensity commercial corridor allowing major retail, office, and mixed-use",
+      "typical_homes": "N/A — Commercial district",
+      "character": "High-intensity commercial corridor",
+      "intensity": 4
+    },
+    "C-7": {
+      "official_name": "Commercial District C-7",
+      "plain_english": "Regional retail commercial",
+      "description": "Regional-scale retail commercial for major shopping centers",
+      "typical_homes": "N/A — Commercial district",
+      "character": "Regional retail commercial",
+      "intensity": 4
+    },
+    "C-8": {
+      "official_name": "Commercial District C-8",
+      "plain_english": "Highway commercial",
+      "description": "Highway-oriented commercial allowing auto-related and service uses",
+      "typical_homes": "N/A — Commercial district",
+      "character": "Highway commercial",
+      "intensity": 4
+    },
+    "CC": {
+      "official_name": "Community Commercial District",
+      "plain_english": "Community-scale commercial center",
+      "description": "Community-serving commercial center with retail and services",
+      "typical_homes": "N/A — Commercial district",
+      "character": "Community-scale commercial",
+      "intensity": 4
+    },
+    "CO": {
+      "official_name": "Commercial Office District",
+      "plain_english": "Office park development",
+      "description": "Office-oriented commercial district for professional and corporate uses",
+      "typical_homes": "N/A — Commercial district",
+      "character": "Office park development",
+      "intensity": 4
+    },
+    "CP": {
+      "official_name": "Commercial Planned District",
+      "plain_english": "Planned commercial center",
+      "description": "Planned commercial development with coordinated site design",
+      "typical_homes": "N/A — Commercial district",
+      "character": "Planned commercial center",
+      "intensity": 4
+    },
+    "CS": {
+      "official_name": "Commercial Special District",
+      "plain_english": "Specialty commercial district",
+      "description": "Special-purpose commercial district for unique uses",
+      "typical_homes": "N/A — Commercial district",
+      "character": "Specialty commercial district",
+      "intensity": 3
+    },
+    "I-2": {
+      "official_name": "Industrial District I-2",
+      "plain_english": "Light industrial",
+      "description": "Light industrial district for manufacturing, warehousing, and research uses",
+      "typical_homes": "N/A — Industrial district",
+      "character": "Light industrial",
+      "intensity": 3
+    },
+    "I-3": {
+      "official_name": "Industrial District I-3",
+      "plain_english": "Medium industrial",
+      "description": "Medium industrial district for manufacturing and heavy commercial uses",
+      "typical_homes": "N/A — Industrial district",
+      "character": "Medium industrial",
+      "intensity": 3
+    },
+    "I-4": {
+      "official_name": "Industrial District I-4",
+      "plain_english": "Heavy industrial",
+      "description": "Heavy industrial district for intensive manufacturing and processing",
+      "typical_homes": "N/A — Industrial district",
+      "character": "Heavy industrial",
+      "intensity": 3
+    },
+    "I-5": {
+      "official_name": "Industrial District I-5",
+      "plain_english": "Research and development industrial",
+      "description": "Industrial district oriented toward research, development, and technology",
+      "typical_homes": "N/A — Industrial district",
+      "character": "Research and development",
+      "intensity": 3
+    },
+    "I-6": {
+      "official_name": "Industrial District I-6",
+      "plain_english": "Flex industrial and office",
+      "description": "Flexible industrial district allowing office, light industrial, and flex space",
+      "typical_homes": "N/A — Industrial district",
+      "character": "Flex industrial/office",
+      "intensity": 3
+    },
+    "I-I": {
+      "official_name": "Institutional Industrial District",
+      "plain_english": "Institutional industrial use",
+      "description": "Industrial district for institutional and governmental industrial uses",
+      "typical_homes": "N/A — Industrial district",
+      "character": "Institutional industrial use",
+      "intensity": 3
+    },
+    "PDH-1": {
+      "official_name": "Planned Development Housing PDH-1",
+      "plain_english": "Planned neighborhood (1 home/acre)",
+      "description": "Master-planned residential at 1 dwelling unit per acre",
+      "typical_homes": "Single-family homes on large lots",
+      "character": "Low-density planned residential",
+      "intensity": 1
+    },
+    "PDH-2": {
+      "official_name": "Planned Development Housing PDH-2",
+      "plain_english": "Planned neighborhood (2 homes/acre)",
+      "description": "Master-planned residential at 2 dwelling units per acre",
+      "typical_homes": "Single-family homes on half-acre lots",
+      "character": "Low-density planned residential",
+      "intensity": 1
+    },
+    "PDH-3": {
+      "official_name": "Planned Development Housing PDH-3",
+      "plain_english": "Planned neighborhood (3 homes/acre)",
+      "description": "Master-planned residential at 3 dwelling units per acre",
+      "typical_homes": "Single-family homes, some townhouses",
+      "character": "Low-density planned residential",
+      "intensity": 2
+    },
+    "PDH-4": {
+      "official_name": "Planned Development Housing PDH-4",
+      "plain_english": "Planned neighborhood (4 homes/acre)",
+      "description": "Master-planned residential at 4 dwelling units per acre",
+      "typical_homes": "Single-family homes, townhouses",
+      "character": "Medium-density planned residential",
+      "intensity": 2
+    },
+    "PDH-5": {
+      "official_name": "Planned Development Housing PDH-5",
+      "plain_english": "Planned neighborhood (5 homes/acre)",
+      "description": "Master-planned residential at 5 dwelling units per acre",
+      "typical_homes": "Townhouses, single-family homes",
+      "character": "Medium-density planned residential",
+      "intensity": 2
+    },
+    "PDH-8": {
+      "official_name": "Planned Development Housing PDH-8",
+      "plain_english": "Planned neighborhood (8 homes/acre)",
+      "description": "Master-planned residential at 8 dwelling units per acre",
+      "typical_homes": "Townhouses, garden apartments",
+      "character": "Medium-density planned residential",
+      "intensity": 2
+    },
+    "PDH-12": {
+      "official_name": "Planned Development Housing PDH-12",
+      "plain_english": "Planned neighborhood (12 homes/acre)",
+      "description": "Higher-density planned residential at 12 units per acre",
+      "typical_homes": "Garden apartments, townhouses",
+      "character": "Medium-high density planned residential",
+      "intensity": 3
+    },
+    "PDH-16": {
+      "official_name": "Planned Development Housing PDH-16",
+      "plain_english": "Planned neighborhood (16 homes/acre)",
+      "description": "High-density planned residential at 16 units per acre",
+      "typical_homes": "Apartments, condominiums",
+      "character": "High-density planned residential",
+      "intensity": 3
+    },
+    "PDH-20": {
+      "official_name": "Planned Development Housing PDH-20",
+      "plain_english": "Planned neighborhood (20 homes/acre)",
+      "description": "High-density planned residential at 20 units per acre",
+      "typical_homes": "Mid-rise apartments, condos",
+      "character": "High-density planned residential",
+      "intensity": 3
+    },
+    "PDH-30": {
+      "official_name": "Planned Development Housing PDH-30",
+      "plain_english": "Planned high-density residential (30 homes/acre)",
+      "description": "Very high-density planned residential at 30 units per acre",
+      "typical_homes": "Mid-rise apartments, high-rise condos",
+      "character": "Very high-density planned residential",
+      "intensity": 4
+    },
+    "PDH-40": {
+      "official_name": "Planned Development Housing PDH-40",
+      "plain_english": "Planned high-density residential (40 homes/acre)",
+      "description": "Urban-density planned residential at 40 units per acre",
+      "typical_homes": "High-rise apartments, urban condos",
+      "character": "Urban-density planned residential",
+      "intensity": 4
+    },
+    "PD-B": {
+      "official_name": "Planned Development-Business District",
+      "plain_english": "Planned business campus",
+      "description": "Master-planned business development with coordinated office and commercial uses",
+      "typical_homes": "N/A — Business district",
+      "character": "Planned business campus",
+      "intensity": 4
+    },
+    "PD-D": {
+      "official_name": "Planned Development-Duplex District",
+      "plain_english": "Planned duplex development",
+      "description": "Planned development allowing duplex and semi-detached housing",
+      "typical_homes": "Duplexes, semi-detached homes",
+      "character": "Planned duplex development",
+      "intensity": 2
+    },
+    "PD-R": {
+      "official_name": "Planned Development-Residential District",
+      "plain_english": "Planned residential community",
+      "description": "Master-planned residential community with flexible design standards",
+      "typical_homes": "Single-family, townhouses, some multifamily",
+      "character": "Planned residential community",
+      "intensity": 2
+    },
+    "PD-TD": {
+      "official_name": "Planned Development-Transit District",
+      "plain_english": "Transit-oriented mixed-use development",
+      "description": "High-density mixed-use development oriented around transit stations",
+      "typical_homes": "High-rise apartments, condos above retail",
+      "character": "Transit-oriented mixed-use",
+      "intensity": 5
+    },
+    "PD-TOC": {
+      "official_name": "Planned Development-Transit Oriented Commercial",
+      "plain_english": "Transit-oriented commercial center",
+      "description": "High-intensity commercial development near transit nodes",
+      "typical_homes": "N/A — Transit-oriented commercial",
+      "character": "Transit-oriented commercial center",
+      "intensity": 5
+    },
+    "PD-UR": {
+      "official_name": "Planned Development-Urban Residential",
+      "plain_english": "Urban-density planned residential",
+      "description": "High-density urban residential in planned development context",
+      "typical_homes": "High-rise apartments, urban condos",
+      "character": "Urban-density planned residential",
+      "intensity": 4
+    },
+    "PD-W": {
+      "official_name": "Planned Development-Waterfront District",
+      "plain_english": "Waterfront mixed-use development",
+      "description": "Mixed-use development along waterfront corridors",
+      "typical_homes": "Waterfront condos, townhouses, retail",
+      "character": "Waterfront mixed-use development",
+      "intensity": 4
+    },
+    "PDC": {
+      "official_name": "Planned Development Commercial",
+      "plain_english": "Planned commercial center",
+      "description": "Master-planned commercial development with coordinated design",
+      "typical_homes": "N/A — Planned commercial",
+      "character": "Planned commercial center",
+      "intensity": 4
+    },
+    "PRC": {
+      "official_name": "Planned Residential Community",
+      "plain_english": "Master-planned residential community",
+      "description": "Large-scale master-planned residential community with mixed housing and amenities",
+      "typical_homes": "Mix of single-family, townhouses, some apartments",
+      "character": "Master-planned residential community",
+      "intensity": 3
+    },
+    "PRM": {
+      "official_name": "Planned Residential Mixed-Use",
+      "plain_english": "Planned residential with mixed uses",
+      "description": "Planned development combining residential with commercial and civic uses",
+      "typical_homes": "Apartments, townhouses, retail below",
+      "character": "Planned residential mixed-use",
+      "intensity": 4
+    },
+    "PTC": {
+      "official_name": "Planned Tysons Corner District",
+      "plain_english": "Tysons urban center development",
+      "description": "High-intensity urban development in the Tysons Corner urban center",
+      "typical_homes": "High-rise apartments, urban mixed-use",
+      "character": "Tysons urban center development",
+      "intensity": 5
+    },
+    "PCC": {
+      "official_name": "Planned Commercial Center",
+      "plain_english": "Major planned commercial center",
+      "description": "Large-scale planned commercial center for regional retail and services",
+      "typical_homes": "N/A — Major commercial center",
+      "character": "Major planned commercial center",
+      "intensity": 4
+    },
+    "PC": {
+      "official_name": "Planned Commercial District",
+      "plain_english": "Planned commercial development",
+      "description": "Planned commercial development with flexible design standards",
+      "typical_homes": "N/A — Planned commercial",
+      "character": "Planned commercial development",
+      "intensity": 4
+    },
+    "PR": {
+      "official_name": "Planned Residential District",
+      "plain_english": "Planned residential development",
+      "description": "Planned residential development with flexible housing types",
+      "typical_homes": "Single-family, townhouses",
+      "character": "Planned residential development",
+      "intensity": 2
+    },
+    "AC": {
+      "official_name": "Airport Compatibility District",
+      "plain_english": "Airport-adjacent restricted zone",
+      "description": "District restricting development for airport safety and noise compatibility",
+      "typical_homes": "Very limited — airport restrictions",
+      "character": "Airport-adjacent restricted zone",
+      "intensity": 1
+    },
+    "AE": {
+      "official_name": "Airport Environment District",
+      "plain_english": "Airport noise and safety zone",
+      "description": "District with development restrictions due to airport noise and safety zones",
+      "typical_homes": "Very limited — noise zone restrictions",
+      "character": "Airport noise/safety zone",
+      "intensity": 1
+    },
+    "AW": {
+      "official_name": "Airport Waterway District",
+      "plain_english": "Airport waterway protection zone",
+      "description": "District protecting waterways near airport facilities",
+      "typical_homes": "Very limited — waterway protection",
+      "character": "Airport waterway protection zone",
+      "intensity": 1
+    },
+    "GS": {
+      "official_name": "Government/Special District",
+      "plain_english": "Government or institutional use",
+      "description": "District for government facilities, schools, and institutional uses",
+      "typical_homes": "N/A — Government/institutional",
+      "character": "Government or institutional use",
+      "intensity": 2
+    },
+    "M": {
+      "official_name": "Mining District",
+      "plain_english": "Resource extraction zone",
+      "description": "District for mining and resource extraction operations",
+      "typical_homes": "N/A — Mining operations",
+      "character": "Resource extraction zone",
+      "intensity": 1
+    },
+    "NM": {
+      "official_name": "Non-Mineral District",
+      "plain_english": "Specialty district (non-mineral)",
+      "description": "Special-purpose district for non-mineral resource activities",
+      "typical_homes": "N/A — Specialty district",
+      "character": "Specialty/Other district",
+      "intensity": 1
+    },
+    "O&LI": {
+      "official_name": "Office and Light Industrial District",
+      "plain_english": "Office and light industrial flex space",
+      "description": "Mixed office and light industrial district for professional and flex uses",
+      "typical_homes": "N/A — Office/light industrial",
+      "character": "Office/light industrial flex",
+      "intensity": 3
+    },
+    "T": {
+      "official_name": "Transitional District",
+      "plain_english": "Transitional buffer zone",
+      "description": "Transitional district providing buffer between different use intensities",
+      "typical_homes": "Varies — transitional uses",
+      "character": "Transitional buffer zone",
+      "intensity": 2
+    }
+  }
+}

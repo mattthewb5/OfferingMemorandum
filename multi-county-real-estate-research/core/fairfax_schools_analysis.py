@@ -226,7 +226,9 @@ class FairfaxSchoolsAnalysis:
                 'phone': str(int(elem_match['phone'])) if pd.notna(elem_match.get('phone')) else None,
                 'website': elem_match.get('website'),
                 'region': elem_match.get('region'),
-                'distance_miles': distance
+                'distance_miles': distance,
+                'lat': facility['latitude'] if facility and facility.get('latitude') else None,
+                'lon': facility['longitude'] if facility and facility.get('longitude') else None,
             }
 
         # Find middle school
@@ -247,7 +249,9 @@ class FairfaxSchoolsAnalysis:
                 'phone': None,  # Middle zones don't have phone in data
                 'website': middle_match.get('website'),
                 'region': middle_match.get('region'),
-                'distance_miles': distance
+                'distance_miles': distance,
+                'lat': facility['latitude'] if facility and facility.get('latitude') else None,
+                'lon': facility['longitude'] if facility and facility.get('longitude') else None,
             }
 
         # Find high school
@@ -268,7 +272,9 @@ class FairfaxSchoolsAnalysis:
                 'phone': None,  # High zones don't have phone in data
                 'website': high_match.get('website'),
                 'region': high_match.get('region'),
-                'distance_miles': distance
+                'distance_miles': distance,
+                'lat': facility['latitude'] if facility and facility.get('latitude') else None,
+                'lon': facility['longitude'] if facility and facility.get('longitude') else None,
             }
 
         # Check if all levels assigned

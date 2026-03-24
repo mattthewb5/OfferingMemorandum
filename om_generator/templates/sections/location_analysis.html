@@ -15,11 +15,18 @@
         <!-- Map -->
         <div>
           <h4 style="margin-bottom:6px;">Location Context Map</h4>
+          {% if location_map_static_url %}
+          <img src="{{ location_map_static_url }}"
+               style="width:100%;height:195px;object-fit:cover;
+                      border:1px solid #e2e8f0;border-radius:4px;"
+               alt="Location Context Map">
+          {% else %}
           <div class="mapbox" style="height:195px;flex-direction:column;gap:8px;">
             <div class="mapbox-label">Property Location Map<br><span style="font-size:7px;opacity:0.7;">Schools &middot; Metro &middot; Police &middot; Fire &middot; Permits &middot; Radius rings</span></div>
           </div>
+          {% endif %}
           <div style="font-size:7px;color:var(--slate-light);margin-top:4px;">
-            &#x1F535; {{ property_name }} &nbsp;|&nbsp; &#x1F3EB; Schools (name labeled) &nbsp;|&nbsp; &#x24C2; Metro (Silver Line) &nbsp;|&nbsp; &#x1F692; Fire station &nbsp;|&nbsp; &#x1F693; Police &nbsp;|&nbsp; &#8212; 1mi / 2mi radius
+            &#x1F535; {{ property_name }} &nbsp;|&nbsp; &#x1F3EB; Schools &nbsp;|&nbsp; &#x24C2; {{ metro_line_name | default('Metro') }} &nbsp;|&nbsp; &#x1F692; Fire station &nbsp;|&nbsp; &#x1F693; Police &nbsp;|&nbsp; &#8212; 1mi / 2mi radius
           </div>
         </div>
 
@@ -141,7 +148,7 @@
               </div>
               <div style="background:white;padding:5px 7px;border-radius:2px;text-align:center;">
                 <div style="font-size:9px;font-weight:600;color:var(--navy);">{{ healthcare.employee_count }}</div>
-                <div style="font-size:7px;color:var(--slate-light);">Inova Employees</div>
+                <div style="font-size:7px;color:var(--slate-light);">{{ anchor_employer | default('Major Area Employer') }}</div>
               </div>
             </div>
           </div>

@@ -77,15 +77,10 @@ def _graceful_default(county: str) -> dict:
             {"label": "Residential Renovation", "width": "0%", "count": "0", "fill_class": "bar-low"},
         ],
         "permit_chart_footnote": "Permit data temporarily unavailable.",
-        "comp_plan_designation": "See zoning report",
-        "growth_center_distance": "N/A",
-        "upzoning_risk": "Not assessed",
-        "zoning_narrative": "Zoning intelligence module pending.",
-        "zoning_code_slash": "N/A",
     }
 
 
-def _build_fairfax(lat: float, lon: float, radius_miles: float) -> dict:
+def _build_fairfax(lat: float, lon: float, radius_miles: float, zoning_ctx: dict = None) -> dict:
     """Build development context from Fairfax permits data."""
     import pandas as pd
     from core.fairfax_permits_analysis import FairfaxPermitsAnalysis
@@ -148,6 +143,7 @@ def _build_fairfax(lat: float, lon: float, radius_miles: float) -> dict:
         permits_2mi_count=permits_2mi_count,
         recent_count=recent_count,
         nearest_dist=nearest_dist,
+        zoning_ctx=zoning_ctx,
     )
     score = sub["volume_pts"] + sub["recency_pts"] + sub["type_pts"] + sub["proximity_pts"] + sub["planning_pts"]
 
@@ -183,7 +179,7 @@ def _build_fairfax(lat: float, lon: float, radius_miles: float) -> dict:
     )
 
 
-def _build_loudoun(lat: float, lon: float, radius_miles: float) -> dict:
+def _build_loudoun(lat: float, lon: float, radius_miles: float, zoning_ctx: dict = None) -> dict:
     """Build development context from Loudoun permits data."""
     from core.development_pressure_analyzer import DevelopmentPressureAnalyzer
 
@@ -251,6 +247,7 @@ def _build_loudoun(lat: float, lon: float, radius_miles: float) -> dict:
         permits_2mi_count=permits_2mi_count,
         recent_count=recent_count,
         nearest_dist=nearest_dist,
+        zoning_ctx=zoning_ctx,
     )
     score = sub["volume_pts"] + sub["recency_pts"] + sub["type_pts"] + sub["proximity_pts"] + sub["planning_pts"]
 
@@ -287,6 +284,7 @@ def _compute_sub_scores(
     permits_2mi_count: int,
     recent_count: int,
     nearest_dist: float,
+    zoning_ctx: dict = None,
 ) -> dict:
     """Compute the 5 formula sub-scores that compose the headline score.
 
@@ -319,8 +317,8 @@ def _compute_sub_scores(
     else:
         proximity_pts = 0
 
-    # Planning Zone (15 pts max) — stubbed until zoning module ready
-    planning_pts = 0
+    # Planning Zone (15 pts max) — powered by zoning_context module
+    planning_pts = (zoning_ctx or {}).get("planning_pts", 0)
 
     return {
         "volume_pts": volume_pts,
@@ -443,16 +441,12 @@ def _assemble_result(
         "permits_context_footnote": permits_context_footnote,
         "permit_activity_bars": permit_activity_bars,
         "permit_chart_footnote": chart_footnote,
-        "comp_plan_designation": "See zoning report",
-        "growth_center_distance": "N/A",
-        "upzoning_risk": "Not assessed",
-        "zoning_narrative": "Zoning intelligence module pending.",
-        "zoning_code_slash": "N/A",
     }
 
 
 def build_development_context(
-    lat: float, lon: float, county: str, radius_miles: float = 2.0
+    lat: float, lon: float, county: str, radius_miles: float = 2.0,
+    zoning_ctx: dict = None,
 ) -> dict:
     """
     Build the development intelligence context dict for the OM template.
@@ -462,15 +456,17 @@ def build_development_context(
         lon: Property longitude
         county: County name ('fairfax' or 'loudoun')
         radius_miles: Search radius in miles (default: 2.0)
+        zoning_ctx: Zoning context dict from build_zoning_context() — provides
+                    planning_pts for the Planning Zone scoring component.
 
     Returns:
         Dict with all keys matching context_sample.py lines 274-320.
     """
     try:
         if county == 'fairfax':
-            return _build_fairfax(lat, lon, radius_miles)
+            return _build_fairfax(lat, lon, radius_miles, zoning_ctx=zoning_ctx)
         elif county == 'loudoun':
-            return _build_loudoun(lat, lon, radius_miles)
+            return _build_loudoun(lat, lon, radius_miles, zoning_ctx=zoning_ctx)
         else:
             print(f"WARNING: Unknown county '{county}' for development context",
                   file=sys.stderr)

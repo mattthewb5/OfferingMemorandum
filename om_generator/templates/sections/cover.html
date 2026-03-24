@@ -88,16 +88,32 @@
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Rentable Area</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ total_rentable_sf }} SF</div></div>
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Zoning</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ zoning_code }}</div></div>
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Utility Structure</div><div style="font-size:9px;font-weight:600;color:var(--navy);">Tenant-Paid: Electric + Gas<br><span style="color:var(--slate-light);font-weight:400;">Landlord-Paid: Water / Common Area</span></div></div>
-        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Management</div><div style="font-size:9px;font-weight:600;color:var(--navy);">Bozzuto Mgmt Co.<br><span style="color:var(--slate-light);font-weight:400;">Institutional Operator</span></div></div>
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Management</div><div style="font-size:9px;font-weight:600;color:var(--navy);">{{ management_company | default('—') }}<br><span style="color:var(--slate-light);font-weight:400;">Institutional Operator</span></div></div>
       </div>
     </div>
 
     <!-- Photo strip -->
-    <div style="margin:16px 36px 0;display:flex;gap:6px;">
-      <div class="mapbox" style="height:82px;flex:2;"><div class="mapbox-label">{{ photo_labels[0] }}</div></div>
-      <div class="mapbox" style="height:82px;flex:1;"><div class="mapbox-label">{{ photo_labels[1] }}</div></div>
-      <div class="mapbox" style="height:82px;flex:1;"><div class="mapbox-label">{{ photo_labels[2] }}</div></div>
-      <div class="mapbox" style="height:82px;flex:1;"><div class="mapbox-label">{{ photo_labels[3] }}</div></div>
+    <div style="margin:16px 36px 0;display:flex;gap:6px;height:280px;overflow:hidden;">
+      <div class="mapbox" style="flex:2;overflow:hidden;">
+        {% if photo_urls and photo_urls[0] %}
+        <img src="{{ photo_urls[0] }}" style="width:100%;height:100%;object-fit:cover;">
+        {% endif %}
+      </div>
+      <div class="mapbox" style="flex:1;overflow:hidden;">
+        {% if photo_urls and photo_urls[1] %}
+        <img src="{{ photo_urls[1] }}" style="width:100%;height:100%;object-fit:cover;">
+        {% endif %}
+      </div>
+      <div class="mapbox" style="flex:1;overflow:hidden;">
+        {% if photo_urls and photo_urls[2] %}
+        <img src="{{ photo_urls[2] }}" style="width:100%;height:100%;object-fit:cover;">
+        {% endif %}
+      </div>
+      <div class="mapbox" style="flex:1;overflow:hidden;">
+        {% if photo_urls and photo_urls[3] %}
+        <img src="{{ photo_urls[3] }}" style="width:100%;height:100%;object-fit:cover;">
+        {% endif %}
+      </div>
     </div>
   </div>
 

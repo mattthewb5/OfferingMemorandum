@@ -141,8 +141,15 @@ def main():
     from context_sample import get_sample_context
     ctx = get_sample_context()
 
-    # Set property_county from detected county
-    ctx['property_county'] = county.title() + ' County'
+    # ── Property identity (must run first) ─────────────────────────────
+    from property_context import build_property_context
+    prop_ctx = build_property_context(address, lat, lon, county)
+    ctx.update(prop_ctx)
+    print(f"  Property wired: {prop_ctx['property_address']}, "
+          f"{prop_ctx['property_city']}, {prop_ctx['property_state_abbr']} "
+          f"{prop_ctx['property_zip']} | county={prop_ctx['property_county']} | "
+          f"metro={prop_ctx['metro_station_name']} ({prop_ctx['metro_distance']}) | "
+          f"uni={prop_ctx['university_name_short']} ({prop_ctx['university_distance']})")
 
     # Inject logo base64
     ctx['wo_logo_base64'] = extract_logo_base64(V3_PATH)

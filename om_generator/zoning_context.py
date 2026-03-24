@@ -155,6 +155,7 @@ def _build_zoning_context_fairfax(lat: float, lon: float) -> dict:
     return {
         # Keys matching existing template variables (development_context.py:446-450)
         "zoning_code_slash": zoning_code_slash,
+        "zoning_display": f"{zoning_code} \u00b7 {zoning_name}" if zoning_code != "N/A" else "N/A",
         "comp_plan_designation": comp_plan_designation,
         "growth_center_distance": growth_center_distance,
         "upzoning_risk": upzoning_risk,
@@ -408,6 +409,7 @@ def _build_zoning_context_loudoun(lat: float, lon: float) -> dict:
 
     return {
         "zoning_code_slash": zoning_code_slash,
+        "zoning_display": f"{zoning_code} \u00b7 {zoning_name}" if zoning_code != "N/A" and zoning_name else zoning_code,
         "comp_plan_designation": comp_plan_designation,
         "growth_center_distance": growth_center_distance,
         "upzoning_risk": upzoning_risk,
@@ -693,6 +695,7 @@ def _zoning_safe_defaults(county: str = "unknown") -> dict:
     """Return safe defaults on any unrecoverable error."""
     return {
         "zoning_code_slash": "N/A",
+        "zoning_display": "N/A",
         "comp_plan_designation": "N/A",
         "growth_center_distance": "N/A",
         "upzoning_risk": "N/A",

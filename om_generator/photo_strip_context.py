@@ -23,11 +23,11 @@ from core.api_config import get_api_key
 _METADATA_URL = "https://maps.googleapis.com/maps/api/streetview/metadata"
 _IMAGE_URL = "https://maps.googleapis.com/maps/api/streetview"
 
-_HEADINGS = [0, 90, 180, 270]
+_HEADINGS = [0, 180, 90, 270]
 _LABELS = [
     "Street View \u2014 Front",
-    "Street View \u2014 Right",
     "Street View \u2014 Rear",
+    "Street View \u2014 Right",
     "Street View \u2014 Left",
 ]
 _FALLBACK_LABELS = ["Aerial View", "Clubhouse", "Pool Deck", "Unit Interior"]
@@ -41,6 +41,7 @@ def _check_coverage(lat: float, lon: float, heading: int, api_key: str) -> bool:
             params={
                 "location": f"{lat},{lon}",
                 "heading": heading,
+                "source": "outdoor",
                 "key": api_key,
             },
             timeout=5,
@@ -61,6 +62,7 @@ def _build_image_url(lat: float, lon: float, heading: int, api_key: str) -> str:
         f"&heading={heading}"
         f"&pitch=0"
         f"&fov=90"
+        f"&source=outdoor"
         f"&key={api_key}"
     )
 

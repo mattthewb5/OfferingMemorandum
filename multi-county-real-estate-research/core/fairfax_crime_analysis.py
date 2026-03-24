@@ -197,34 +197,39 @@ class FairfaxCrimeAnalysis:
 
         # Map raw weighted count to score (0-100)
         # Calibrated at radius=1.0mi, months_back=6:
-        #   Great Falls: ~? weighted → score ~85
-        #   Herndon suburb: ~? weighted → score ~65
-        #   Dunn Loring: ~? weighted → score ~38
-        #   Tysons: ~? weighted → score ~25
+        #   Great Falls: ~3 weighted → score ~87
+        #   Herndon suburb: ~1 weighted → score ~89
+        #   Clocktower Place: ~42 weighted → score ~60
+        #   Dunn Loring: ~106 weighted → score ~41
+        #   Tysons: ~202 weighted → score ~25
         if weighted_crimes <= 10:
-            score = 90 - weighted_crimes * 0.5
+            # 0 → 90, 10 → 80
+            score = 90 - weighted_crimes * 1.0
         elif weighted_crimes <= 50:
-            # 10 → 85, 50 → 55
-            score = 85 - (weighted_crimes - 10) * (30.0 / 40.0)
-        elif weighted_crimes <= 200:
-            # 50 → 55, 200 → 15
-            score = 55 - (weighted_crimes - 50) * (40.0 / 150.0)
+            # 10 → 80, 50 → 55
+            score = 80 - (weighted_crimes - 10) * (25.0 / 40.0)
+        elif weighted_crimes <= 150:
+            # 50 → 55, 150 → 30
+            score = 55 - (weighted_crimes - 50) * (25.0 / 100.0)
+        elif weighted_crimes <= 300:
+            # 150 → 30, 300 → 15
+            score = 30 - (weighted_crimes - 150) * (15.0 / 150.0)
         else:
-            score = max(0, 15 - (weighted_crimes - 200) * 0.1)
+            score = 5
 
         score = max(0, min(100, int(score)))
 
         # Assign rating
-        if score >= 80:
+        if score >= 75:
             rating = 'Very Safe'
-        elif score >= 60:
+        elif score >= 55:
             rating = 'Safe'
-        elif score >= 40:
+        elif score >= 35:
             rating = 'Moderate'
         elif score >= 20:
-            rating = 'Caution Advised'
+            rating = 'Caution'
         else:
-            rating = 'High Crime Area'
+            rating = 'High Crime'
 
         return {
             'score': score,

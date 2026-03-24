@@ -77,11 +77,6 @@ def _graceful_default(county: str) -> dict:
             {"label": "Residential Renovation", "width": "0%", "count": "0", "fill_class": "bar-low"},
         ],
         "permit_chart_footnote": "Permit data temporarily unavailable.",
-        "comp_plan_designation": "See zoning report",
-        "growth_center_distance": "N/A",
-        "upzoning_risk": "Not assessed",
-        "zoning_narrative": "Zoning intelligence module pending.",
-        "zoning_code_slash": "N/A",
     }
 
 
@@ -446,11 +441,6 @@ def _assemble_result(
         "permits_context_footnote": permits_context_footnote,
         "permit_activity_bars": permit_activity_bars,
         "permit_chart_footnote": chart_footnote,
-        "comp_plan_designation": "See zoning report",
-        "growth_center_distance": "N/A",
-        "upzoning_risk": "Not assessed",
-        "zoning_narrative": "Zoning intelligence module pending.",
-        "zoning_code_slash": "N/A",
     }
 
 

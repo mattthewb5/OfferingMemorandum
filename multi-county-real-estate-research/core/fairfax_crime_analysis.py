@@ -195,19 +195,12 @@ class FairfaxCrimeAnalysis:
         # Violent weighted 3x heavier than property
         weighted_crimes = violent_count * 3 + property_count
 
-        # Scale for search radius: normalize to a 2-mile radius baseline
-        # so scores are comparable regardless of radius used
-        baseline_area = math.pi * 2.0 ** 2  # ~12.57 sq mi
-        actual_area = math.pi * radius_miles ** 2
-        if actual_area > 0:
-            weighted_crimes = weighted_crimes * (baseline_area / actual_area)
-
-        # Map weighted count to score (0-100)
-        # Calibrated benchmarks (2-mi radius, 6 months):
-        #   Great Falls: ~8 weighted → score ~85
-        #   Herndon suburb: ~34 weighted → score ~65
-        #   Dunn Loring: ~135 weighted → score ~38
-        #   Tysons: ~179 weighted → score ~25
+        # Map raw weighted count to score (0-100)
+        # Calibrated at radius=1.0mi, months_back=6:
+        #   Great Falls: ~? weighted → score ~85
+        #   Herndon suburb: ~? weighted → score ~65
+        #   Dunn Loring: ~? weighted → score ~38
+        #   Tysons: ~? weighted → score ~25
         if weighted_crimes <= 10:
             score = 90 - weighted_crimes * 0.5
         elif weighted_crimes <= 50:

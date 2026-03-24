@@ -140,10 +140,11 @@ def _build_fairfax_schools(lat: float, lon: float) -> dict:
 
     # Build footnote
     year_display = ", ".join(sorted(years_used)) if years_used else "N/A"
+    county_display = _COUNTY_DISPLAY.get("fairfax", "Fairfax County")
     school_footnote = (
         f"Multi-year SOL pass rate trends available in Data Appendix. "
         f"School quality is the #1 stated retention driver for family renters "
-        f"in Fairfax County. Source: Virginia DOE ({year_display})."
+        f"in {county_display}. Source: Virginia DOE ({year_display})."
     )
 
     return {

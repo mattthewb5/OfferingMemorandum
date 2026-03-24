@@ -88,7 +88,7 @@
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Rentable Area</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ total_rentable_sf }} SF</div></div>
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Zoning</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ zoning_code }}</div></div>
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Utility Structure</div><div style="font-size:9px;font-weight:600;color:var(--navy);">Tenant-Paid: Electric + Gas<br><span style="color:var(--slate-light);font-weight:400;">Landlord-Paid: Water / Common Area</span></div></div>
-        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Management</div><div style="font-size:9px;font-weight:600;color:var(--navy);">Bozzuto Mgmt Co.<br><span style="color:var(--slate-light);font-weight:400;">Institutional Operator</span></div></div>
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Management</div><div style="font-size:9px;font-weight:600;color:var(--navy);">{{ management_company | default('—') }}<br><span style="color:var(--slate-light);font-weight:400;">Institutional Operator</span></div></div>
       </div>
     </div>
 

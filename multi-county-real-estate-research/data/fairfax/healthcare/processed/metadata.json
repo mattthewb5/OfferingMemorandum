@@ -1,16 +1,16 @@
 {
-  "last_updated": "2026-01-26T22:29:26.470128",
+  "last_updated": "2026-04-07T20:43:01.280309",
   "total_facilities": 77,
   "by_type": {
     "hospitals": 13,
     "urgent_care": 64
   },
   "cms_integration": {
-    "hospitals_matched": 8,
+    "hospitals_matched": 6,
     "with_ratings": 6,
     "rating_distribution": {
-      "3": 2,
       "5": 3,
+      "3": 2,
       "4": 1
     }
   },
@@ -19,7 +19,8 @@
     "grade_distribution": {
       "A": 6,
       "B": 1
-    }
+    },
+    "source": "manually maintained - data/fairfax/healthcare/raw/leapfrog_grades_fall2024_manual.csv"
   },
   "by_city": {
     "ALEXANDRIA": 11,
@@ -46,7 +47,7 @@
   },
   "data_sources": {
     "base": "Fairfax County GIS (2026-01-26)",
-    "cms": "CMS Hospital Compare (2025-12-28)",
-    "leapfrog": "Hospital Safety Grade (Fall 2024)"
+    "cms": "CMS Hospital Compare (data.cms.gov/provider-data/dataset/xubh-q36u, upstream modified 2026-01-26)",
+    "leapfrog": "Hospital Safety Grade Fall 2024 (manually maintained)"
   }
 }

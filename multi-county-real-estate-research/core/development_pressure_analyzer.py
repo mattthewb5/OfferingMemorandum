@@ -421,7 +421,7 @@ if __name__ == '__main__':
     # Test the analyzer
     import sys
 
-    permits_file = 'multi-county-real-estate-research/data/loudoun/building_permits/loudoun_permits_2024_2025_complete.csv'
+    permits_file = 'multi-county-real-estate-research/data/loudoun/building_permits/loudoun_permits_with_infrastructure.csv'
 
     print("Testing Development Pressure Analyzer")
     print("=" * 70)

@@ -95,11 +95,11 @@ def _load_infer_industry(county: str):
 
 
 def _graceful_default(county: str) -> dict:
+    # employers_county is owned by property_context.py.
     return {
         "employers": [],
         "employer_footnote": "Employer data temporarily unavailable.",
         "employers_data_year": None,
-        "employers_county": county,
     }
 
 
@@ -113,8 +113,8 @@ def build_employers_context(lat: float, lon: float, county: str) -> dict:
         county: County name ('fairfax' or 'loudoun')
 
     Returns:
-        Dict with keys: employers (list), employer_footnote, employers_data_year,
-        employers_county.
+        Dict with keys: employers (list), employer_footnote, employers_data_year.
+        (employers_county is owned by property_context.py.)
     """
     try:
         # Select data file
@@ -160,6 +160,7 @@ def build_employers_context(lat: float, lon: float, county: str) -> dict:
                 "logo_url": logo_url,
             })
 
+        # employers_county is owned by property_context.py.
         return {
             "employers": employer_list,
             "employer_footnote": (
@@ -168,7 +169,6 @@ def build_employers_context(lat: float, lon: float, county: str) -> dict:
                 f"equivalents where reported; ranges indicate privately held employers."
             ),
             "employers_data_year": data_year,
-            "employers_county": county,
         }
 
     except Exception as e:

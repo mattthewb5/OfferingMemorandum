@@ -75,12 +75,12 @@ def _parse_street_address(address: str) -> str:
 
 
 def _reverse_geocode(lat: float, lon: float, api_key: str) -> dict:
-    """Reverse-geocode *lat*/*lon* via Google Maps and return city + ZIP.
+    """Reverse-geocode *lat*/*lon* via Google Maps and return city, ZIP, state.
 
-    Returns a dict with keys ``city`` and ``zip``, both strings.
-    Falls back to empty strings on any error.
+    Returns a dict with keys ``city``, ``zip``, ``state``, and ``state_abbr``,
+    all strings.  Falls back to empty strings on any error.
     """
-    result = {"city": "", "zip": ""}
+    result = {"city": "", "zip": "", "state": "", "state_abbr": ""}
     try:
         url = "https://maps.googleapis.com/maps/api/geocode/json"
         resp = requests.get(
@@ -100,6 +100,9 @@ def _reverse_geocode(lat: float, lon: float, api_key: str) -> dict:
                 result["city"] = comp["long_name"]
             elif "postal_code" in types:
                 result["zip"] = comp["short_name"]
+            elif "administrative_area_level_1" in types:
+                result["state"] = comp["long_name"]
+                result["state_abbr"] = comp["short_name"]
     except Exception as exc:
         logger.warning("Reverse geocode failed: %s", exc)
     return result
@@ -152,6 +155,67 @@ def _metro_badge(station_name: str) -> str:
     return f"{clean} Metro" if clean else "Transit"
 
 
+# ── Virginia WMATA station → line corridor mapping ─────────────────────────
+# Key is a lowercase substring that should match the resolved Google Places
+# transit_station displayName. Value is the corridor label used on the cover.
+_VA_METRO_CORRIDORS = {
+    # Silver Line (VA segment)
+    "ashburn": "Silver Line Corridor",
+    "loudoun gateway": "Silver Line Corridor",
+    "dulles": "Silver Line Corridor",
+    "innovation center": "Silver Line Corridor",
+    "herndon": "Silver Line Corridor",
+    "reston town center": "Silver Line Corridor",
+    "wiehle": "Silver Line Corridor",
+    "spring hill": "Silver Line Corridor",
+    "greensboro": "Silver Line Corridor",
+    "tysons": "Silver Line Corridor",
+    "mclean": "Silver Line Corridor",
+    # Orange Line (VA segment)
+    "vienna": "Orange Line Corridor",
+    "fairfax-gmu": "Orange Line Corridor",
+    "dunn loring": "Orange Line Corridor",
+    "west falls church": "Orange Line Corridor",
+    "east falls church": "Orange Line Corridor",
+    "ballston": "Orange / Silver Line Corridor",
+    "virginia square": "Orange / Silver Line Corridor",
+    "clarendon": "Orange / Silver Line Corridor",
+    "court house": "Orange / Silver Line Corridor",
+    # Blue Line (VA segment)
+    "franconia": "Blue Line Corridor",
+    "springfield": "Blue Line Corridor",
+    "van dorn": "Blue Line Corridor",
+    "king st": "Blue / Yellow Line Corridor",
+    "king street": "Blue / Yellow Line Corridor",
+    "braddock": "Blue / Yellow Line Corridor",
+    "eisenhower": "Yellow Line Corridor",
+    "huntington": "Yellow Line Corridor",
+    # Rosslyn–Pentagon stretch (Blue/Orange/Silver overlap on VA side)
+    "rosslyn": "Blue / Orange / Silver Line Corridor",
+    "arlington cemetery": "Blue Line Corridor",
+    "pentagon city": "Blue / Yellow Line Corridor",
+    "pentagon": "Blue / Yellow Line Corridor",
+    "crystal city": "Blue / Yellow Line Corridor",
+    "ronald reagan": "Blue / Yellow Line Corridor",
+    "potomac yard": "Blue / Yellow Line Corridor",
+}
+
+
+def _transit_corridor(station_name: str) -> str:
+    """Return the WMATA line corridor label for a resolved station name.
+
+    Empty string when the station is not in the VA WMATA dict (e.g. out-of-region
+    properties or non-rail transit stations returned by Google Places).
+    """
+    if not station_name:
+        return ""
+    name_lower = station_name.lower()
+    for key, corridor in _VA_METRO_CORRIDORS.items():
+        if key in name_lower:
+            return corridor
+    return ""
+
+
 # ── Public API ──────────────────────────────────────────────────────────────
 
 def build_property_context(
@@ -182,13 +246,17 @@ def build_property_context(
     except Exception:
         pass
 
-    # Reverse-geocode for city and ZIP
+    # Reverse-geocode for city, ZIP, and state
     city = ""
     zip_code = ""
+    state = ""
+    state_abbr = ""
     if api_key:
         geo = _reverse_geocode(lat, lon, api_key)
         city = geo["city"]
         zip_code = geo["zip"]
+        state = geo["state"]
+        state_abbr = geo["state_abbr"]
 
     if not city:
         # Fallback: attempt to parse city from the address string
@@ -255,6 +323,9 @@ def build_property_context(
                     dist = _haversine_miles(lat, lon, ulat, ulon)
                     university_distance = f"{dist:.1f} mi"
 
+    # Transit corridor derived from resolved metro station name
+    transit_corridor = _transit_corridor(metro_station_name)
+
     # Report date
     report_date = datetime.now().strftime("%B %Y")
 
@@ -266,11 +337,12 @@ def build_property_context(
         "property_address": street,
         "property_address_short": street_short,
         "property_city": city or "See broker",
-        "property_state": "Virginia",
-        "property_state_abbr": "VA",
-        "property_zip": zip_code or "—",
+        "property_state": state or "\u2014",
+        "property_state_abbr": state_abbr or "\u2014",
+        "property_zip": zip_code or "\u2014",
         "property_county": property_county,
-        "submarket_name": submarket_name,
+        "submarket_name": submarket_name,  # TODO: broker input
+        "transit_corridor": transit_corridor,
         "metro_station_name": metro_station_name,
         "metro_badge_text": metro_badge_text,
         "metro_distance": metro_distance,
@@ -279,4 +351,8 @@ def build_property_context(
         "university_name_short": university_name_short,
         "university_distance": university_distance,
         "report_date": report_date,
+        # Owned by property_context.py — source of truth for downstream builders
+        "employer_map_center_lat": lat,
+        "employer_map_center_lon": lon,
+        "employers_county": county,
     }

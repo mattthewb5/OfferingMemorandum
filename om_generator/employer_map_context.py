@@ -111,11 +111,10 @@ def _build_static_map_url(
 
 
 def _graceful_default(lat: float, lon: float) -> dict:
+    # employer_map_center_lat/lon are owned by property_context.py.
     return {
         "employer_map_markers": [],
         "employer_map_markers_json": "[]",
-        "employer_map_center_lat": lat,
-        "employer_map_center_lon": lon,
         "employer_map_zoom": 11,
         "employer_map_static_url": None,
     }
@@ -135,7 +134,8 @@ def build_employer_map_context(
 
     Returns:
         Dict with employer_map_markers, employer_map_markers_json,
-        employer_map_center_lat/lon, employer_map_zoom, employer_map_static_url.
+        employer_map_zoom, employer_map_static_url.
+        (employer_map_center_lat/lon are owned by property_context.py.)
     """
     try:
         if not employers:
@@ -187,11 +187,10 @@ def build_employer_map_context(
             if valid_markers else None
         )
 
+        # employer_map_center_lat/lon are owned by property_context.py.
         return {
             "employer_map_markers": markers,
             "employer_map_markers_json": json.dumps(markers),
-            "employer_map_center_lat": lat,
-            "employer_map_center_lon": lon,
             "employer_map_zoom": 11,
             "employer_map_static_url": static_map_url,
         }

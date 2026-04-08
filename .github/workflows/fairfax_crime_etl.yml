@@ -69,40 +69,31 @@ jobs:
             echo "total_records=0" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check for changes
-        id: check_changes
-        run: |
-          git add -N multi-county-real-estate-research/data/fairfax/crime/
-          if git diff --quiet multi-county-real-estate-research/data/fairfax/crime/; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Commit and push if changed
-        if: steps.check_changes.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_COUNT: ${{ steps.etl_summary.outputs.new_records }}
+          TOTAL_COUNT: ${{ steps.etl_summary.outputs.total_records }}
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
+
           git add multi-county-real-estate-research/data/fairfax/crime/processed/
           git add multi-county-real-estate-research/data/fairfax/crime/raw/geocoded/
 
-          NEW=${{ steps.etl_summary.outputs.new_records }}
-          TOTAL=${{ steps.etl_summary.outputs.total_records }}
-          if [ "$NEW" -gt 0 ] 2>/dev/null; then
-            git commit -m "Crime data update: $NEW new incidents (total: $TOTAL)"
-          else
-            git commit -m "Crime data: geocoding/metadata refresh (total unchanged at $TOTAL)"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
           fi
 
-          # Pull with rebase to handle any concurrent pushes, then push with retry
-          for attempt in 1 2 3; do
+          git commit -m "Crime data update: ${NEW_COUNT} new incidents (total: ${TOTAL_COUNT})"
+
+          for i in 1 2 3; do
             git pull --rebase origin main && git push origin main && break
-            echo "Push attempt $attempt failed, retrying in $((attempt * 2)) seconds..."
-            sleep $((attempt * 2))
+            echo "Push attempt $i failed, retrying in ${i}s..."
+            git rebase --abort 2>/dev/null || true
+            sleep $i
           done
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Report status
         if: always()
@@ -123,5 +114,4 @@ jobs:
             echo "No metadata file found - check if ETL completed"
           fi
           echo ""
-          echo "=== Data Changed: ${{ steps.check_changes.outputs.changed }} ==="
           echo "=== New Records: ${{ steps.etl_summary.outputs.new_records }} ==="

@@ -156,7 +156,7 @@ def main():
 
     # ── Photo strip (Street View) ────────────────────────────────────
     from photo_strip_context import build_photo_strip_context
-    photo_ctx = build_photo_strip_context(lat, lon)
+    photo_ctx = build_photo_strip_context(address, lat, lon)
     ctx.update(photo_ctx)
     has_photos = sum(1 for u in photo_ctx['photo_urls'] if u)
     print(f"  Photo strip wired: {has_photos}/4 headings with Street View coverage")

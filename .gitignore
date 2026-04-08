@@ -35,3 +35,8 @@ om_generator/loudoun_test_output.html
 # Data (keep structure, ignore large downloads)
 # Uncomment these if you don't want to commit data files
 # data/performance/*.csv
+
+# Broker-uploaded property photos (keep scaffold, ignore broker drops)
+om_generator/data/property_photos/*
+!om_generator/data/property_photos/.gitkeep
+!om_generator/data/property_photos/README.md

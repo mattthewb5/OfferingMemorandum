@@ -109,12 +109,18 @@ def _reverse_geocode(lat: float, lon: float, api_key: str) -> dict:
 
 
 def _nearest_place(
-    lat: float, lon: float, place_type: str, api_key: str, radius_m: int = 8047
+    lat: float,
+    lon: float,
+    place_type: str,
+    api_key: str,
+    radius_m: int = 8047,
+    rank_preference: str = "POPULARITY",
 ) -> dict | None:
     """Find the nearest *place_type* via Google Places Nearby Search.
 
-    *radius_m* defaults to ~5 miles (8047 m).  Returns the first result dict
-    or ``None`` on failure / no results.
+    *radius_m* defaults to ~5 miles (8047 m).  *rank_preference* is
+    ``"POPULARITY"`` (default) or ``"DISTANCE"``.  Returns the first result
+    dict or ``None`` on failure / no results.
     """
     try:
         url = "https://places.googleapis.com/v1/places:searchNearby"
@@ -125,6 +131,7 @@ def _nearest_place(
         body = {
             "includedTypes": [place_type],
             "maxResultCount": 1,
+            "rankPreference": rank_preference,
             "locationRestriction": {
                 "circle": {
                     "center": {"latitude": lat, "longitude": lon},
@@ -209,9 +216,11 @@ def _transit_corridor(station_name: str) -> str:
     """
     if not station_name:
         return ""
-    name_lower = station_name.lower()
+    normalized = station_name.lower()
+    normalized = normalized.replace("\u2019", "").replace("'", "").replace(".", "")
+    normalized = " ".join(normalized.split())
     for key, corridor in _VA_METRO_CORRIDORS.items():
-        if key in name_lower:
+        if key in normalized:
             return corridor
     return ""
 
@@ -288,7 +297,14 @@ def build_property_context(
     mlon = None
 
     if api_key:
-        metro = _nearest_place(lat, lon, "transit_station", api_key, radius_m=8047)
+        metro = _nearest_place(
+            lat,
+            lon,
+            "subway_station",
+            api_key,
+            radius_m=16093,
+            rank_preference="DISTANCE",
+        )
         if metro:
             name = metro.get("displayName", {}).get("text", "")
             if name:
@@ -312,10 +328,15 @@ def build_property_context(
         if uni:
             name = uni.get("displayName", {}).get("text", "")
             if name:
-                # Shorten: drop "University" / "College" prefix words if present
-                university_name_short = re.sub(
-                    r"\s*(University|College)\s*$", "", name, flags=re.IGNORECASE
-                ).strip() or name
+                # Shorten: first strip " - <suffix>" (e.g. "- Loudoun Campus"),
+                # then drop a trailing "University" / "College" word.
+                short = name
+                if " - " in short:
+                    short = short[:short.index(" - ")]
+                short = re.sub(
+                    r"\s*(University|College)\s*$", "", short, flags=re.IGNORECASE
+                ).strip()
+                university_name_short = short or name
                 loc = uni.get("location", {})
                 ulat = loc.get("latitude")
                 ulon = loc.get("longitude")

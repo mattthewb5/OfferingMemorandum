@@ -89,12 +89,7 @@ jobs:
 
           git commit -m "Crime data update: ${NEW_COUNT} new incidents (total: ${TOTAL_COUNT})"
 
-          for i in 1 2 3; do
-            git pull --rebase --autostash origin main && git push origin main && break
-            echo "Push attempt $i failed, retrying in ${i}s..."
-            git rebase --abort 2>/dev/null || true
-            sleep $i
-          done
+          git push origin main
 
       - name: Parse notification values
         id: parse_notify
@@ -126,26 +121,25 @@ jobs:
           WEBHOOK: ${{ secrets.ZAPIER_CRIME_ETL_WEBHOOK }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          PAYLOAD=$(jq -nc \
-            --arg status "success" \
-            --arg report_date "${TODAY:-}" \
-            --arg new_records "${NEW_COUNT:-0}" \
-            --arg total_records "${TOTAL_COUNT:-0}" \
-            --arg min_date "${MIN_DATE:-}" \
-            --arg max_date "${MAX_DATE:-}" \
-            --arg pct_geocoded "${PCT_GEOCODED:-0}" \
-            --arg run_url "${RUN_URL:-}" \
-            '{
-              status: $status,
-              date: $report_date,
-              new_records: ($new_records | tonumber? // 0),
-              total_records: ($total_records | tonumber? // 0),
-              min_date: $min_date,
-              max_date: $max_date,
-              pct_geocoded: ($pct_geocoded | tonumber? // 0),
-              run_url: $run_url
-            }')
-          curl -s -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+          python3 - << 'EOF'
+          import json, os, subprocess
+          payload = {
+              "status": "success",
+              "date": os.environ.get("TODAY", ""),
+              "new_records": int(os.environ.get("NEW_COUNT", 0) or 0),
+              "total_records": int(os.environ.get("TOTAL_COUNT", 0) or 0),
+              "min_date": os.environ.get("MIN_DATE", ""),
+              "max_date": os.environ.get("MAX_DATE", ""),
+              "pct_geocoded": float(os.environ.get("PCT_GEOCODED", 0) or 0),
+              "run_url": os.environ.get("RUN_URL", "")
+          }
+          subprocess.run([
+              "curl", "-s", "-X", "POST",
+              "-H", "Content-Type: application/json",
+              "-d", json.dumps(payload),
+              os.environ["WEBHOOK"]
+          ])
+          EOF
 
       - name: Notify Zapier - failure
         if: failure()
@@ -153,17 +147,21 @@ jobs:
           WEBHOOK: ${{ secrets.ZAPIER_CRIME_ETL_WEBHOOK }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          REPORT_DATE="$(date -u +%Y-%m-%d)"
-          PAYLOAD=$(jq -nc \
-            --arg status "failed" \
-            --arg report_date "$REPORT_DATE" \
-            --arg run_url "${RUN_URL:-}" \
-            '{
-              status: $status,
-              date: $report_date,
-              run_url: $run_url
-            }')
-          curl -s -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+          python3 - << 'EOF'
+          import json, os, subprocess
+          from datetime import datetime, timezone
+          payload = {
+              "status": "failed",
+              "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+              "run_url": os.environ.get("RUN_URL", "")
+          }
+          subprocess.run([
+              "curl", "-s", "-X", "POST",
+              "-H", "Content-Type: application/json",
+              "-d", json.dumps(payload),
+              os.environ["WEBHOOK"]
+          ])
+          EOF
 
       - name: Report status
         if: always()

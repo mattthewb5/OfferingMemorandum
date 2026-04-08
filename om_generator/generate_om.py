@@ -242,6 +242,19 @@ def main():
           f"planning_pts={zoning_ctx.get('planning_pts', 0)} | "
           f"comp_plan={zoning_ctx.get('comp_plan_designation', 'N/A')}")
 
+    # ── Comparable sales ─────────────────────────────────────────────
+    from comps_context import build_comps_context
+    comps_ctx = build_comps_context(
+        address=address,
+        lat=lat,
+        lon=lon,
+        county=county,
+        submarket_name=ctx.get("submarket_name", ""),
+    )
+    ctx.update(comps_ctx)
+    print(f"  Comps wired: {len(comps_ctx['comps'])} comps, "
+          f"tier={comps_ctx.get('_tier', 'empty')}")
+
     # ── Live development data ─────────────────────────────────────────
     from development_context import build_development_context
     dev_ctx = build_development_context(lat, lon, county, zoning_ctx=zoning_ctx)

@@ -22,7 +22,13 @@ from rapidfuzz import fuzz, process
 # Data paths
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR.parent / "data" / "fairfax" / "traffic" / "processed"
-TRAFFIC_DATA_PATH = DATA_DIR / "traffic_volumes.parquet"
+# Statewide VDOT parquet replaces the legacy bbox-clipped traffic_volumes.parquet.
+# Loaded lazily and spatially filtered to Fairfax County at load time.
+STATEWIDE_TRAFFIC_PATH = SCRIPT_DIR.parent / "data" / "shared" / "traffic" / "vdot_statewide_traffic.parquet"
+TRAFFIC_DATA_PATH = STATEWIDE_TRAFFIC_PATH
+
+# Fairfax County bounding box for fast prefilter (lat, lon)
+_FAIRFAX_BBOX = (38.58, 39.08, -77.55, -76.85)
 
 
 class FairfaxTrafficAnalysis:
@@ -60,11 +66,43 @@ class FairfaxTrafficAnalysis:
         return self._traffic
 
     def _load_data(self) -> gpd.GeoDataFrame:
-        """Load traffic volume data from parquet."""
+        """Load statewide VDOT traffic volume data, filtered to Fairfax County."""
         if not self.data_path.exists():
             raise FileNotFoundError(f"Traffic data not found at {self.data_path}")
 
         gdf = gpd.read_parquet(self.data_path)
+
+        # Precise filter: segments whose county_fips includes Fairfax (51059 -> '059')
+        gdf = gdf[gdf.geometry.notna()].copy()
+        if 'county_fips' in gdf.columns:
+            gdf = gdf[gdf['county_fips'].fillna('').str.contains(r'\b059\b', regex=True)].copy()
+        else:
+            # Fallback bbox (less precise)
+            lat_min, lat_max, lon_min, lon_max = _FAIRFAX_BBOX
+            bounds = gdf.geometry.bounds
+            mask = (
+                (bounds['maxy'] >= lat_min) & (bounds['miny'] <= lat_max) &
+                (bounds['maxx'] >= lon_min) & (bounds['minx'] <= lon_max)
+            )
+            gdf = gdf.loc[mask].copy()
+
+        # Derive centroid lat/lon for legacy distance calculations
+        centroids = gdf.geometry.centroid
+        gdf['latitude'] = centroids.y
+        gdf['longitude'] = centroids.x
+
+        # Normalize column names to legacy schema expected by this module
+        rename = {
+            'ADT': 'adt',
+            'ADT_QUALITY': 'data_quality',
+            'ROUTE_COMMON_NAME': 'road_name',
+            'ROUTE_NAME': 'route_name',
+            'DATA_DATE': 'data_date',
+        }
+        gdf = gdf.rename(columns={k: v for k, v in rename.items() if k in gdf.columns})
+        # Provide street_name alias for downstream code
+        if 'street_name' not in gdf.columns and 'road_name' in gdf.columns:
+            gdf['street_name'] = gdf['road_name']
         return gdf
 
     @staticmethod

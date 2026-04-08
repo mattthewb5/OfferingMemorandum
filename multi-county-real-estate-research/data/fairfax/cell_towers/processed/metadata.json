@@ -1,0 +1,10 @@
+{
+  "source": "FCC ULS Antenna Structure Registration (a_tower.zip)",
+  "source_url": "https://data.fcc.gov/download/pub/uls/complete/a_tower.zip",
+  "source_vintage": "2026-04-05",
+  "last_updated": "2026-04-07T21:15:28.641627",
+  "filter": "Status=A (Active); spatial point-in-polygon vs Census TIGER 2024 county boundary",
+  "field_offsets_note": "RA.dat corrected column offsets: height_meters=[28], overall_height_ft=[29], structure_type=[32], city=[24], state=[25], zip=[26]",
+  "county": "Fairfax (FIPS 51059)",
+  "total_towers": 1451
+}

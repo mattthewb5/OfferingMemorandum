@@ -1,0 +1,9 @@
+{
+  "source": "VDOT Traffic Volume ADT (ArcGIS FeatureServer layer 0)",
+  "source_url": "https://services.arcgis.com/p5v98VHDX9Atv3l7/arcgis/rest/services/VDOTTrafficVolume/FeatureServer/0",
+  "last_fetched": "2026-04-07T20:59:25.056635",
+  "total_segments": 121679,
+  "data_date_max": "2022-12-29 05:00:00",
+  "scope": "Statewide Virginia \u2014 replaces bbox-clipped county extracts",
+  "crs": "EPSG:4326"
+}

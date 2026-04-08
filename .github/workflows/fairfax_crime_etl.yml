@@ -69,40 +69,87 @@ jobs:
             echo "total_records=0" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check for changes
-        id: check_changes
-        run: |
-          git add -N multi-county-real-estate-research/data/fairfax/crime/
-          if git diff --quiet multi-county-real-estate-research/data/fairfax/crime/; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Commit and push if changed
-        if: steps.check_changes.outputs.changed == 'true'
+        id: commit_push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_COUNT: ${{ steps.etl_summary.outputs.new_records }}
+          TOTAL_COUNT: ${{ steps.etl_summary.outputs.total_records }}
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
+
           git add multi-county-real-estate-research/data/fairfax/crime/processed/
           git add multi-county-real-estate-research/data/fairfax/crime/raw/geocoded/
 
-          NEW=${{ steps.etl_summary.outputs.new_records }}
-          TOTAL=${{ steps.etl_summary.outputs.total_records }}
-          if [ "$NEW" -gt 0 ] 2>/dev/null; then
-            git commit -m "Crime data update: $NEW new incidents (total: $TOTAL)"
-          else
-            git commit -m "Crime data: geocoding/metadata refresh (total unchanged at $TOTAL)"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
           fi
 
-          # Pull with rebase to handle any concurrent pushes, then push with retry
-          for attempt in 1 2 3; do
+          git commit -m "Crime data update: ${NEW_COUNT} new incidents (total: ${TOTAL_COUNT})"
+
+          for i in 1 2 3; do
             git pull --rebase origin main && git push origin main && break
-            echo "Push attempt $attempt failed, retrying in $((attempt * 2)) seconds..."
-            sleep $((attempt * 2))
+            echo "Push attempt $i failed, retrying in ${i}s..."
+            git rebase --abort 2>/dev/null || true
+            sleep $i
           done
+
+      - name: Parse notification values
+        id: parse_notify
+        if: always()
+        run: |
+          SUMMARY="multi-county-real-estate-research/data/fairfax/crime/processed/etl_run_summary.json"
+          METADATA="multi-county-real-estate-research/data/fairfax/crime/processed/metadata.json"
+          if [ -f "$SUMMARY" ]; then
+            echo "NEW_COUNT=$(jq -r '.new_records // 0' "$SUMMARY")" >> "$GITHUB_ENV"
+            echo "TOTAL_COUNT=$(jq -r '.total_records // 0' "$SUMMARY")" >> "$GITHUB_ENV"
+          else
+            echo "NEW_COUNT=0" >> "$GITHUB_ENV"
+            echo "TOTAL_COUNT=0" >> "$GITHUB_ENV"
+          fi
+          if [ -f "$METADATA" ]; then
+            echo "MIN_DATE=$(jq -r '.date_range.min // ""' "$METADATA")" >> "$GITHUB_ENV"
+            echo "MAX_DATE=$(jq -r '.date_range.max // ""' "$METADATA")" >> "$GITHUB_ENV"
+            echo "PCT_GEOCODED=$(jq -r '.geocoding.pct_geocoded // 0' "$METADATA")" >> "$GITHUB_ENV"
+          else
+            echo "MIN_DATE=" >> "$GITHUB_ENV"
+            echo "MAX_DATE=" >> "$GITHUB_ENV"
+            echo "PCT_GEOCODED=0" >> "$GITHUB_ENV"
+          fi
+          echo "TODAY=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+
+      - name: Notify Zapier - success
+        if: steps.commit_push.outcome == 'success' && steps.etl_summary.outputs.new_records != '0' && steps.etl_summary.outputs.new_records != ''
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBHOOK: ${{ secrets.ZAPIER_CRIME_ETL_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg status "success" \
+            --arg date "$TODAY" \
+            --argjson new_records "$NEW_COUNT" \
+            --argjson total_records "$TOTAL_COUNT" \
+            --arg min_date "$MIN_DATE" \
+            --arg max_date "$MAX_DATE" \
+            --argjson pct_geocoded "$PCT_GEOCODED" \
+            --arg run_url "$RUN_URL" \
+            '{status: $status, date: $date, new_records: $new_records, total_records: $total_records, min_date: $min_date, max_date: $max_date, pct_geocoded: $pct_geocoded, run_url: $run_url}')
+          curl -s -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
+
+      - name: Notify Zapier - failure
+        if: failure()
+        env:
+          WEBHOOK: ${{ secrets.ZAPIER_CRIME_ETL_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg status "failed" \
+            --arg date "$(date -u +%Y-%m-%d)" \
+            --arg run_url "$RUN_URL" \
+            '{status: $status, date: $date, run_url: $run_url}')
+          curl -s -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
       - name: Report status
         if: always()
@@ -123,5 +170,4 @@ jobs:
             echo "No metadata file found - check if ETL completed"
           fi
           echo ""
-          echo "=== Data Changed: ${{ steps.check_changes.outputs.changed }} ==="
           echo "=== New Records: ${{ steps.etl_summary.outputs.new_records }} ==="

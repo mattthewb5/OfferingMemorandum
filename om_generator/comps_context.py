@@ -199,9 +199,22 @@ def _build_county_rows(sales: list[dict], county: str) -> list[dict]:
             "sale_date": _format_sale_date(sale.get("sale_date")),
             "source": source_label,
         })
-        if len(rows) >= 5:
-            break
-    return rows
+
+    # Deduplicate by (name, sale_price, sale_date). The upstream county
+    # sales join multiplies multi-parcel deed transfers across every
+    # matching PARID in the address_points table, so a single $28.9M
+    # 4-parcel sale shows up as four identical rows. Keep the first
+    # occurrence and drop the duplicates.
+    seen: set[tuple[str, str, str]] = set()
+    deduped: list[dict] = []
+    for row in rows:
+        key = (row["name"], row["sale_price"], row["sale_date"])
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(row)
+
+    return deduped[:5]
 
 
 def build_comps_context(

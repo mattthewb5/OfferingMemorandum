@@ -49,17 +49,9 @@
 
         <h4 style="margin-bottom:10px;">Investment Highlights</h4>
 
-        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[0] }}</div></div>
-
-        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[1] }}</div></div>
-
-        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[2] }}</div></div>
-
-        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[3] }}</div></div>
-
-        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[4] }}</div></div>
-
-        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ investment_highlights[5] }}</div></div>
+        {% for hl in investment_highlights %}
+        <div class="hl-bullet"><div class="hl-marker"></div><div class="hl-text">{{ hl }}</div></div>
+        {% endfor %}
       </div>
 
       <div class="vdiv"></div>

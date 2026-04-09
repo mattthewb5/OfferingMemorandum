@@ -111,6 +111,27 @@ def _lookup_university(name: str) -> dict | None:
     return None
 
 
+def _university_display_name(name: str) -> str:
+    """Restore the trailing 'College' word for community-college names.
+
+    property_context.py's university_name_short strips trailing
+    'University' / 'College' words, which is fine for research universities
+    ("George Mason University" → "George Mason") but reads awkwardly in
+    inline prose for community colleges ("Northern Virginia Community
+    College" → "Northern Virginia Community" → "Northern Virginia
+    Community campus"). For type=community matches, append " College"
+    back when the short name doesn't already end with it. For research
+    universities and fallback strings, pass through unchanged.
+    """
+    if not name:
+        return ""
+    uni_data = _lookup_university(name)
+    if uni_data and uni_data.get("type") == "community":
+        if not name.strip().lower().endswith("college"):
+            return f"{name} College"
+    return name
+
+
 def _school_by_level(schools: list[dict], level: str) -> dict | None:
     """Find a school dict by its 'level' field. Returns None if missing."""
     if not schools:
@@ -165,13 +186,14 @@ def _bullet_university(ctx: dict) -> str:
         )
     if uni_data and not too_far and uni_data["type"] == "community":
         enrollment = uni_data["enrollment"]
+        display_name = _university_display_name(name)
         return (
-            f"<strong>{name} College \u2014 Education Anchor:</strong> {name} "
-            f"campus at {distance_str} serves {enrollment} students through "
-            f"workforce training, transfer programs, and continuing education. "
-            f"Community college proximity drives sustained workforce-housing "
-            f"demand from faculty, staff, and adult learners across multiple "
-            f"economic cycles."
+            f"<strong>{display_name} \u2014 Education Anchor:</strong> "
+            f"{display_name} campus at {distance_str} serves {enrollment} "
+            f"students through workforce training, transfer programs, and "
+            f"continuing education. Community college proximity drives "
+            f"sustained workforce-housing demand from faculty, staff, and "
+            f"adult learners across multiple economic cycles."
         )
 
     return (
@@ -213,13 +235,14 @@ def _bullet_supply(ctx: dict) -> str:
     county = ctx.get("property_county") or "the county"
     headline = _supply_headline(permits)
 
+    permit_word = "permit" if permits == 1 else "permits"
     return (
         f"<strong>{headline}:</strong> "
         f"Development Pressure Score of {score}/100 ({label}). {zoning} "
         f"zoning with Comprehensive Plan designation unchanged. {permits} "
-        f"new multifamily permits within 2-mile radius in trailing 24 months. "
-        f"{county}\u2019s development review process makes competitive supply "
-        f"additions a 5\u20137 year horizon at minimum."
+        f"new multifamily {permit_word} within 2-mile radius in trailing 24 "
+        f"months. {county}\u2019s development review process makes competitive "
+        f"supply additions a 5\u20137 year horizon at minimum."
     )
 
 
@@ -306,7 +329,9 @@ def _bullet_employment(ctx: dict, county: str) -> str:
     school_district = emp_data["school_district"]
     tech_corridor = emp_data["tech_corridor"]
     fed_employment = emp_data["fed_employment"]
-    university_name = ctx.get("university_name_short") or "regional universities"
+    university_name = _university_display_name(
+        ctx.get("university_name_short") or "regional universities"
+    )
 
     median_income = ctx.get("demo", {}).get("median_income", "N/A")
     income_multiplier = ctx.get("demo", {}).get("income_multiplier", "N/A")

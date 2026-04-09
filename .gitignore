@@ -40,3 +40,11 @@ om_generator/loudoun_test_output.html
 om_generator/data/property_photos/*
 !om_generator/data/property_photos/.gitkeep
 !om_generator/data/property_photos/README.md
+
+# Runtime employer geocode cache (regenerable, mutates on every OM run)
+om_generator/data/employer_geocache.json
+
+# Broker comps CSV drop directory (runtime data, not source)
+om_generator/data/comps/*
+!om_generator/data/comps/.gitkeep
+!om_generator/data/comps/README.md

@@ -151,12 +151,19 @@ def main():
           f"metro={prop_ctx['metro_station_name']} ({prop_ctx['metro_distance']}) | "
           f"uni={prop_ctx['university_name_short']} ({prop_ctx['university_distance']})")
 
+    # ── County-aware data sources sidebar ───────────────────────────────
+    from data_sources_context import build_data_sources_context
+    data_sources_ctx = build_data_sources_context(county)
+    ctx.update(data_sources_ctx)
+    print(f"  Data sources wired: {len(data_sources_ctx['data_sources'])} entries "
+          f"(county={county})")
+
     # Inject logo base64
     ctx['wo_logo_base64'] = extract_logo_base64(V3_PATH)
 
     # ── Photo strip (Street View) ────────────────────────────────────
     from photo_strip_context import build_photo_strip_context
-    photo_ctx = build_photo_strip_context(lat, lon)
+    photo_ctx = build_photo_strip_context(address, lat, lon)
     ctx.update(photo_ctx)
     has_photos = sum(1 for u in photo_ctx['photo_urls'] if u)
     print(f"  Photo strip wired: {has_photos}/4 headings with Street View coverage")
@@ -242,6 +249,19 @@ def main():
           f"planning_pts={zoning_ctx.get('planning_pts', 0)} | "
           f"comp_plan={zoning_ctx.get('comp_plan_designation', 'N/A')}")
 
+    # ── Comparable sales ─────────────────────────────────────────────
+    from comps_context import build_comps_context
+    comps_ctx = build_comps_context(
+        address=address,
+        lat=lat,
+        lon=lon,
+        county=county,
+        submarket_name=ctx.get("submarket_name", ""),
+    )
+    ctx.update(comps_ctx)
+    print(f"  Comps wired: {len(comps_ctx['comps'])} comps, "
+          f"tier={comps_ctx.get('_tier', 'empty')}")
+
     # ── Live development data ─────────────────────────────────────────
     from development_context import build_development_context
     dev_ctx = build_development_context(lat, lon, county, zoning_ctx=zoning_ctx)
@@ -307,31 +327,13 @@ def main():
             sl['badge_class'] = dev_badge_cls
             break
 
-    # Flatten schools for investment highlights interpolation
-    if ctx.get('schools') and len(ctx['schools']) >= 3:
-        ctx['hl_elem_name']   = ctx['schools'][0]['name']
-        ctx['hl_elem_sol']    = ctx['schools'][0]['sol_pass']
-        ctx['hl_middle_name'] = ctx['schools'][1]['name']
-        ctx['hl_middle_sol']  = ctx['schools'][1]['sol_pass']
-        ctx['hl_high_name']   = ctx['schools'][2]['name']
-        ctx['hl_high_sol']    = ctx['schools'][2]['sol_pass']
-    else:
-        ctx['hl_elem_name']   = 'Elementary School'
-        ctx['hl_elem_sol']    = 'N/A'
-        ctx['hl_middle_name'] = 'Middle School'
-        ctx['hl_middle_sol']  = 'N/A'
-        ctx['hl_high_name']   = 'High School'
-        ctx['hl_high_sol']    = 'N/A'
-
-    # Flatten demographics for investment highlights interpolation
-    ctx['hl_median_income']     = ctx.get('demo', {}).get('median_income', 'N/A')
-    ctx['hl_income_multiplier'] = ctx.get('demo', {}).get('income_multiplier', 'N/A')
-
-    # Interpolate live data into investment_highlights placeholders
-    ctx['investment_highlights'] = [
-        h.format_map(ctx) if '{' in h else h
-        for h in ctx['investment_highlights']
-    ]
+    # ── Investment highlights ─────────────────────────────────────────
+    # Must run last — reads from every other builder's output to assemble
+    # county-aware, property-specific bullets for the executive summary.
+    from investment_highlights_context import build_investment_highlights_context
+    highlights_ctx = build_investment_highlights_context(county, ctx)
+    ctx.update(highlights_ctx)
+    print(f"  Highlights wired: {len(highlights_ctx['investment_highlights'])} bullets")
 
     # Convert unicode characters to HTML entities to match v3 output
     ctx = _encode_entities(ctx)

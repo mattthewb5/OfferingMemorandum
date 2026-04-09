@@ -147,18 +147,6 @@ def get_sample_context():
         ],
 
         # ============================================================
-        # INVESTMENT HIGHLIGHTS (raw HTML)
-        # ============================================================
-        "investment_highlights": [
-            '<strong>Vienna Metro Access \u2014 Institutional Rent Premium:</strong> Vienna/Fairfax-GMU Metro station 1.3 miles from property. Silver Line access to Tysons Corner, Reston, Arlington, and Union Station. NoVA research consistently documents 10\u201320% rent premium for walkable Metro proximity, directly supporting above-market rent capture on unit turnover.',
-            '<strong>George Mason University Demand Engine:</strong> GMU at 0.9 miles enrolls 39,000+ students with 7,500+ employees. Graduate student and faculty housing demand provides recession-resistant occupancy floor. University enrollment has grown consistently regardless of broader economic cycles.',
-            '<strong>Supply-Constrained Location \u2014 Zero Competing Pipeline:</strong> Development Pressure Score of {dev_pressure_score}/100 ({dev_pressure_label}). PDH/PRC zoning with Comprehensive Plan designation unchanged. {new_mf_permits_count} new multifamily permits within 2-mile radius in trailing 24 months. {property_county}\u2019s development review process makes competitive supply additions a 5\u20137 year horizon at minimum.',
-            '<strong>Top-Tier School District \u2014 Family Tenant Retention:</strong> Served by {hl_high_name} ({hl_high_sol} SOL), {hl_middle_name} ({hl_middle_sol}), and {hl_elem_name} ({hl_elem_sol}) \u2014 all consistently above Virginia SOL state averages. School quality is the #1 stated retention driver for family renters in {property_county} surveys.',
-            '<strong>Inova Fairfax Hospital \u2014 Healthcare Anchor (3.3 mi):</strong> One of the region\u2019s premier healthcare facilities drives consistent demand from medical professionals and health system employees. Inova Health System employment has grown +206% since 2009 (to 26,000+ employees), creating sustained multifamily demand within the care radius.',
-            '<strong>Deep, Diversified Employment \u2014 Recession-Resistant Demand:</strong> 3-mile median household income of {hl_median_income} ({hl_income_multiplier}\u00d7 national median). Federal government (28,126 county employees), FCPS, George Mason University, and the Tysons/Merrifield technology corridor provide multi-sector employment insulation unavailable in single-industry markets.',
-        ],
-
-        # ============================================================
         # STOPLIGHT SCORES
         # ============================================================
         "stoplight_scores": [
@@ -406,24 +394,6 @@ def get_sample_context():
             {"count": "5", "label": "Parks / Trails", "nearest_name": "Daniels Run Park", "nearest_dist": "0.5 mi", "nearest_walk": "10 min"},
             {"count": "11", "label": "Coffee Shops", "nearest_name": "Starbucks", "nearest_dist": "0.2 mi", "nearest_walk": "4 min"},
             {"count": "22", "label": "Retail Shops", "nearest_name": "CVS Pharmacy", "nearest_dist": "0.3 mi", "nearest_walk": "5 min"},
-        ],
-
-        # ============================================================
-        # DATA SOURCES
-        # ============================================================
-        "data_sources": [
-            {"icon": "\u2713", "name": "Census ACS 5-Year API", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "VDOT Traffic Volume API", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Virginia DOE SOL Data", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "CMS Hospital Ratings", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Fairfax Co. Permit DB (41K+)", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Google Places API", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Fairfax Co. GIS / Zoning", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Fairfax Co. Crime Database", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "EIA Forms 861 + 176 (Utilities)", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Fairfax Water Authority", "color": "var(--slate-light)"},
-            {"icon": "\u2299", "name": "RentCast (mkt rents \u00b7 on activation)", "color": "var(--wo-blue)"},
-            {"icon": "\u2299", "name": "Virginia RETR (CRE comps \u00b7 pending)", "color": "var(--wo-blue)"},
         ],
 
         # ============================================================

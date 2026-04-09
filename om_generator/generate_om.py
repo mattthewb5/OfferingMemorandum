@@ -151,6 +151,13 @@ def main():
           f"metro={prop_ctx['metro_station_name']} ({prop_ctx['metro_distance']}) | "
           f"uni={prop_ctx['university_name_short']} ({prop_ctx['university_distance']})")
 
+    # ── County-aware data sources sidebar ───────────────────────────────
+    from data_sources_context import build_data_sources_context
+    data_sources_ctx = build_data_sources_context(county)
+    ctx.update(data_sources_ctx)
+    print(f"  Data sources wired: {len(data_sources_ctx['data_sources'])} entries "
+          f"(county={county})")
+
     # Inject logo base64
     ctx['wo_logo_base64'] = extract_logo_base64(V3_PATH)
 

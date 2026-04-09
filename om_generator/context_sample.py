@@ -409,24 +409,6 @@ def get_sample_context():
         ],
 
         # ============================================================
-        # DATA SOURCES
-        # ============================================================
-        "data_sources": [
-            {"icon": "\u2713", "name": "Census ACS 5-Year API", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "VDOT Traffic Volume API", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Virginia DOE SOL Data", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "CMS Hospital Ratings", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Fairfax Co. Permit DB (41K+)", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Google Places API", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Fairfax Co. GIS / Zoning", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Fairfax Co. Crime Database", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "EIA Forms 861 + 176 (Utilities)", "color": "var(--slate-light)"},
-            {"icon": "\u2713", "name": "Fairfax Water Authority", "color": "var(--slate-light)"},
-            {"icon": "\u2299", "name": "RentCast (mkt rents \u00b7 on activation)", "color": "var(--wo-blue)"},
-            {"icon": "\u2299", "name": "Virginia RETR (CRE comps \u00b7 pending)", "color": "var(--wo-blue)"},
-        ],
-
-        # ============================================================
         # DRIVE TIMES
         # ============================================================
         "drive_times": [

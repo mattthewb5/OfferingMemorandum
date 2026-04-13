@@ -44,17 +44,14 @@ def fmt_dollar_medium(n: float) -> str:
 def fmt_pct(n: float, decimals: int = 2) -> str:
     """Format as percentage. Multiplies by 100 if n < 1.
 
-    Examples: 0.0502 → "5.02%", 0.035 → "3.5%", 0.091 → "9.1%"
+    Examples: 0.0502 → "5.02%", 0.035 → "3.50%", 0.091 → "9.10%"
     """
     if abs(n) < 1:
         pct = n * 100
     else:
         pct = n
 
-    # Format with requested decimals, then strip trailing zeros
     formatted = f"{pct:.{decimals}f}"
-    if '.' in formatted:
-        formatted = formatted.rstrip('0').rstrip('.')
     return f"{formatted}%"
 
 

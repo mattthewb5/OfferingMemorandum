@@ -327,6 +327,18 @@ def main():
             sl['badge_class'] = dev_badge_cls
             break
 
+    # ── Financial engine ────────────────────────────────────────────────
+    from financial_context import build_financial_context
+    financial_ctx = build_financial_context(address, lat, lon, county, ctx)
+    ctx.update(financial_ctx)
+    if financial_ctx:
+        print(f"  Financials wired: type={financial_ctx.get('property_type', 'N/A')}, "
+              f"cap={financial_ctx.get('t12_cap_rate', 'N/A')}, "
+              f"CoC={financial_ctx.get('cash_on_cash', 'N/A')}, "
+              f"IRR={financial_ctx.get('irr', 'N/A')}")
+    else:
+        print("  Financials: using seed defaults (engine returned empty)")
+
     # ── Investment highlights ─────────────────────────────────────────
     # Must run last — reads from every other builder's output to assemble
     # county-aware, property-specific bullets for the executive summary.

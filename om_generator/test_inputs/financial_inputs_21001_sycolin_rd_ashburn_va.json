@@ -1,0 +1,44 @@
+{
+  "property_type": "multifamily",
+  "asking_price": 85000000,
+  "total_units": 220,
+  "unit_mix": [
+    {
+      "type": "1 BR / 1 BA",
+      "count": 80,
+      "avg_sf": 695,
+      "in_place_rent": 1950
+    },
+    {
+      "type": "2 BR / 2 BA",
+      "count": 100,
+      "avg_sf": 985,
+      "in_place_rent": 2480
+    },
+    {
+      "type": "3 BR / 2 BA",
+      "count": 40,
+      "avg_sf": 1290,
+      "in_place_rent": 3350
+    }
+  ],
+  "t12": {
+    "gpr": 6180000,
+    "vacancy_pct": 0.04,
+    "credit_loss_pct": 0.005,
+    "real_estate_taxes": 425000,
+    "insurance": 137500,
+    "repairs": 231000,
+    "mgmt_pct": 0.05,
+    "utilities": 193000,
+    "admin": 95000
+  },
+  "financing": {
+    "ltv": 0.65,
+    "interest_rate": 0.0625,
+    "amortization": 30
+  },
+  "rent_growth_assumption": 0.035,
+  "exit_cap_spread": 0.0025,
+  "hold_period": 5
+}

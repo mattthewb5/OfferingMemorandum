@@ -10,6 +10,7 @@ Caching:
 - Cache location: cache/rentcast/
 """
 
+import re
 import requests
 from typing import Dict, Optional, Any
 from dataclasses import dataclass
@@ -322,6 +323,119 @@ class RentCastClient:
             value_data.rent_range_high = rent_data.rent_range_high
 
         return value_data
+
+    def get_market_rent_statistics(self, zipcode: str, bedrooms: int,
+                                       property_type: str = "Apartment") -> Optional[Dict]:
+        """
+        Get aggregate market rent statistics by zip code and bedroom count.
+
+        Args:
+            zipcode: ZIP code (e.g., "22031")
+            bedrooms: Number of bedrooms (0 for Studio)
+            property_type: Property type (default "Apartment")
+
+        Returns:
+            Dict with avg_rent, median_rent, min_rent, max_rent, sample_size
+            or None on error/empty response.
+        """
+        cache_key = f"market_rent_{zipcode}_{bedrooms}_{property_type.lower()}"
+
+        # Check cache first
+        cached = _get_cached_property_records(cache_key)
+        if cached:
+            return cached
+
+        try:
+            url = f"{self.BASE_URL}/market/rent/long-term"
+            params = {
+                'zipCode': zipcode,
+                'bedrooms': bedrooms,
+                'propertyType': property_type,
+            }
+
+            response = self.session.get(url, params=params)
+            response.raise_for_status()
+
+            data = response.json()
+
+            if not data:
+                return None
+
+            # RentCast market endpoint returns a list of listings —
+            # compute aggregate statistics from the results
+            if isinstance(data, list):
+                rents = [item.get('rent') for item in data if item.get('rent')]
+                if not rents:
+                    return None
+                result = {
+                    'avg_rent': int(sum(rents) / len(rents)),
+                    'median_rent': int(sorted(rents)[len(rents) // 2]),
+                    'min_rent': int(min(rents)),
+                    'max_rent': int(max(rents)),
+                    'sample_size': len(rents),
+                }
+            elif isinstance(data, dict):
+                # Single aggregate response format
+                result = {
+                    'avg_rent': int(data.get('averageRent') or data.get('rent') or 0),
+                    'median_rent': int(data.get('medianRent') or data.get('rent') or 0),
+                    'min_rent': int(data.get('minRent') or 0),
+                    'max_rent': int(data.get('maxRent') or 0),
+                    'sample_size': int(data.get('sampleSize') or data.get('count') or 1),
+                }
+            else:
+                return None
+
+            if result['avg_rent'] == 0:
+                return None
+
+            # Cache the result
+            _save_property_records_to_cache(cache_key, result)
+            return result
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching market rent statistics: {e}")
+            if hasattr(e, 'response') and hasattr(e.response, 'text'):
+                print(f"Response: {e.response.text}")
+            return None
+
+    def get_market_rent_for_unit_mix(self, zipcode: str,
+                                      unit_mix_inputs: list) -> Dict[int, int]:
+        """
+        Convenience wrapper: fetch market rent for each unique bedroom count
+        in a unit mix list.
+
+        Args:
+            zipcode: ZIP code (e.g., "22031")
+            unit_mix_inputs: List of unit dicts, each with a 'type' label
+                             like "1 BR / 1 BA", "Studio", etc.
+
+        Returns:
+            Dict keyed by bedroom count (int): {1: 2340, 2: 2950, 3: 3800}
+            Returns empty dict on any failure.
+        """
+        try:
+            # Extract unique bedroom counts from unit type labels
+            bedroom_counts = set()
+            for unit in unit_mix_inputs:
+                unit_type = unit.get('type', '')
+                if unit_type.lower().startswith('studio'):
+                    bedroom_counts.add(0)
+                else:
+                    match = re.search(r'(\d+)\s*BR', unit_type, re.IGNORECASE)
+                    if match:
+                        bedroom_counts.add(int(match.group(1)))
+
+            result = {}
+            for br in bedroom_counts:
+                stats = self.get_market_rent_statistics(zipcode, br)
+                if stats and stats.get('avg_rent'):
+                    result[br] = stats['avg_rent']
+
+            return result
+        except Exception as e:
+            print(f"Error fetching market rents for unit mix: {e}")
+            return {}
 
     def format_estimate_report(self, estimate: RentEstimate) -> str:
         """Format an estimate report for display."""

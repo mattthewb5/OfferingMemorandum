@@ -8,6 +8,7 @@
     <div class="sec-title">{{ footer_section_names[2] }}</div>
     <div class="gold-rule"></div>
 
+    {% if property_type == 'multifamily' or property_type is not defined %}
     <!-- Unit Mix Table — v3: full spec data -->
     <h4 style="margin-bottom:7px;">Unit Mix &amp; In-Place Rents</h4>
     <table class="dtable" style="margin-bottom:5px;">
@@ -32,6 +33,36 @@
       </tfoot>
     </table>
     <div style="font-size:7.5px;color:var(--slate-light);font-style:italic;margin-bottom:16px;">Full {{ total_units }}-unit rent roll available upon execution of confidentiality agreement. Market rent data sourced via RentCast API for ZIP {{ property_zip }}.</div>
+    {% endif %}
+
+    {% if property_type in ['office', 'retail', 'industrial'] %}
+    <h4 style="margin-bottom:7px;">Tenant Rent Roll</h4>
+    <table class="dtable" style="margin-bottom:5px;">
+      <thead>
+        <tr>
+          <th>Tenant</th>
+          <th class="r">SF</th>
+          <th class="r">Rent / SF</th>
+          <th class="r">Annual Rent</th>
+          <th class="r">Lease Expiry</th>
+          <th class="r">Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tenant in rent_roll %}
+        <tr>
+          <td class="strong">{{ tenant.name }}</td>
+          <td class="r">{{ tenant.sf_display }}</td>
+          <td class="r">{{ tenant.rent_psf_display }}</td>
+          <td class="r">{{ tenant.annual_rent_display }}</td>
+          <td class="r">{{ tenant.lease_expiry }}</td>
+          <td class="r">{{ tenant.lease_type }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p style="font-size:7.5px;color:var(--slate-light);font-style:italic;margin-bottom:16px;">WALT: {{ walt_display }} &nbsp;|&nbsp; Avg Rent: {{ avg_rent_psf_display }}</p>
+    {% endif %}
 
     <!-- Income/Expense two column + Utility benchmark -->
     <div style="display:flex;gap:14px;margin-bottom:14px;">
@@ -137,7 +168,9 @@
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Price / Unit</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ price_per_unit_display }}</span></div>
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">T-12 Cap Rate</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ t12_cap_rate }}</span></div>
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Pro Forma Cap Rate</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ proforma_cap_rate }}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="font-size:8px;color:var(--slate);">OpEx Ratio</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ opex_ratio }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">OpEx Ratio</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ opex_ratio }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Cash-on-Cash (YR1)</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ cash_on_cash }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="font-size:8px;color:var(--slate);">IRR ({{ hold_period }}yr)</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ irr }}</span></div>
         </div>
       </div>
     </div>

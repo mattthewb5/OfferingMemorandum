@@ -1,0 +1,28 @@
+{
+  "property_type": "office",
+  "asking_price": 25000000,
+  "total_sf": 85000,
+  "rent_roll": [
+    {
+      "tenant": "Acme Corp",
+      "sf": 12000,
+      "annual_rent_psf": 42.5,
+      "lease_expiry": "2028-06",
+      "lease_type": "NNN"
+    },
+    {
+      "tenant": "Beta LLC",
+      "sf": 28000,
+      "annual_rent_psf": 38.0,
+      "lease_expiry": "2029-12",
+      "lease_type": "NNN"
+    }
+  ],
+  "vacancy_sf": 8500,
+  "operating_expenses": 380000,
+  "financing": {
+    "ltv": 0.65,
+    "interest_rate": 0.0625,
+    "amortization": 30
+  }
+}

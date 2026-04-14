@@ -665,9 +665,174 @@ def _step_3():
                 st.rerun()
 
 
+# ══════════════════════════════════════════════════════════════════════
+# STEP 4 — Files & Photos
+# ══════════════════════════════════════════════════════════════════════
+
+_COMPS_TEMPLATE_CSV = (
+    "name,units,sale_price,price_per_unit,cap_rate,sale_date,source\n"
+)
+
+
 def _step_4():
     _show_progress()
-    st.info("Step 4 — Files & Photos (coming next)")
+
+    slug = make_slug(st.session_state.address)
+
+    st.caption(
+        "*All uploads are optional. The OM will generate using available "
+        "public data where files are not provided. Uploading your own data "
+        "always produces a stronger document.*"
+    )
+
+    # ── Section A — Property Photos ─────────────────────────────────
+    st.markdown("#### Property Photos")
+    st.caption("JPG, JPEG, or PNG  |  Up to 10 files  |  Max 10 MB each")
+    photos = st.file_uploader(
+        "Property Photos",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=True,
+        key="s4_photos",
+        label_visibility="collapsed",
+    )
+    if photos:
+        saved_paths = []
+        photo_dir = str(_OM_DIR / "data" / "property_photos" / slug)
+        ensure_dir(photo_dir)
+        cols = st.columns(min(len(photos), 5))
+        for i, photo in enumerate(photos[:10]):
+            if photo.size > 10 * 1024 * 1024:
+                st.error(f"{photo.name} exceeds 10 MB limit — skipped.")
+                continue
+            ext = Path(photo.name).suffix.lower() or ".jpg"
+            save_path = str(
+                Path(photo_dir) / f"{i:02d}{ext}"
+            )
+            write_file(save_path, photo.getvalue())
+            saved_paths.append(save_path)
+            with cols[i % len(cols)]:
+                st.image(photo, width=120)
+        st.session_state.uploaded_photos = saved_paths
+        if len(photos) > 10:
+            st.warning("Only the first 10 photos were saved.")
+    st.caption("*Photos appear in the hero strip. First photo is the hero image.*")
+
+    # ── Section B — Comparable Sales ────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### Comparable Sales CSV")
+    st.caption("Optional — overrides automated deed record comps")
+
+    st.download_button(
+        "Download template",
+        data=_COMPS_TEMPLATE_CSV,
+        file_name="comps_template.csv",
+        mime="text/csv",
+        key="s4_comps_template",
+    )
+
+    comps_file = st.file_uploader(
+        "Comparable Sales CSV",
+        type=["csv"],
+        key="s4_comps",
+        label_visibility="collapsed",
+    )
+    if comps_file is not None:
+        try:
+            comps_df = pd.read_csv(comps_file)
+            required_cols = {
+                "name", "units", "sale_price", "price_per_unit",
+                "cap_rate", "sale_date", "source",
+            }
+            actual_cols = {c.strip().lower() for c in comps_df.columns}
+            missing = required_cols - actual_cols
+            if missing:
+                st.error(
+                    f"Missing required columns: {', '.join(sorted(missing))}. "
+                    f"Required: {', '.join(sorted(required_cols))}"
+                )
+            else:
+                save_path = str(_OM_DIR / "data" / "comps" / f"{slug}.csv")
+                write_file(save_path, comps_file.getvalue())
+                st.session_state.uploaded_comps = save_path
+                st.success(f"{len(comps_df)} comparable sales loaded.")
+        except Exception as e:
+            st.error(f"Could not parse CSV: {e}")
+
+    # ── Section C — Rent Roll ───────────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### Rent Roll")
+    st.caption("CSV or Excel export from your property management system")
+
+    rr_file = st.file_uploader(
+        "Rent Roll",
+        type=["csv", "xlsx", "xls"],
+        key="s4_rent_roll",
+        label_visibility="collapsed",
+    )
+    if rr_file is not None:
+        ext = Path(rr_file.name).suffix.lower()
+        rr_dir = str(_OM_DIR / "data" / "rent_rolls" / slug)
+        ensure_dir(rr_dir)
+        rr_path = str(Path(rr_dir) / f"rent_roll{ext}")
+        write_file(rr_path, rr_file.getvalue())
+        st.session_state.uploaded_rent_roll = rr_path
+        # Count rows for confirmation
+        try:
+            if ext in (".xlsx", ".xls"):
+                row_count = len(pd.read_excel(rr_path))
+            else:
+                row_count = len(pd.read_csv(rr_path))
+            st.success(f"rent_roll{ext} uploaded ({row_count} rows detected).")
+        except Exception:
+            st.success(f"rent_roll{ext} uploaded.")
+        st.warning(
+            "Rent roll uploaded — you'll review the parsed data in "
+            "Step 5 before generating."
+        )
+    elif st.session_state.uploaded_rent_roll:
+        st.info(
+            f"Rent roll already uploaded: "
+            f"{Path(st.session_state.uploaded_rent_roll).name}"
+        )
+    else:
+        st.caption(
+            "*No rent roll uploaded. The Financial Analysis section will "
+            "show market-rate estimates. Upload a rent roll for actual "
+            "in-place rent data.*"
+        )
+
+    # ── Section D — T-12 Operating Statement ────────────────────────
+    st.markdown("---")
+    st.markdown("#### T-12 Operating Statement")
+    st.caption("CSV or Excel  |  Line-item format preferred")
+
+    t12_file = st.file_uploader(
+        "T-12 Operating Statement",
+        type=["csv", "xlsx", "xls"],
+        key="s4_t12",
+        label_visibility="collapsed",
+    )
+    if t12_file is not None:
+        ext = Path(t12_file.name).suffix.lower()
+        t12_dir = str(_OM_DIR / "data" / "t12" / slug)
+        ensure_dir(t12_dir)
+        t12_path = str(Path(t12_dir) / f"t12{ext}")
+        write_file(t12_path, t12_file.getvalue())
+        st.session_state.uploaded_t12 = t12_path
+        st.success(f"t12{ext} uploaded.")
+    elif st.session_state.uploaded_t12:
+        st.info(
+            f"T-12 already uploaded: "
+            f"{Path(st.session_state.uploaded_t12).name}"
+        )
+    else:
+        st.caption(
+            "*No T-12 uploaded. You'll enter operating figures manually "
+            "in Step 5.*"
+        )
+
+    # ── Navigation ──────────────────────────────────────────────────
+    st.markdown("---")
     col_b, col_c, _ = st.columns([1, 1, 3])
     with col_b:
         if st.button("Back"):
@@ -675,6 +840,7 @@ def _step_4():
             st.rerun()
     with col_c:
         if st.button("Continue", type="primary"):
+            _auto_save()
             st.session_state.wizard_step = 5
             st.rerun()
 

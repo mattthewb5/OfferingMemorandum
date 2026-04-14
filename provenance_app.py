@@ -139,6 +139,7 @@ DEFAULTS = {
     "rent_roll_parsed": None,
     "section_overrides": {},
     "generation_result": None,
+    "om_pdf_bytes": None,
     "auto_save_path": None,
 }
 
@@ -1900,6 +1901,7 @@ def _step_6():
                     status.update(label="Generation complete!", state="complete")
 
                 st.session_state.om_output_path = output_path
+                st.session_state.om_pdf_bytes = result.get("pdf_bytes")
                 st.session_state.generating = False
                 st.rerun()
 
@@ -1931,13 +1933,21 @@ def _step_6_success():
         key="download_om",
     )
 
-    st.caption(
-        "Open in any browser for full formatting. "
-        "Print to PDF from your browser for distribution."
-    )
+    pdf_bytes = st.session_state.get("om_pdf_bytes")
+    if pdf_bytes:
+        st.download_button(
+            label="Download OM (.pdf)",
+            data=pdf_bytes,
+            file_name=f"{slug}_om.pdf",
+            mime="application/pdf",
+            key="download_om_pdf",
+        )
+    else:
+        st.warning("PDF generation failed — download HTML version above.")
 
     if st.button("Generate New OM"):
         st.session_state.om_output_path = None
+        st.session_state.om_pdf_bytes = None
         st.rerun()
 
 

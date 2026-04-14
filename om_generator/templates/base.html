@@ -185,6 +185,19 @@
   .value-add-box { background: rgba(42,82,160,0.05); border: 1px solid rgba(42,82,160,0.2); padding: 12px 14px; margin-bottom: 14px; }
 
 </style>
+<style>
+  /* ── Print / PDF rules ─────────────────────────────────────────── */
+  @page { size: letter portrait; margin: 0; }
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; margin: 0; page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+    .page-footer { position: relative; bottom: auto; }
+    .sec-title { page-break-after: avoid; }
+    .mapbox { page-break-inside: avoid; }
+    table, .dtable, .ftable, .crime-table { page-break-inside: avoid; }
+  }
+</style>
 </head>
 <body>
 

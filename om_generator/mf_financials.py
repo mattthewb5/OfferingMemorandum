@@ -83,6 +83,110 @@ def solve_irr(cash_flows: list, lo: float = 0.0, hi: float = 5.0,
     return (lo + hi) / 2
 
 
+def build_sensitivity_table(equity, pf_noi, hold_period,
+                            annual_debt_svc, asking_price,
+                            base_exit_cap, base_rent_growth):
+    """Build 3×3 IRR sensitivity grid varying exit cap and rent growth."""
+
+    exit_cap_offsets = [-0.0025, 0.0, 0.0025]
+    rent_growth_offsets = [-0.005, 0.0, 0.005]
+
+    rows = []
+    for ec_offset in exit_cap_offsets:
+        for rg_offset in rent_growth_offsets:
+            ec = base_exit_cap + ec_offset
+            rg = base_rent_growth + rg_offset
+
+            scenario_yr_nois = {}
+            for yr in range(1, hold_period + 1):
+                scenario_yr_nois[yr] = pf_noi * (1 + rg) ** (yr - 1)
+
+            exit_yr_noi = scenario_yr_nois[hold_period]
+            selling_cost = asking_price * 0.02
+            rev = (exit_yr_noi / ec - selling_cost) if ec > 0 else 0
+
+            cf_list = [-equity]
+            for yr in range(1, hold_period + 1):
+                cf = scenario_yr_nois[yr] - annual_debt_svc
+                if yr == hold_period:
+                    cf += rev
+                cf_list.append(cf)
+
+            scenario_irr = solve_irr(cf_list)
+
+            rows.append({
+                "exit_cap": fmt_pct(ec),
+                "rent_growth": fmt_pct(rg),
+                "irr": fmt_pct(scenario_irr) if scenario_irr is not None else "N/A",
+                "irr_raw": round(scenario_irr, 4) if scenario_irr is not None else None,
+            })
+    return rows
+
+
+def build_financing_scenarios(asking_price, noi, pf_noi, hold_period,
+                              t12_cap_rate_raw, default_rent_growth=0.035):
+    """Build All-Cash / Conventional / Agency financing scenario comparison."""
+
+    scenarios = [
+        ("All Cash",     0.0,  0.0,    0),
+        ("Conventional", 0.65, 0.0625, 30),
+        ("Agency",       0.75, 0.055,  30),
+    ]
+    exit_cap_spread = 0.0025
+    exit_cap = t12_cap_rate_raw + exit_cap_spread
+
+    results = []
+    for label, s_ltv, s_rate, s_amort in scenarios:
+        loan = asking_price * s_ltv
+        equity_s = asking_price - loan
+
+        if s_ltv == 0:
+            debt_svc = 0
+            dscr_s = None
+            coc = noi / asking_price if asking_price > 0 else 0
+            equity_denom = asking_price
+        else:
+            debt_svc = _monthly_payment(loan, s_rate, s_amort) * 12
+            dscr_s = noi / debt_svc if debt_svc > 0 else 0
+            coc = (noi - debt_svc) / equity_s if equity_s > 0 else 0
+            equity_denom = equity_s
+
+        # IRR + equity multiple
+        scenario_yr_nois = {}
+        for yr in range(1, hold_period + 1):
+            scenario_yr_nois[yr] = pf_noi * (1 + default_rent_growth) ** (yr - 1)
+
+        exit_yr_noi = scenario_yr_nois[hold_period]
+        selling_cost = asking_price * 0.02
+        rev = (exit_yr_noi / exit_cap - selling_cost) if exit_cap > 0 else 0
+
+        cf_list = [-equity_denom]
+        total_annual_cf = 0
+        for yr in range(1, hold_period + 1):
+            cf = scenario_yr_nois[yr] - debt_svc
+            total_annual_cf += cf
+            if yr == hold_period:
+                cf += rev
+            cf_list.append(cf)
+
+        scenario_irr = solve_irr(cf_list)
+        em = (total_annual_cf + rev) / equity_denom if equity_denom > 0 else 0
+
+        results.append({
+            "label": label,
+            "ltv": "All Cash" if s_ltv == 0 else fmt_pct(s_ltv),
+            "rate": "\u2014" if s_ltv == 0 else fmt_pct(s_rate),
+            "loan_amount": fmt_dollar(loan),
+            "equity_required": fmt_dollar(equity_denom),
+            "annual_debt_svc": "\u2014" if s_ltv == 0 else fmt_dollar(debt_svc),
+            "dscr": "N/A" if dscr_s is None else fmt_ratio(dscr_s),
+            "cash_on_cash": fmt_pct(coc),
+            "irr": fmt_pct(scenario_irr) if scenario_irr is not None else "N/A",
+            "equity_multiple": fmt_ratio(em),
+        })
+    return results
+
+
 # ============================================================================
 # MAIN ENGINE
 # ============================================================================
@@ -324,6 +428,18 @@ def compute_mf_financials(inputs: dict, defaults: dict,
     total_cf = sum(yr_cashflows_raw[yr] for yr in range(1, hold_period + 1))
     equity_multiple = (total_cf + reversion) / equity if equity > 0 else 0
 
+    # ── LAYER 8 — Sensitivity table + financing scenarios ──────────────
+    sensitivity_table = build_sensitivity_table(
+        equity, pf_noi, hold_period,
+        annual_debt_svc, asking_price,
+        base_exit_cap=exit_cap,
+        base_rent_growth=rent_growth,
+    )
+    financing_scenarios = build_financing_scenarios(
+        asking_price, noi, pf_noi, hold_period, t12_cap_rate,
+        default_rent_growth=rent_growth,
+    )
+
     # ── OUTPUT — build and return ctx_update dict ───────────────────────
     # All values are pre-formatted strings
 
@@ -459,6 +575,14 @@ def compute_mf_financials(inputs: dict, defaults: dict,
         "hold_period": str(hold_period),
         "equity_multiple": fmt_ratio(equity_multiple),
         "equity_multiple_raw": round(equity_multiple, 2),
+
+        # Sensitivity & scenario analysis
+        "sensitivity_table": sensitivity_table,
+        "sensitivity_exit_caps": [fmt_pct(exit_cap + o)
+                                  for o in [-0.0025, 0.0, 0.0025]],
+        "sensitivity_rent_growths": [fmt_pct(rent_growth + o)
+                                     for o in [-0.005, 0.0, 0.005]],
+        "financing_scenarios": financing_scenarios,
     }
 
     return ctx

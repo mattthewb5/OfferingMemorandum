@@ -11,7 +11,7 @@ from financial_formatter import (
     fmt_dollar, fmt_dollar_short, fmt_dollar_medium,
     fmt_pct, fmt_int, fmt_ratio,
 )
-from mf_financials import _monthly_payment, solve_irr
+from mf_financials import _monthly_payment, solve_irr, build_financing_scenarios
 
 
 def compute_commercial_financials(inputs: dict, defaults: dict,
@@ -147,6 +147,12 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
             "is_exit_year": yr == hold_period,
         })
 
+    # Financing scenarios
+    financing_scenarios = build_financing_scenarios(
+        asking_price, noi, pf_noi, hold_period, t12_cap_rate,
+        default_rent_growth=rent_growth,
+    )
+
     # ── Output dict ─────────────────────────────────────────────────────
     ctx = {
         "property_type": property_type,
@@ -171,6 +177,7 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
         "equity_multiple_raw": round(equity_multiple, 2),
         "dscr": fmt_ratio(dscr),
         "cashflow_years": cashflow_years,
+        "financing_scenarios": financing_scenarios,
         "financing": {
             "ltv": fmt_pct(ltv),
             "interest_rate": fmt_pct(rate),

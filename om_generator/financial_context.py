@@ -21,9 +21,15 @@ from commercial_financials import compute_commercial_financials
 
 
 def build_financial_context(address: str, lat: float, lon: float,
-                             county: str, ctx: dict) -> dict:
+                             county: str, ctx: dict,
+                             financial_inputs_path: str = None) -> dict:
     """
     Load inputs, fetch market rents, route to correct engine.
+
+    Args:
+        financial_inputs_path: Optional explicit path to a financial sidecar
+            JSON file. When provided, this file is loaded instead of the
+            default test_inputs/ search.
 
     Returns ctx_update dict ready for ctx.update().
     On any failure, returns {} so ctx.update({}) is a no-op and the
@@ -32,7 +38,8 @@ def build_financial_context(address: str, lat: float, lon: float,
     try:
         # 1. Load inputs
         defaults = get_defaults(county)
-        inputs = load_financial_inputs(address, county)
+        inputs = load_financial_inputs(address, county,
+                                       financial_inputs_path=financial_inputs_path)
         property_type = inputs.get("property_type", "multifamily")
 
         # 2. Fetch market rents (MF only)

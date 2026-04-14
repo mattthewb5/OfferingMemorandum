@@ -141,21 +141,27 @@
         </div>
 
         <div>
-          <h4 style="margin-bottom:7px;">5-Year Cash Flow Projection</h4>
+          <h4 style="margin-bottom:7px;">{{ hold_period }}-Year Cash Flow Projection</h4>
           <table style="width:100%;border-collapse:collapse;font-size:8px;font-family:var(--sans);">
             <thead>
               <tr style="background:var(--navy);">
-                <th style="padding:5px 7px;font-size:7px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);text-align:left;font-weight:600;">Metric</th>
-                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">YR1</th>
-                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">YR3</th>
-                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">YR5</th>
+                <th style="padding:5px 7px;font-size:7px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);text-align:left;font-weight:600;">Year</th>
+                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">EGI</th>
+                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">NOI</th>
+                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">Debt Svc</th>
+                <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">Cash Flow</th>
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom:1px solid var(--rule);"><td style="padding:5px 7px;color:var(--navy);">EGI</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr1_egi }}</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr3_egi }}</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr5_egi }}</td></tr>
-              <tr style="border-bottom:1px solid var(--rule);"><td style="padding:5px 7px;color:var(--navy);">NOI</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr1_noi }}</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr3_noi }}</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ cashflow.yr5_noi }}</td></tr>
-              <tr style="border-bottom:1px solid var(--rule);"><td style="padding:5px 7px;color:var(--navy);">Debt Svc</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">({{ cashflow.yr1_debt_svc }})</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">({{ cashflow.yr1_debt_svc }})</td><td style="padding:5px 7px;text-align:right;color:var(--slate);">({{ cashflow.yr1_debt_svc }})</td></tr>
-              <tr style="background:#f0ede8;"><td style="padding:5px 7px;font-weight:600;color:var(--navy);">Cash Flow</td><td style="padding:5px 7px;text-align:right;font-weight:600;color:var(--green);">{{ cashflow.yr1_cashflow }}</td><td style="padding:5px 7px;text-align:right;font-weight:600;color:var(--green);">{{ cashflow.yr3_cashflow }}</td><td style="padding:5px 7px;text-align:right;font-weight:600;color:var(--green);">{{ cashflow.yr5_cashflow }}</td></tr>
+              {% for yr in cashflow_years %}
+              <tr style="{% if yr.is_exit_year %}background:#f0ede8;{% else %}border-bottom:1px solid var(--rule);{% endif %}">
+                <td style="padding:5px 7px;{% if yr.is_exit_year %}font-weight:600;{% endif %}color:var(--navy);">Year {{ yr.year }}{% if yr.is_exit_year %} (Exit){% endif %}</td>
+                <td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ yr.egi }}</td>
+                <td style="padding:5px 7px;text-align:right;color:var(--slate);">{{ yr.noi }}</td>
+                <td style="padding:5px 7px;text-align:right;color:var(--slate);">({{ yr.debt_svc }})</td>
+                <td style="padding:5px 7px;text-align:right;{% if yr.is_exit_year %}font-weight:600;{% endif %}color:var(--green);">{{ yr.cashflow }}</td>
+              </tr>
+              {% endfor %}
             </tbody>
           </table>
           <div style="font-size:7px;color:var(--slate-light);font-style:italic;margin-top:4px;">Assumes {{ financing.ltv }} LTV financing at {{ financing.interest_rate }} interest, {{ financing.amortization }}-yr amortization. DSCR: {{ financing.dscr }}&times;. Pro Forma only.</div>
@@ -170,7 +176,8 @@
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Pro Forma Cap Rate</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ proforma_cap_rate }}</span></div>
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">OpEx Ratio</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ opex_ratio }}</span></div>
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Cash-on-Cash (YR1)</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ cash_on_cash }}</span></div>
-          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="font-size:8px;color:var(--slate);">IRR ({{ hold_period }}yr)</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ irr }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">IRR ({{ hold_period }}yr)</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ irr }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="font-size:8px;color:var(--slate);">Equity Multiple</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ equity_multiple }}</span></div>
         </div>
       </div>
     </div>
@@ -207,6 +214,62 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Sensitivity Table — IRR by Exit Cap & Rent Growth (MF only) -->
+    {% if sensitivity_table %}
+    <div style="margin-top:16px;">
+      <h4 style="margin-bottom:7px;">Return Sensitivity &#8212; IRR by Exit Cap &amp; Rent Growth</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:8px;font-family:var(--sans);">
+        <thead>
+          <tr style="background:var(--navy);">
+            <th style="padding:5px 7px;font-size:7px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);text-align:left;font-weight:600;">Exit Cap \ Rent Growth</th>
+            {% for rg in sensitivity_rent_growths %}
+            <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">{{ rg }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(3) %}
+          <tr style="border-bottom:1px solid var(--rule);">
+            <td style="padding:5px 7px;font-weight:600;color:var(--navy);">{{ sensitivity_exit_caps[i] }}</td>
+            {% for j in range(3) %}
+            <td style="padding:5px 7px;text-align:right;{% if i == 1 and j == 1 %}background:var(--navy);color:#fff;font-weight:600;{% else %}color:var(--slate);{% endif %}">{{ sensitivity_table[i * 3 + j].irr }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="font-size:7px;color:var(--slate-light);font-style:italic;margin-top:4px;">Highlighted cell reflects base-case assumptions. Sensitivity grid varies exit cap &#177;25 bps and rent growth &#177;50 bps.</div>
+    </div>
+    {% endif %}
+
+    <!-- Financing Scenarios -->
+    {% if financing_scenarios %}
+    <div style="margin-top:16px;">
+      <h4 style="margin-bottom:7px;">Financing Scenarios</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:8px;font-family:var(--sans);">
+        <thead>
+          <tr style="background:var(--navy);">
+            <th style="padding:5px 7px;font-size:7px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);text-align:left;font-weight:600;"></th>
+            {% for s in financing_scenarios %}
+            <th style="padding:5px 7px;font-size:7px;color:rgba(255,255,255,0.6);text-align:right;font-weight:600;">{{ s.label }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for metric_label, metric_key in [("Loan Amount", "loan_amount"), ("Equity Required", "equity_required"), ("Annual Debt Service", "annual_debt_svc"), ("DSCR", "dscr"), ("Cash-on-Cash", "cash_on_cash"), ("IRR", "irr"), ("Equity Multiple", "equity_multiple")] %}
+          <tr style="border-bottom:1px solid var(--rule);">
+            <td style="padding:5px 7px;color:var(--navy);font-weight:{% if metric_key == 'irr' %}600{% else %}400{% endif %};">{{ metric_label }}</td>
+            {% for s in financing_scenarios %}
+            <td style="padding:5px 7px;text-align:right;color:{% if metric_key == 'irr' %}var(--green){% else %}var(--slate){% endif %};{% if metric_key == 'irr' %}font-weight:600;{% endif %}">{{ s[metric_key] }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="font-size:7px;color:var(--slate-light);font-style:italic;margin-top:4px;">Conventional: 65% LTV, 6.25%, 30-yr amort. Agency: 75% LTV, 5.50%, 30-yr amort. All scenarios assume identical NOI projections.</div>
+    </div>
+    {% endif %}
 
   </div>
   <div class="page-footer">

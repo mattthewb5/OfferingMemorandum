@@ -10,6 +10,7 @@ Run:  python -m streamlit run provenance_app.py
 import json
 import re
 import sys
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -25,7 +26,7 @@ from om_generator.storage import (
     write_json, read_json, file_exists, ensure_dir, write_file, read_file,
     read_text,
 )
-from generate_om import geocode_address
+from generate_om import geocode_address, run_om_generation
 from utils.county_detector import detect_county
 
 
@@ -1762,11 +1763,181 @@ def _assemble_sidecar_json(fin: dict):
     fin["_sidecar_path"] = sidecar_path
 
 
+# ══════════════════════════════════════════════════════════════════════
+# STEP 6 — Review & Generate
+# ══════════════════════════════════════════════════════════════════════
+
+_SECTION_DEFAULTS = {
+    #                                MF    Office Retail Indust Land
+    "Executive Summary":            (True,  True,  True,  True,  True),
+    "Investment Highlights":        (True,  True,  True,  True,  True),
+    "Property Description":         (True,  True,  True,  True,  True),
+    "Location & Demographics":      (True,  True,  True,  True,  True),
+    "Financial Analysis":           (True,  True,  True,  True,  False),
+    "Rent Roll / Lease Summary":    (True,  True,  True,  True,  False),
+    "Sales Comparables":            (True,  True,  True,  True,  True),
+    "Development Activity":         (True,  True,  True,  True,  True),
+    "Zoning & Entitlements":        (False, False, False, False, True),
+}
+_PTYPE_INDEX = {
+    "multifamily": 0, "office": 1, "retail": 2, "industrial": 3, "land": 4,
+}
+
+
 def _step_6():
     _show_progress()
-    st.info("Step 6 — Review & Generate (coming next)")
+
+    slug = make_slug(st.session_state.address)
+    ptype = st.session_state.property_type
+    pd_details = st.session_state.property_details
+    br = st.session_state.branding
+
+    # ── PART 1 — Input Summary Card ─────────────────────────────────
+    st.subheader("Review Your Inputs")
+
+    col_l, col_r = st.columns(2)
+    with col_l:
+        st.markdown(f"**Address:** {st.session_state.address}")
+        st.markdown(f"**County:** {(st.session_state.county or '').title()}")
+        st.markdown(f"**Property Type:** {(ptype or '').title()}")
+        asking = pd_details.get("asking_price")
+        if pd_details.get("price_upon_request"):
+            st.markdown("**Asking Price:** Price Upon Request")
+        elif asking:
+            st.markdown(f"**Asking Price:** ${asking:,.0f}")
+        else:
+            st.markdown("**Asking Price:** —")
+    with col_r:
+        broker_name = br.get("broker_name", "—")
+        broker_firm = br.get("broker_firm", "—")
+        st.markdown(f"**Broker:** {broker_name}, {broker_firm}")
+        photo_count = len(st.session_state.get("uploaded_photos", []))
+        st.markdown(f"**Photos uploaded:** {photo_count}")
+        comps_path = st.session_state.get("uploaded_comps")
+        if comps_path and file_exists(comps_path):
+            try:
+                comps_count = len(pd.read_csv(comps_path))
+                st.markdown(f"**Comps loaded:** {comps_count} rows")
+            except Exception:
+                st.markdown("**Comps loaded:** Yes")
+        else:
+            st.markdown("**Comps loaded:** None")
+        rr_status = "Uploaded" if st.session_state.get("uploaded_rent_roll") else "Not uploaded"
+        st.markdown(f"**Rent roll:** {rr_status}")
+        t12_status = "Uploaded" if st.session_state.get("uploaded_t12") else "Not uploaded"
+        st.markdown(f"**T-12:** {t12_status}")
+
+    st.caption(
+        "Need to change something? Use the Back button or jump to any "
+        "step using the sidebar."
+    )
+
+    # ── PART 2 — Section Toggle Checklist ───────────────────────────
+    st.divider()
+    st.subheader("Select OM Sections")
+    st.info(
+        "Sections are pre-selected based on your property type. "
+        "Uncheck any section to exclude it from the OM."
+    )
+
+    ptype_idx = _PTYPE_INDEX.get(ptype, 0)
+
+    # Initialize defaults only on first entry
+    if "selected_sections" not in st.session_state:
+        st.session_state.selected_sections = {
+            name: defaults[ptype_idx]
+            for name, defaults in _SECTION_DEFAULTS.items()
+        }
+
+    selected = st.session_state.selected_sections
+    for section_name in _SECTION_DEFAULTS:
+        selected[section_name] = st.checkbox(
+            section_name,
+            value=selected.get(section_name, True),
+            key=f"sec_toggle_{section_name}",
+        )
+    st.session_state.selected_sections = selected
+
+    # ── PART 3 — Generate Button & Progress ─────────────────────────
+    st.divider()
+    st.subheader("Generate Offering Memorandum")
+
+    output_path = str(_OM_DIR / "output" / f"{slug}_om.html")
+    sidecar_path = str(
+        _OM_DIR / "data" / "financial_inputs" / f"{slug}.json"
+    )
+    fin_path = sidecar_path if file_exists(sidecar_path) else None
+
+    # If already generated, jump to Part 4
+    if st.session_state.get("om_output_path") and file_exists(
+        st.session_state["om_output_path"]
+    ):
+        _step_6_success()
+    else:
+        if st.button("Generate OM", type="primary"):
+            st.session_state.generating = True
+
+            progress_steps = [
+                "Gathering property data...",
+                "Building financial analysis...",
+                "Assembling comparable sales...",
+                "Compiling demographics & market context...",
+                "Rendering document...",
+            ]
+
+            try:
+                with st.status("Generating your OM...", expanded=True) as status:
+                    for step_msg in progress_steps:
+                        time.sleep(0.4)
+                        st.write(f"✓ {step_msg}")
+
+                    result = run_om_generation(
+                        address=st.session_state.address,
+                        output_path=output_path,
+                        financial_inputs_path=fin_path,
+                    )
+
+                    status.update(label="Generation complete!", state="complete")
+
+                st.session_state.om_output_path = output_path
+                st.session_state.generating = False
+                st.rerun()
+
+            except Exception as e:
+                st.session_state.generating = False
+                st.error("OM generation failed. See details below.")
+                st.exception(e)
+
+    # ── Navigation ──────────────────────────────────────────────────
+    st.markdown("---")
     if st.button("Back"):
         st.session_state.wizard_step = 5
+        st.rerun()
+
+
+def _step_6_success():
+    """Render the post-generation success state with download button."""
+    slug = make_slug(st.session_state.address)
+    output_path = st.session_state["om_output_path"]
+
+    st.success("Your Offering Memorandum is ready.")
+
+    html_bytes = read_file(output_path)
+    st.download_button(
+        label="Download OM (.html)",
+        data=html_bytes,
+        file_name=f"{slug}_om.html",
+        mime="text/html",
+        key="download_om",
+    )
+
+    st.caption(
+        "Open in any browser for full formatting. "
+        "Print to PDF from your browser for distribution."
+    )
+
+    if st.button("Generate New OM"):
+        st.session_state.om_output_path = None
         st.rerun()
 
 

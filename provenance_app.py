@@ -7,10 +7,12 @@ context dict, and invokes the OM generation pipeline.
 Run:  python -m streamlit run provenance_app.py
 """
 
+import json
 import re
 import sys
 from pathlib import Path
 
+import pandas as pd
 import streamlit as st
 
 # ── Path setup (match existing repo pattern) ─────────────────────────
@@ -20,7 +22,8 @@ sys.path.insert(0, str(_OM_DIR))
 sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
 
 from om_generator.storage import (
-    write_json, read_json, file_exists, ensure_dir, write_file,
+    write_json, read_json, file_exists, ensure_dir, write_file, read_file,
+    read_text,
 )
 from generate_om import geocode_address
 from utils.county_detector import detect_county
@@ -676,18 +679,398 @@ def _step_4():
             st.rerun()
 
 
+# ══════════════════════════════════════════════════════════════════════
+# STEP 5 — Financials
+# ══════════════════════════════════════════════════════════════════════
+
+_RENT_ROLL_PARSE_PROMPT = """
+You are parsing a property rent roll export. Extract each unit's data and return ONLY valid JSON, no other text.
+
+Required JSON structure:
+{
+  "units": [
+    {
+      "unit_number": "string or null",
+      "bedrooms": number or null,
+      "bathrooms": number or null,
+      "sq_ft": number or null,
+      "monthly_rent": number or null,
+      "lease_start": "YYYY-MM-DD or null",
+      "lease_end": "YYYY-MM-DD or null",
+      "status": "occupied | vacant | unknown"
+    }
+  ],
+  "summary": {
+    "total_units": number,
+    "occupied_units": number,
+    "vacant_units": number,
+    "avg_monthly_rent": number,
+    "parse_notes": "any ambiguities or flags"
+  }
+}
+
+If a field is absent or unclear, use null. Do not invent data.
+"""
+
+
+def _parse_rent_roll_with_claude(file_path: str) -> dict | None:
+    """Send rent roll file contents to Claude API for structured extraction.
+
+    Returns parsed dict on success, None on failure.
+    """
+    try:
+        from core.api_config import get_api_key
+        import anthropic
+
+        api_key = get_api_key("ANTHROPIC_API_KEY")
+        if not api_key:
+            return None
+
+        # Read file content — handle CSV and Excel
+        ext = Path(file_path).suffix.lower()
+        if ext in (".xlsx", ".xls"):
+            df = pd.read_excel(file_path)
+            file_text = df.to_csv(index=False)
+        else:
+            file_text = read_text(file_path)
+
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4096,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"{_RENT_ROLL_PARSE_PROMPT}\n\n"
+                    f"--- RENT ROLL DATA ---\n{file_text}"
+                ),
+            }],
+        )
+
+        raw = message.content[0].text.strip()
+        # Strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+        return json.loads(raw)
+
+    except Exception as e:
+        print(f"  Rent roll parse error: {e}")
+        return None
+
+
+def _build_unit_mix_from_parse(parsed: dict) -> list[dict]:
+    """Convert rent_roll_parsed units into unit mix rows grouped by bedroom count."""
+    from collections import defaultdict
+    groups = defaultdict(lambda: {"count": 0, "total_sf": 0, "total_rent": 0})
+    for u in parsed.get("units", []):
+        br = u.get("bedrooms")
+        if br is None:
+            br = -1
+        g = groups[br]
+        g["count"] += 1
+        g["total_sf"] += (u.get("sq_ft") or 0)
+        g["total_rent"] += (u.get("monthly_rent") or 0)
+
+    rows = []
+    for br in sorted(groups.keys()):
+        g = groups[br]
+        if g["count"] == 0:
+            continue
+        if br == 0:
+            label = "Studio"
+        elif br == -1:
+            label = "Unknown"
+        else:
+            label = f"{br} BR"
+        rows.append({
+            "Unit Type": label,
+            "Count": g["count"],
+            "Avg SF": int(g["total_sf"] / g["count"]) if g["count"] else 0,
+            "In-Place Rent ($/mo)": int(g["total_rent"] / g["count"]) if g["count"] else 0,
+        })
+    return rows if rows else [{"Unit Type": "", "Count": 0, "Avg SF": 0, "In-Place Rent ($/mo)": 0}]
+
+
 def _step_5():
     _show_progress()
-    st.info("Step 5 — Financials (coming next)")
+
+    ptype = st.session_state.property_type
+    is_mf = ptype == "multifamily"
+    is_commercial = ptype in ("office", "retail", "industrial")
+    is_land = ptype == "land"
+
+    fin = st.session_state.financials
+
+    # ── Step 5A — Rent Roll Parse & Confirmation ────────────────────
+    if st.session_state.uploaded_rent_roll and is_mf:
+        if st.session_state.rent_roll_parsed is None:
+            if "rent_roll_parse_failed" not in st.session_state:
+                st.session_state.rent_roll_parse_failed = False
+
+            if not st.session_state.rent_roll_parse_failed:
+                with st.spinner("Parsing rent roll with AI — this takes a few seconds..."):
+                    parsed = _parse_rent_roll_with_claude(
+                        st.session_state.uploaded_rent_roll
+                    )
+
+                if parsed and "units" in parsed:
+                    st.session_state.rent_roll_parsed = parsed
+                    st.rerun()
+                else:
+                    st.session_state.rent_roll_parse_failed = True
+                    st.rerun()
+
+            if st.session_state.rent_roll_parse_failed:
+                st.warning(
+                    "Couldn't parse rent roll automatically. "
+                    "You can enter figures manually below."
+                )
+                if st.button("Enter Manually", key="rr_enter_manual"):
+                    st.session_state.rent_roll_parse_failed = False
+                    st.session_state.uploaded_rent_roll = None
+
+        elif st.session_state.rent_roll_parsed is not None:
+            parsed = st.session_state.rent_roll_parsed
+            summary = parsed.get("summary", {})
+            total_u = summary.get("total_units", len(parsed.get("units", [])))
+            occ = summary.get("occupied_units", 0)
+            vac = summary.get("vacant_units", 0)
+            avg_rent = summary.get("avg_monthly_rent", 0)
+            occ_pct = (occ / total_u * 100) if total_u > 0 else 0
+            notes = summary.get("parse_notes", "")
+
+            st.markdown(
+                f"""<div class="success-card">
+<b>Rent Roll Parsed</b> <span class="check">&#10003;</span><br>
+<code style="font-size:0.9rem;">
+Total units:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{total_u}<br>
+Occupied:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{occ}&nbsp;&nbsp;&nbsp;({occ_pct:.1f}%)<br>
+Vacant:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{vac}<br>
+Avg monthly rent:&nbsp;${avg_rent:,.0f}
+</code><br>
+{f'<em>Parse notes: {notes}</em><br>' if notes else ''}
+<em>Does this look right?</em>
+</div>""",
+                unsafe_allow_html=True,
+            )
+            col_ok, col_rej, _ = st.columns([1, 1, 3])
+            with col_ok:
+                if st.button("Looks right — continue", key="rr_confirm"):
+                    pass  # parsed data stays; flows into unit mix below
+            with col_rej:
+                if st.button("Enter manually instead", key="rr_reject"):
+                    st.session_state.rent_roll_parsed = None
+                    st.rerun()
+
+    # ── Step 5B — Financial Input Forms (property-type-aware) ───────
+    if is_mf:
+        _step_5b_multifamily(fin)
+    elif is_commercial:
+        st.info(
+            f"Step 5B — {ptype.title()} financial forms (coming in next build)"
+        )
+    elif is_land:
+        st.info(
+            "No financial inputs required for Land listings. "
+            "Pro forma assumptions below are optional."
+        )
+
+    # ── Step 5C — Pro Forma & Financing (placeholder) ───────────────
+    if not is_land:
+        st.caption(
+            "*Step 5C — Pro Forma & Financing Assumptions will be added "
+            "in the next build.*"
+        )
+
+    # ── Navigation ──────────────────────────────────────────────────
+    st.markdown("---")
     col_b, col_c, _ = st.columns([1, 1, 3])
     with col_b:
         if st.button("Back"):
+            st.session_state.financials = fin
             st.session_state.wizard_step = 4
             st.rerun()
     with col_c:
         if st.button("Continue", type="primary"):
+            st.session_state.financials = fin
+            _auto_save()
             st.session_state.wizard_step = 6
             st.rerun()
+
+
+# ── Step 5B — Multifamily ───────────────────────────────────────────
+def _step_5b_multifamily(fin: dict):
+    """Render MF-specific financial input forms: unit mix + T-12 + live NOI."""
+
+    st.markdown("#### Unit Mix")
+
+    # Pre-populate from rent roll parse if available, else from saved state
+    if "unit_mix_df" not in st.session_state:
+        parsed = st.session_state.rent_roll_parsed
+        if parsed:
+            rows = _build_unit_mix_from_parse(parsed)
+        elif fin.get("unit_mix_rows"):
+            rows = fin["unit_mix_rows"]
+        else:
+            rows = [{"Unit Type": "", "Count": 0, "Avg SF": 0, "In-Place Rent ($/mo)": 0}]
+        st.session_state.unit_mix_df = pd.DataFrame(rows)
+
+    edited_mix = st.data_editor(
+        st.session_state.unit_mix_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="unit_mix_editor",
+        column_config={
+            "Unit Type": st.column_config.TextColumn("Unit Type", width="medium"),
+            "Count": st.column_config.NumberColumn("Count", min_value=0, step=1),
+            "Avg SF": st.column_config.NumberColumn("Avg SF", min_value=0, step=1),
+            "In-Place Rent ($/mo)": st.column_config.NumberColumn(
+                "In-Place Rent ($/mo)", min_value=0, step=50, format="$%d",
+            ),
+        },
+    )
+
+    # Persist edits back so they survive reruns
+    st.session_state.unit_mix_df = edited_mix
+    fin["unit_mix_rows"] = edited_mix.to_dict(orient="records")
+
+    # ── T-12 Income & Expenses ──────────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### T-12 Income & Expenses")
+
+    t12 = fin.get("t12", {})
+
+    # --- Income ---
+    st.markdown("**Income**")
+    t12["gpr"] = st.number_input(
+        "Gross Potential Rent ($/yr)",
+        min_value=0,
+        value=t12.get("gpr", None),
+        step=10000,
+        format="%d",
+        key="t12_gpr",
+        placeholder="e.g. 16428000",
+    )
+    t12["vacancy_pct"] = st.number_input(
+        "Vacancy Rate (%)",
+        min_value=0.0, max_value=100.0,
+        value=t12.get("vacancy_pct", None),
+        step=0.1,
+        format="%.1f",
+        key="t12_vacancy_pct",
+        placeholder="e.g. 4.5",
+    )
+    t12["credit_loss_pct"] = st.number_input(
+        "Credit / Bad Debt Rate (%)",
+        min_value=0.0, max_value=100.0,
+        value=t12.get("credit_loss_pct", None),
+        step=0.1,
+        format="%.1f",
+        key="t12_credit_loss_pct",
+        placeholder="e.g. 0.5",
+    )
+
+    # --- Expenses ---
+    st.markdown("**Expenses (annual $)**")
+    t12["real_estate_taxes"] = st.number_input(
+        "Real Estate Taxes",
+        min_value=0,
+        value=t12.get("real_estate_taxes", None),
+        step=10000,
+        format="%d",
+        key="t12_re_taxes",
+        placeholder="e.g. 1385000",
+    )
+    t12["insurance"] = st.number_input(
+        "Insurance",
+        min_value=0,
+        value=t12.get("insurance", None),
+        step=5000,
+        format="%d",
+        key="t12_insurance",
+        placeholder="e.g. 345000",
+    )
+    t12["repairs"] = st.number_input(
+        "Repairs & Maintenance",
+        min_value=0,
+        value=t12.get("repairs", None),
+        step=5000,
+        format="%d",
+        key="t12_repairs",
+        placeholder="e.g. 580000",
+    )
+    t12["mgmt_pct"] = st.number_input(
+        "Property Management (% of EGI)",
+        min_value=0.0, max_value=100.0,
+        value=t12.get("mgmt_pct", None),
+        step=0.5,
+        format="%.1f",
+        key="t12_mgmt_pct",
+        placeholder="e.g. 5.0",
+    )
+    t12["utilities"] = st.number_input(
+        "Utilities (Landlord-Paid)",
+        min_value=0,
+        value=t12.get("utilities", None),
+        step=5000,
+        format="%d",
+        key="t12_utilities",
+        placeholder="e.g. 485000",
+    )
+    t12["admin"] = st.number_input(
+        "Administrative",
+        min_value=0,
+        value=t12.get("admin", None),
+        step=5000,
+        format="%d",
+        key="t12_admin",
+        placeholder="e.g. 245000",
+    )
+    t12["reserves"] = st.number_input(
+        "Replacement Reserves",
+        min_value=0,
+        value=t12.get("reserves", None),
+        step=1000,
+        format="%d",
+        key="t12_reserves",
+    )
+
+    fin["t12"] = t12
+
+    # ── Live NOI Summary ────────────────────────────────────────────
+    gpr = t12.get("gpr") or 0
+    vac_pct = (t12.get("vacancy_pct") or 0) / 100.0
+    credit_pct = (t12.get("credit_loss_pct") or 0) / 100.0
+    vacancy_loss = gpr * vac_pct
+    credit_loss = gpr * credit_pct
+    egi = gpr - vacancy_loss - credit_loss
+
+    mgmt_pct_val = (t12.get("mgmt_pct") or 0) / 100.0
+    management = egi * mgmt_pct_val
+
+    re_taxes = t12.get("real_estate_taxes") or 0
+    insurance = t12.get("insurance") or 0
+    repairs = t12.get("repairs") or 0
+    utilities = t12.get("utilities") or 0
+    admin = t12.get("admin") or 0
+    reserves = t12.get("reserves") or 0
+
+    total_opex = re_taxes + insurance + repairs + management + utilities + admin + reserves
+    noi = egi - total_opex
+    opex_ratio = (total_opex / egi * 100) if egi > 0 else 0
+
+    if gpr > 0:
+        st.markdown("---")
+        st.markdown("**Live NOI Summary**")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.metric("Effective Gross Income", f"${egi:,.0f}")
+        with c2:
+            st.metric("Total Operating Expenses", f"(${total_opex:,.0f})",
+                       delta=f"OpEx Ratio: {opex_ratio:.1f}%", delta_color="off")
+        with c3:
+            st.metric("Net Operating Income", f"${noi:,.0f}")
 
 
 def _step_6():

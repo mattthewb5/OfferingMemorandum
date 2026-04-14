@@ -286,14 +286,14 @@ def compute_mf_financials(inputs: dict, defaults: dict,
         t12_utilities_per_unit, utility_benchmark_low, utility_benchmark_high
     )
 
-    # ── LAYER 7 — 5-year projections + IRR ─────────────────────────────
+    # ── LAYER 7 — N-year projections + IRR ─────────────────────────────
     hold_period = int(inputs.get("hold_period", defaults["hold_period"]))
     exit_cap_spread = float(
         inputs.get("exit_cap_spread", defaults["exit_cap_spread"])
     )
     exit_cap = t12_cap_rate + exit_cap_spread
 
-    # Compute NOI/EGI/cashflow for each year 1-5
+    # Compute NOI/EGI/cashflow for each year 1-N
     yr_nois = {}
     yr_egis = {}
     yr_cashflows_raw = {}
@@ -305,20 +305,24 @@ def compute_mf_financials(inputs: dict, defaults: dict,
         yr_egis[yr] = yr_egi
         yr_cashflows_raw[yr] = yr_cf
 
-    # Reversion at year 5
-    yr5_noi = yr_nois.get(hold_period, pf_noi)
+    # Reversion at exit year
+    exit_yr_noi = yr_nois.get(hold_period, pf_noi)
     selling_cost = asking_price * 0.02
-    reversion_yr5 = (yr5_noi / exit_cap - selling_cost) if exit_cap > 0 else 0
+    reversion = (exit_yr_noi / exit_cap - selling_cost) if exit_cap > 0 else 0
 
     # IRR cash flows
     cash_flows_irr = [-equity]
     for yr in range(1, hold_period + 1):
         cf = yr_cashflows_raw[yr]
         if yr == hold_period:
-            cf += reversion_yr5
+            cf += reversion
         cash_flows_irr.append(cf)
 
     irr = solve_irr(cash_flows_irr)
+
+    # Equity multiple
+    total_cf = sum(yr_cashflows_raw[yr] for yr in range(1, hold_period + 1))
+    equity_multiple = (total_cf + reversion) / equity if equity > 0 else 0
 
     # ── OUTPUT — build and return ctx_update dict ───────────────────────
     # All values are pre-formatted strings
@@ -376,21 +380,17 @@ def compute_mf_financials(inputs: dict, defaults: dict,
         "noi": fmt_dollar(pf_noi),
     }
 
-    # Cashflow dict (yr1, yr3, yr5)
-    cashflow_formatted = {
-        "yr1_egi": fmt_dollar_short(yr_egis.get(1, pf_egi)),
-        "yr3_egi": fmt_dollar_short(yr_egis.get(3, pf_egi)),
-        "yr5_egi": fmt_dollar_short(yr_egis.get(5, pf_egi)),
-        "yr1_noi": fmt_dollar_short(yr_nois.get(1, pf_noi)),
-        "yr3_noi": fmt_dollar_short(yr_nois.get(3, pf_noi)),
-        "yr5_noi": fmt_dollar_short(yr_nois.get(5, pf_noi)),
-        "yr1_debt_svc": fmt_dollar_short(annual_debt_svc),
-        "yr3_debt_svc": fmt_dollar_short(annual_debt_svc),
-        "yr5_debt_svc": fmt_dollar_short(annual_debt_svc),
-        "yr1_cashflow": fmt_dollar_short(yr_cashflows_raw.get(1, yr1_cashflow)),
-        "yr3_cashflow": fmt_dollar_short(yr_cashflows_raw.get(3, yr1_cashflow)),
-        "yr5_cashflow": fmt_dollar_short(yr_cashflows_raw.get(5, yr1_cashflow)),
-    }
+    # Cashflow years list — one dict per year, 1 through hold_period
+    cashflow_years = []
+    for yr in range(1, hold_period + 1):
+        cashflow_years.append({
+            "year": yr,
+            "egi": fmt_dollar(yr_egis.get(yr, pf_egi)),
+            "noi": fmt_dollar(yr_nois.get(yr, pf_noi)),
+            "debt_svc": fmt_dollar(annual_debt_svc),
+            "cashflow": fmt_dollar(yr_cashflows_raw.get(yr, yr1_cashflow)),
+            "is_exit_year": yr == hold_period,
+        })
 
     # Financing dict
     financing_formatted = {
@@ -447,16 +447,18 @@ def compute_mf_financials(inputs: dict, defaults: dict,
         "reserves_per_unit": fmt_dollar(defaults["reserves_per_unit"]),
         "rent_growth_assumption": fmt_pct(rent_growth),
 
-        # Cash flow projection
-        "cashflow": cashflow_formatted,
+        # Cash flow projection — list of dicts, one per year
+        "cashflow_years": cashflow_years,
 
         # Financing
         "financing": financing_formatted,
 
-        # New keys: cash-on-cash + IRR
+        # Return metrics
         "cash_on_cash": fmt_pct(cash_on_cash),
         "irr": fmt_pct(irr) if irr is not None else "N/A",
         "hold_period": str(hold_period),
+        "equity_multiple": fmt_ratio(equity_multiple),
+        "equity_multiple_raw": round(equity_multiple, 2),
     }
 
     return ctx

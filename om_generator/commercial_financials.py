@@ -101,7 +101,7 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
     yr1_cashflow = noi - annual_debt_svc
     cash_on_cash = yr1_cashflow / equity if equity > 0 else 0
 
-    # ── 5-year projections + IRR ────────────────────────────────────────
+    # ── N-year projections + IRR ─────────────────────────────────────────
     hold_period = int(inputs.get("hold_period", defaults["hold_period"]))
     rent_growth = float(inputs.get("rent_growth_assumption", defaults["rent_growth_assumption"]))
     exit_cap_spread = float(inputs.get("exit_cap_spread", defaults["exit_cap_spread"]))
@@ -118,9 +118,9 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
         yr_nois[yr] = yr_noi
         yr_cashflows[yr] = yr_noi - annual_debt_svc
 
-    yr5_noi = yr_nois.get(hold_period, pf_noi)
+    exit_yr_noi = yr_nois.get(hold_period, pf_noi)
     selling_cost = asking_price * 0.02
-    reversion = (yr5_noi / exit_cap - selling_cost) if exit_cap > 0 else 0
+    reversion = (exit_yr_noi / exit_cap - selling_cost) if exit_cap > 0 else 0
 
     cash_flows_irr = [-equity]
     for yr in range(1, hold_period + 1):
@@ -130,6 +130,22 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
         cash_flows_irr.append(cf)
 
     irr = solve_irr(cash_flows_irr)
+
+    # Equity multiple
+    total_cf = sum(yr_cashflows[yr] for yr in range(1, hold_period + 1))
+    equity_multiple = (total_cf + reversion) / equity if equity > 0 else 0
+
+    # Cashflow years list — one dict per year, 1 through hold_period
+    cashflow_years = []
+    for yr in range(1, hold_period + 1):
+        cashflow_years.append({
+            "year": yr,
+            "egi": fmt_dollar(yr_nois.get(yr, pf_noi)),  # commercial EGI = gross rev
+            "noi": fmt_dollar(yr_nois.get(yr, pf_noi)),
+            "debt_svc": fmt_dollar(annual_debt_svc),
+            "cashflow": fmt_dollar(yr_cashflows.get(yr, yr1_cashflow)),
+            "is_exit_year": yr == hold_period,
+        })
 
     # ── Output dict ─────────────────────────────────────────────────────
     ctx = {
@@ -151,7 +167,10 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
         "cash_on_cash": fmt_pct(cash_on_cash),
         "irr": fmt_pct(irr) if irr is not None else "N/A",
         "hold_period": str(hold_period),
+        "equity_multiple": fmt_ratio(equity_multiple),
+        "equity_multiple_raw": round(equity_multiple, 2),
         "dscr": fmt_ratio(dscr),
+        "cashflow_years": cashflow_years,
         "financing": {
             "ltv": fmt_pct(ltv),
             "interest_rate": fmt_pct(rate),

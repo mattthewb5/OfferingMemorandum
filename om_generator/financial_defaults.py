@@ -74,11 +74,18 @@ def _slugify(address: str) -> str:
     return slug
 
 
-def load_financial_inputs(address: str, county: str) -> dict:
+def load_financial_inputs(address: str, county: str,
+                          financial_inputs_path: str = None) -> dict:
     """
     Load broker financial inputs for this property.
 
+    Args:
+        financial_inputs_path: Optional explicit path to a financial sidecar
+            JSON file. When provided, this file is loaded first (highest
+            priority) before falling back to the default search order.
+
     Search order:
+    0. financial_inputs_path (explicit path — from wizard or CLI)
     1. test_inputs/financial_inputs_{slug}.json (address-level match)
     2. test_inputs/financial_inputs_{county}.json (county-level fallback)
     3. Return empty dict (engine runs on defaults + RentCast only)
@@ -87,6 +94,19 @@ def load_financial_inputs(address: str, county: str) -> dict:
       defaults ← loaded_json (broker values win over defaults)
     """
     inputs = get_defaults(county)
+
+    # Search order 0: explicit path (wizard / CLI override)
+    if financial_inputs_path:
+        explicit_path = Path(financial_inputs_path)
+        if explicit_path.exists():
+            try:
+                with open(explicit_path, 'r', encoding='utf-8') as f:
+                    broker = json.load(f)
+                inputs.update(broker)
+                print(f"  Financial inputs loaded (explicit): {explicit_path}")
+                return inputs
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"  Warning: Could not parse {explicit_path}: {e}")
 
     # Search order 1: address-specific file
     slug = _slugify(address)

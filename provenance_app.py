@@ -1033,21 +1033,18 @@ Avg monthly rent:&nbsp;${avg_rent:,.0f}
     if is_mf:
         _step_5b_multifamily(fin)
     elif is_commercial:
-        st.info(
-            f"Step 5B — {ptype.title()} financial forms (coming in next build)"
-        )
+        _step_5b_commercial(fin, ptype)
     elif is_land:
         st.info(
             "No financial inputs required for Land listings. "
             "Pro forma assumptions below are optional."
         )
 
-    # ── Step 5C — Pro Forma & Financing (placeholder) ───────────────
-    if not is_land:
-        st.caption(
-            "*Step 5C — Pro Forma & Financing Assumptions will be added "
-            "in the next build.*"
-        )
+    # ── Step 5C — Pro Forma & Financing Assumptions ─────────────────
+    _step_5c_proforma(fin, is_land)
+
+    # ── Missing-field warnings ──────────────────────────────────────
+    _step_5_missing_field_warnings(fin, is_mf, is_commercial, is_land)
 
     # ── Navigation ──────────────────────────────────────────────────
     st.markdown("---")
@@ -1060,6 +1057,7 @@ Avg monthly rent:&nbsp;${avg_rent:,.0f}
     with col_c:
         if st.button("Continue", type="primary"):
             st.session_state.financials = fin
+            _assemble_sidecar_json(fin)
             _auto_save()
             st.session_state.wizard_step = 6
             st.rerun()
@@ -1237,6 +1235,531 @@ def _step_5b_multifamily(fin: dict):
                        delta=f"OpEx Ratio: {opex_ratio:.1f}%", delta_color="off")
         with c3:
             st.metric("Net Operating Income", f"${noi:,.0f}")
+
+
+# ── Step 5B — Commercial (Office / Retail / Industrial) ────────────
+_TENANT_TEMPLATE_CSV = (
+    "tenant_name,sq_ft,annual_rent_psf,lease_start,lease_end,lease_type\n"
+)
+
+
+def _step_5b_commercial(fin: dict, ptype: str):
+    """Render commercial financial forms: tenant schedule + T-12 + live NOI."""
+
+    st.markdown(f"#### Tenant Schedule ({ptype.title()})")
+
+    # Radio toggle: upload vs manual
+    entry_mode = st.radio(
+        "Tenant data entry",
+        ["Upload tenant CSV", "Enter manually"],
+        horizontal=True,
+        key="comm_entry_mode",
+    )
+
+    if entry_mode == "Upload tenant CSV":
+        # If rent roll was already uploaded in Step 4, reuse it
+        if st.session_state.uploaded_rent_roll:
+            st.info(
+                f"Tenant data file already uploaded: "
+                f"{Path(st.session_state.uploaded_rent_roll).name}"
+            )
+        else:
+            st.download_button(
+                "Download template",
+                data=_TENANT_TEMPLATE_CSV,
+                file_name="tenant_schedule_template.csv",
+                mime="text/csv",
+                key="comm_tenant_template",
+            )
+            tenant_file = st.file_uploader(
+                "Tenant Schedule CSV",
+                type=["csv"],
+                key="comm_tenant_csv",
+                label_visibility="collapsed",
+            )
+            if tenant_file is not None:
+                try:
+                    tdf = pd.read_csv(tenant_file)
+                    required = {
+                        "tenant_name", "sq_ft", "annual_rent_psf",
+                        "lease_start", "lease_end", "lease_type",
+                    }
+                    actual = {c.strip().lower() for c in tdf.columns}
+                    missing = required - actual
+                    if missing:
+                        st.error(
+                            f"Missing columns: {', '.join(sorted(missing))}. "
+                            f"Required: {', '.join(sorted(required))}"
+                        )
+                    else:
+                        fin["tenant_schedule"] = tdf.to_dict(orient="records")
+                        st.success(f"{len(tdf)} tenants loaded.")
+                except Exception as e:
+                    st.error(f"Could not parse CSV: {e}")
+    else:
+        # Manual entry via data_editor
+        if "comm_tenant_df" not in st.session_state:
+            if fin.get("tenant_schedule"):
+                rows = fin["tenant_schedule"]
+            else:
+                rows = [{
+                    "Tenant Name": "", "SF": 0,
+                    "Annual Rent PSF ($)": 0.0,
+                    "Lease Start": "", "Lease End": "",
+                    "Lease Type": "NNN",
+                }]
+            st.session_state.comm_tenant_df = pd.DataFrame(rows)
+
+        edited_tenants = st.data_editor(
+            st.session_state.comm_tenant_df,
+            num_rows="dynamic",
+            use_container_width=True,
+            key="comm_tenant_editor",
+            column_config={
+                "Tenant Name": st.column_config.TextColumn("Tenant Name", width="medium"),
+                "SF": st.column_config.NumberColumn("SF", min_value=0, step=100),
+                "Annual Rent PSF ($)": st.column_config.NumberColumn(
+                    "Annual Rent PSF ($)", min_value=0.0, step=0.5, format="$%.2f",
+                ),
+                "Lease Start": st.column_config.TextColumn("Lease Start"),
+                "Lease End": st.column_config.TextColumn("Lease End"),
+                "Lease Type": st.column_config.SelectboxColumn(
+                    "Lease Type", options=["NNN", "Gross", "Modified Gross"],
+                ),
+            },
+        )
+        st.session_state.comm_tenant_df = edited_tenants
+        fin["tenant_schedule"] = edited_tenants.to_dict(orient="records")
+
+    # ── T-12 Income & Expenses ──────────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### T-12 Income & Expenses")
+
+    t12 = fin.get("t12", {})
+
+    st.markdown("**Income**")
+    t12["total_gross_revenue"] = st.number_input(
+        "Total Gross Revenue ($/yr)",
+        min_value=0,
+        value=t12.get("total_gross_revenue", None),
+        step=10000,
+        format="%d",
+        key="comm_t12_revenue",
+        placeholder="e.g. 3200000",
+    )
+    t12["vacancy_pct"] = st.number_input(
+        "Vacancy Rate (%)",
+        min_value=0.0, max_value=100.0,
+        value=t12.get("vacancy_pct", None),
+        step=0.1,
+        format="%.1f",
+        key="comm_t12_vacancy",
+        placeholder="e.g. 5.0",
+    )
+    # Total SF (if not already in Step 2)
+    pd_sf = st.session_state.property_details.get("total_rentable_sf")
+    if not pd_sf:
+        t12["total_sf"] = st.number_input(
+            "Total SF *",
+            min_value=1,
+            value=t12.get("total_sf", None),
+            step=1000,
+            format="%d",
+            key="comm_t12_total_sf",
+            placeholder="e.g. 85000",
+        )
+
+    st.markdown("**Expenses (annual $)**")
+    t12["real_estate_taxes"] = st.number_input(
+        "Real Estate Taxes",
+        min_value=0,
+        value=t12.get("real_estate_taxes", None),
+        step=10000, format="%d",
+        key="comm_t12_re_taxes",
+        placeholder="e.g. 280000",
+    )
+    t12["insurance"] = st.number_input(
+        "Insurance",
+        min_value=0,
+        value=t12.get("insurance", None),
+        step=5000, format="%d",
+        key="comm_t12_insurance",
+    )
+    t12["repairs"] = st.number_input(
+        "Repairs & Maintenance",
+        min_value=0,
+        value=t12.get("repairs", None),
+        step=5000, format="%d",
+        key="comm_t12_repairs",
+    )
+    t12["mgmt_pct"] = st.number_input(
+        "Property Management (% of EGI)",
+        min_value=0.0, max_value=100.0,
+        value=t12.get("mgmt_pct", None),
+        step=0.5, format="%.1f",
+        key="comm_t12_mgmt",
+    )
+    t12["utilities"] = st.number_input(
+        "Utilities (Landlord-Paid)",
+        min_value=0,
+        value=t12.get("utilities", None),
+        step=5000, format="%d",
+        key="comm_t12_utilities",
+    )
+    t12["admin"] = st.number_input(
+        "Administrative",
+        min_value=0,
+        value=t12.get("admin", None),
+        step=5000, format="%d",
+        key="comm_t12_admin",
+    )
+    t12["reserves"] = st.number_input(
+        "Replacement Reserves",
+        min_value=0,
+        value=t12.get("reserves", None),
+        step=1000, format="%d",
+        key="comm_t12_reserves",
+    )
+
+    fin["t12"] = t12
+
+    # ── Live NOI Summary ────────────────────────────────────────────
+    gross_rev = t12.get("total_gross_revenue") or 0
+    vac_pct = (t12.get("vacancy_pct") or 0) / 100.0
+    egi = gross_rev * (1 - vac_pct)
+
+    mgmt_pct_val = (t12.get("mgmt_pct") or 0) / 100.0
+    management = egi * mgmt_pct_val
+
+    re_taxes = t12.get("real_estate_taxes") or 0
+    insurance = t12.get("insurance") or 0
+    repairs = t12.get("repairs") or 0
+    utilities = t12.get("utilities") or 0
+    admin = t12.get("admin") or 0
+    reserves = t12.get("reserves") or 0
+
+    total_opex = re_taxes + insurance + repairs + management + utilities + admin + reserves
+    noi = egi - total_opex
+    opex_ratio = (total_opex / egi * 100) if egi > 0 else 0
+
+    if gross_rev > 0:
+        st.markdown("---")
+        st.markdown("**Live NOI Summary**")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.metric("Effective Gross Income", f"${egi:,.0f}")
+        with c2:
+            st.metric("Total Operating Expenses", f"(${total_opex:,.0f})",
+                       delta=f"OpEx Ratio: {opex_ratio:.1f}%", delta_color="off")
+        with c3:
+            st.metric("Net Operating Income", f"${noi:,.0f}")
+
+
+# ── Step 5C — Pro Forma & Financing Assumptions ────────────────────
+def _step_5c_proforma(fin: dict, is_land: bool):
+    """Render pro forma, financing, existing debt, and CapEx expanders."""
+
+    with st.expander(
+        "Pro Forma & Financing Assumptions "
+        "(optional — market defaults applied if left blank)",
+        expanded=False,
+    ):
+        pf = fin.get("pro_forma", {})
+
+        st.markdown("**Pro Forma**")
+        pf["rent_growth"] = st.number_input(
+            "Rent Growth Assumption (%/yr)",
+            min_value=0.0, max_value=20.0,
+            value=pf.get("rent_growth", 3.5),
+            step=0.1, format="%.1f",
+            key="pf_rent_growth",
+        )
+        pf["expense_growth"] = st.number_input(
+            "Expense Growth Assumption (%/yr)",
+            min_value=0.0, max_value=20.0,
+            value=pf.get("expense_growth", 2.5),
+            step=0.1, format="%.1f",
+            key="pf_expense_growth",
+        )
+        pf["hold_period"] = st.number_input(
+            "Hold Period (years)",
+            min_value=1, max_value=20,
+            value=pf.get("hold_period", 5),
+            step=1, format="%d",
+            key="pf_hold_period",
+        )
+        pf["exit_cap_spread_bps"] = st.number_input(
+            "Exit Cap Rate Spread (bps over going-in)",
+            min_value=0, max_value=500,
+            value=pf.get("exit_cap_spread_bps", 25),
+            step=5, format="%d",
+            key="pf_exit_cap_spread",
+        )
+
+        st.markdown("**Financing**")
+        financing = fin.get("financing", {})
+        financing["ltv"] = st.number_input(
+            "LTV (%)",
+            min_value=0.0, max_value=100.0,
+            value=financing.get("ltv", 65.0),
+            step=1.0, format="%.1f",
+            key="pf_ltv",
+        )
+        financing["interest_rate"] = st.number_input(
+            "Interest Rate (%/yr)",
+            min_value=0.0, max_value=20.0,
+            value=financing.get("interest_rate", 6.25),
+            step=0.05, format="%.2f",
+            key="pf_interest_rate",
+        )
+        financing["amortization"] = st.number_input(
+            "Amortization (years)",
+            min_value=1, max_value=40,
+            value=financing.get("amortization", 30),
+            step=1, format="%d",
+            key="pf_amortization",
+        )
+
+        fin["pro_forma"] = pf
+        fin["financing"] = financing
+
+    # ── Existing Debt ───────────────────────────────────────────────
+    with st.expander("Existing Debt (optional)", expanded=False):
+        debt = fin.get("existing_debt", {})
+        debt["outstanding_balance"] = st.number_input(
+            "Outstanding Balance ($)",
+            min_value=0,
+            value=debt.get("outstanding_balance", None),
+            step=100000, format="%d",
+            key="pf_debt_balance",
+        )
+        debt["interest_rate"] = st.number_input(
+            "Interest Rate (%)",
+            min_value=0.0, max_value=20.0,
+            value=debt.get("interest_rate", None),
+            step=0.05, format="%.2f",
+            key="pf_debt_rate",
+        )
+        debt["maturity_date"] = st.date_input(
+            "Maturity Date",
+            value=debt.get("maturity_date", None),
+            key="pf_debt_maturity",
+        )
+        debt["lender_name"] = st.text_input(
+            "Lender Name",
+            value=debt.get("lender_name", ""),
+            key="pf_debt_lender",
+        )
+        fin["existing_debt"] = debt
+
+    # ── Capital Expenditures ────────────────────────────────────────
+    with st.expander("Capital Expenditures (optional)", expanded=False):
+        capex = fin.get("capex", {})
+        capex["recent_description"] = st.text_area(
+            "Recent CapEx Description",
+            value=capex.get("recent_description", ""),
+            key="pf_capex_recent_desc",
+        )
+        capex["recent_amount"] = st.number_input(
+            "Recent CapEx Amount ($)",
+            min_value=0,
+            value=capex.get("recent_amount", None),
+            step=10000, format="%d",
+            key="pf_capex_recent_amt",
+        )
+        capex["planned_description"] = st.text_area(
+            "Planned CapEx Description",
+            value=capex.get("planned_description", ""),
+            key="pf_capex_planned_desc",
+        )
+        capex["planned_amount"] = st.number_input(
+            "Planned CapEx Amount ($)",
+            min_value=0,
+            value=capex.get("planned_amount", None),
+            step=10000, format="%d",
+            key="pf_capex_planned_amt",
+        )
+        fin["capex"] = capex
+
+
+# ── Missing-field warnings ─────────────────────────────────────────
+def _step_5_missing_field_warnings(
+    fin: dict, is_mf: bool, is_commercial: bool, is_land: bool,
+):
+    """Show non-blocking warnings for strongly-encouraged blank fields."""
+    if is_land:
+        return
+
+    t12 = fin.get("t12", {})
+    missing = []
+
+    if is_mf:
+        if not t12.get("gpr"):
+            missing.append("Gross Potential Rent")
+        if t12.get("vacancy_pct") is None:
+            missing.append("Vacancy Rate")
+    elif is_commercial:
+        if not t12.get("total_gross_revenue"):
+            missing.append("Total Gross Revenue")
+        if t12.get("vacancy_pct") is None:
+            missing.append("Vacancy Rate")
+
+    if not t12.get("real_estate_taxes"):
+        missing.append("Real Estate Taxes")
+    if not t12.get("insurance"):
+        missing.append("Insurance")
+    if not t12.get("repairs"):
+        missing.append("Repairs & Maintenance")
+    if t12.get("mgmt_pct") is None:
+        missing.append("Property Management (%)")
+
+    if missing:
+        bullets = "\n".join(f"- {f}" for f in missing)
+        st.warning(
+            f"The following fields are missing and will result in "
+            f"placeholder data in the OM:\n\n{bullets}\n\n"
+            f"You can continue, but the Financial Analysis section will be "
+            f"incomplete. Consider filling these in for a stronger document."
+        )
+
+
+# ── Sidecar JSON assembly ──────────────────────────────────────────
+def _assemble_sidecar_json(fin: dict):
+    """Build the sidecar JSON expected by financial_context.py and write to disk."""
+    import datetime as _dt
+
+    ptype = st.session_state.property_type
+    pd_details = st.session_state.property_details
+    slug = make_slug(st.session_state.address)
+
+    sidecar = {"property_type": ptype}
+
+    # Asking price (from Step 2)
+    if not pd_details.get("price_upon_request"):
+        sidecar["asking_price"] = pd_details.get("asking_price", 0)
+
+    # Pro forma / financing defaults
+    pf = fin.get("pro_forma", {})
+    sidecar["rent_growth_assumption"] = (pf.get("rent_growth", 3.5)) / 100.0
+    sidecar["hold_period"] = pf.get("hold_period", 5)
+    sidecar["exit_cap_spread"] = (pf.get("exit_cap_spread_bps", 25)) / 10000.0
+
+    fdata = fin.get("financing", {})
+    sidecar["financing"] = {
+        "ltv": (fdata.get("ltv", 65.0)) / 100.0,
+        "interest_rate": (fdata.get("interest_rate", 6.25)) / 100.0,
+        "amortization": fdata.get("amortization", 30),
+    }
+
+    t12 = fin.get("t12", {})
+
+    if ptype == "multifamily":
+        sidecar["total_units"] = pd_details.get("total_units", 0)
+
+        # Unit mix from data editor rows
+        unit_mix = []
+        for row in fin.get("unit_mix_rows", []):
+            count = row.get("Count", 0)
+            if not count:
+                continue
+            unit_mix.append({
+                "type": row.get("Unit Type", ""),
+                "count": int(count),
+                "avg_sf": int(row.get("Avg SF", 0)),
+                "in_place_rent": float(row.get("In-Place Rent ($/mo)", 0)),
+            })
+        sidecar["unit_mix"] = unit_mix
+
+        # T-12
+        sidecar_t12 = {}
+        if t12.get("gpr"):
+            sidecar_t12["gpr"] = t12["gpr"]
+        if t12.get("vacancy_pct") is not None:
+            sidecar_t12["vacancy_pct"] = t12["vacancy_pct"] / 100.0
+        if t12.get("credit_loss_pct") is not None:
+            sidecar_t12["credit_loss_pct"] = t12["credit_loss_pct"] / 100.0
+        if t12.get("real_estate_taxes"):
+            sidecar_t12["real_estate_taxes"] = t12["real_estate_taxes"]
+        if t12.get("insurance"):
+            sidecar_t12["insurance"] = t12["insurance"]
+        if t12.get("repairs"):
+            sidecar_t12["repairs"] = t12["repairs"]
+        if t12.get("mgmt_pct") is not None:
+            sidecar_t12["mgmt_pct"] = t12["mgmt_pct"] / 100.0
+        if t12.get("utilities"):
+            sidecar_t12["utilities"] = t12["utilities"]
+        if t12.get("admin"):
+            sidecar_t12["admin"] = t12["admin"]
+        if sidecar_t12:
+            sidecar["t12"] = sidecar_t12
+
+    elif ptype in ("office", "retail", "industrial"):
+        total_sf = (
+            pd_details.get("total_rentable_sf")
+            or t12.get("total_sf")
+            or 0
+        )
+        sidecar["total_sf"] = total_sf
+
+        # Tenant schedule → commercial rent_roll
+        rent_roll = []
+        for row in fin.get("tenant_schedule", []):
+            sf = row.get("SF") or row.get("sq_ft") or 0
+            psf = row.get("Annual Rent PSF ($)") or row.get("annual_rent_psf") or 0
+            if not sf:
+                continue
+            rent_roll.append({
+                "tenant": row.get("Tenant Name") or row.get("tenant_name", ""),
+                "sf": float(sf),
+                "annual_rent_psf": float(psf),
+                "lease_expiry": row.get("Lease End") or row.get("lease_end", ""),
+                "lease_type": row.get("Lease Type") or row.get("lease_type", "Gross"),
+            })
+        sidecar["rent_roll"] = rent_roll
+
+        # Compute operating_expenses from T-12 fields
+        opex = 0
+        for k in ("real_estate_taxes", "insurance", "repairs", "utilities", "admin", "reserves"):
+            opex += t12.get(k) or 0
+        # Add management
+        gross_rev = t12.get("total_gross_revenue") or 0
+        vac_pct = (t12.get("vacancy_pct") or 0) / 100.0
+        egi_val = gross_rev * (1 - vac_pct)
+        mgmt = egi_val * ((t12.get("mgmt_pct") or 0) / 100.0)
+        opex += mgmt
+        sidecar["operating_expenses"] = opex
+
+    # CapEx / existing debt as pass-through metadata
+    if fin.get("capex"):
+        capex = fin["capex"]
+        sidecar_capex = {}
+        for k in ("recent_description", "recent_amount", "planned_description", "planned_amount"):
+            v = capex.get(k)
+            if v:
+                sidecar_capex[k] = v
+        if sidecar_capex:
+            sidecar["capex"] = sidecar_capex
+
+    if fin.get("existing_debt"):
+        debt = fin["existing_debt"]
+        sidecar_debt = {}
+        for k in ("outstanding_balance", "interest_rate", "lender_name"):
+            v = debt.get(k)
+            if v:
+                sidecar_debt[k] = v
+        mat = debt.get("maturity_date")
+        if mat is not None:
+            if isinstance(mat, _dt.date):
+                sidecar_debt["maturity_date"] = mat.isoformat()
+            elif mat:
+                sidecar_debt["maturity_date"] = str(mat)
+        if sidecar_debt:
+            sidecar["existing_debt"] = sidecar_debt
+
+    # Write sidecar
+    sidecar_path = str(_OM_DIR / "data" / "financial_inputs" / f"{slug}.json")
+    write_json(sidecar_path, sidecar)
+    fin["_sidecar_path"] = sidecar_path
 
 
 def _step_6():

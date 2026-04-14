@@ -10,3 +10,4 @@ pytest>=7.4.0
 geopandas>=1.0.0
 pyarrow>=14.0.0
 rapidfuzz>=3.0.0
+weasyprint>=62.0

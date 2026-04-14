@@ -122,7 +122,8 @@ def run_om_generation(address: str, output_path: str,
             test_inputs/ search.
 
     Returns:
-        {"success": bool, "output_path": str, "error": str | None}
+        {"success": bool, "output_path": str, "pdf_bytes": bytes | None,
+         "error": str | None}
     """
     import traceback
 
@@ -133,6 +134,7 @@ def run_om_generation(address: str, output_path: str,
         coords = geocode_address(address)
         if coords is None:
             return {"success": False, "output_path": output_path,
+                    "pdf_bytes": None,
                     "error": f"Could not geocode address: {address}"}
 
         lat, lon = coords
@@ -384,11 +386,24 @@ def run_om_generation(address: str, output_path: str,
         else:
             print("All template variables resolved successfully.")
 
-        return {"success": True, "output_path": output_path, "error": None}
+        # ── PDF generation via WeasyPrint ─────────────────────────────
+        pdf_bytes = None
+        try:
+            from weasyprint import HTML as WeasyHTML
+            base_url = os.path.dirname(os.path.abspath(output_path))
+            pdf_bytes = WeasyHTML(string=html, base_url=base_url).write_pdf()
+            print(f"  PDF generated: {len(pdf_bytes):,} bytes")
+        except Exception as pdf_exc:
+            print(f"  WARNING: PDF generation failed: {pdf_exc}",
+                  file=sys.stderr)
+
+        return {"success": True, "output_path": output_path,
+                "pdf_bytes": pdf_bytes, "error": None}
 
     except Exception as e:
         traceback.print_exc()
-        return {"success": False, "output_path": output_path, "error": str(e)}
+        return {"success": False, "output_path": output_path,
+                "pdf_bytes": None, "error": str(e)}
 
 
 def main():

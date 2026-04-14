@@ -317,34 +317,349 @@ def _step_1():
 
 
 # ══════════════════════════════════════════════════════════════════════
-# STEP STUBS (to be built in subsequent phases)
+# STEP 2 — Property Details
 # ══════════════════════════════════════════════════════════════════════
 def _step_2():
     _show_progress()
-    st.info("Step 2 — Property Details (coming next)")
+
+    ptype = st.session_state.property_type  # "multifamily" | "office" | etc.
+    is_mf = ptype == "multifamily"
+    is_commercial = ptype in ("office", "retail", "industrial")
+    is_land = ptype == "land"
+
+    # Backing store
+    pd = st.session_state.property_details
+
+    # ── Property Name ────────────────────────────────────────────────
+    pd["property_name"] = st.text_input(
+        "Property Name *",
+        value=pd.get("property_name", ""),
+        placeholder='e.g. "Regent\'s Park"',
+        key="pd_property_name",
+    )
+
+    # ── Year Built ───────────────────────────────────────────────────
+    pd["year_built"] = st.number_input(
+        "Year Built *",
+        min_value=1800, max_value=2030,
+        value=pd.get("year_built", None),
+        step=1,
+        format="%d",
+        key="pd_year_built",
+        placeholder="e.g. 1997",
+    )
+
+    # ── Stories ───────────────────────────────────────────────────────
+    pd["stories"] = st.number_input(
+        "Stories",
+        min_value=1, max_value=100,
+        value=pd.get("stories", None),
+        step=1,
+        format="%d",
+        key="pd_stories",
+        placeholder="e.g. 4",
+    )
+
+    # ── Total Units (MF only) ────────────────────────────────────────
+    if is_mf:
+        pd["total_units"] = st.number_input(
+            "Total Units *",
+            min_value=1, max_value=10000,
+            value=pd.get("total_units", None),
+            step=1,
+            format="%d",
+            key="pd_total_units",
+            placeholder="e.g. 552",
+        )
+
+    # ── Total Rentable SF (commercial only) ──────────────────────────
+    if is_commercial:
+        pd["total_rentable_sf"] = st.number_input(
+            "Total Rentable SF *",
+            min_value=1,
+            value=pd.get("total_rentable_sf", None),
+            step=1,
+            format="%d",
+            key="pd_total_rentable_sf",
+            placeholder="e.g. 85000",
+        )
+
+    # ── MF-specific optional fields ──────────────────────────────────
+    if is_mf:
+        pd["floor_plan_count"] = st.number_input(
+            "Floor Plan Count",
+            min_value=1,
+            value=pd.get("floor_plan_count", None),
+            step=1,
+            format="%d",
+            key="pd_floor_plan_count",
+        )
+        pd["avg_unit_sf"] = st.number_input(
+            "Avg Unit SF",
+            min_value=1,
+            value=pd.get("avg_unit_sf", None),
+            step=1,
+            format="%d",
+            key="pd_avg_unit_sf",
+        )
+        col_min, col_max = st.columns(2)
+        with col_min:
+            pd["min_unit_sf"] = st.number_input(
+                "Min Unit SF",
+                min_value=1,
+                value=pd.get("min_unit_sf", None),
+                step=1,
+                format="%d",
+                key="pd_min_unit_sf",
+            )
+        with col_max:
+            pd["max_unit_sf"] = st.number_input(
+                "Max Unit SF",
+                min_value=1,
+                value=pd.get("max_unit_sf", None),
+                step=1,
+                format="%d",
+                key="pd_max_unit_sf",
+            )
+
+    # ── Common optional fields ───────────────────────────────────────
+    if not is_land:
+        pd["management_company"] = st.text_input(
+            "Management Company",
+            value=pd.get("management_company", ""),
+            placeholder='e.g. "Bozzuto"',
+            key="pd_management_company",
+        )
+    pd["submarket_label"] = st.text_input(
+        "Submarket Label",
+        value=pd.get("submarket_label", ""),
+        placeholder='e.g. "Vienna/Merrifield"',
+        key="pd_submarket_label",
+    )
+    if not is_land:
+        pd["utility_structure"] = st.text_input(
+            "Utility Structure",
+            value=pd.get("utility_structure", ""),
+            placeholder="e.g. Tenant: Elec+Gas | LL: Water",
+            key="pd_utility_structure",
+        )
+    pd["zoning_code"] = st.text_input(
+        "Zoning Code",
+        value=pd.get("zoning_code", ""),
+        placeholder='e.g. "PDH \u00b7 PRC"',
+        key="pd_zoning_code",
+    )
+    pd["transit_proximity_notes"] = st.text_area(
+        "Transit / Proximity Notes",
+        value=pd.get("transit_proximity_notes", ""),
+        placeholder="e.g. Vienna Metro 1.3 mi \u00b7 George Mason 0.9 mi",
+        key="pd_transit_proximity_notes",
+    )
+
+    # ── Asking Price ─────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### Asking Price")
+    pricing_mode = st.radio(
+        "Pricing",
+        ["Enter asking price", "Price Upon Request"],
+        index=0 if pd.get("price_upon_request") is not True else 1,
+        key="pd_pricing_mode",
+        horizontal=True,
+    )
+    pd["price_upon_request"] = (pricing_mode == "Price Upon Request")
+
+    if not pd["price_upon_request"]:
+        pd["asking_price"] = st.number_input(
+            "Asking Price ($)",
+            min_value=0,
+            value=pd.get("asking_price", None),
+            step=100000,
+            format="%d",
+            key="pd_asking_price",
+        )
+        # Derived price-per-unit / price-per-sf
+        asking = pd.get("asking_price")
+        if asking and asking > 0:
+            if is_mf and pd.get("total_units") and pd["total_units"] > 0:
+                ppu = asking / pd["total_units"]
+                st.markdown(f"**Price per Unit:** ${ppu:,.0f}")
+            elif is_commercial and pd.get("total_rentable_sf") and pd["total_rentable_sf"] > 0:
+                ppsf = asking / pd["total_rentable_sf"]
+                st.markdown(f"**Price per SF:** ${ppsf:,.2f}")
+
+    # ── Cap Rate ─────────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### Cap Rate")
+    cap_mode = st.radio(
+        "Cap Rate",
+        ["Enter cap rate", "Leave blank (auto-generates disclosure language)"],
+        index=0 if pd.get("cap_rate_omitted") is not True else 1,
+        key="pd_cap_mode",
+        horizontal=True,
+    )
+    pd["cap_rate_omitted"] = (cap_mode != "Enter cap rate")
+
+    if not pd["cap_rate_omitted"]:
+        pd["cap_rate"] = st.number_input(
+            "Cap Rate (%)",
+            min_value=0.0, max_value=30.0,
+            value=pd.get("cap_rate", None),
+            step=0.01,
+            format="%.2f",
+            key="pd_cap_rate",
+        )
+    else:
+        st.info(
+            "Cap rate not provided. The offering document will include "
+            "standard disclosure language: *\"Capitalization rate has not "
+            "been provided by the seller. Prospective purchasers are advised "
+            "to conduct independent analysis.\"*"
+        )
+
+    # ── Validation + navigation ──────────────────────────────────────
+    st.markdown("---")
+    errors = []
+
     col_b, col_c, _ = st.columns([1, 1, 3])
     with col_b:
         if st.button("Back"):
+            st.session_state.property_details = pd
             st.session_state.wizard_step = 1
             st.rerun()
     with col_c:
         if st.button("Continue", type="primary"):
-            st.session_state.wizard_step = 3
-            st.rerun()
+            # Validate required fields
+            if not pd.get("property_name", "").strip():
+                errors.append(("Property Name", "Property Name is required."))
+            if pd.get("year_built") is None:
+                errors.append(("Year Built", "Year Built is required."))
+            if is_mf and not pd.get("total_units"):
+                errors.append(("Total Units", "Total Units is required for multifamily."))
+            if is_commercial and not pd.get("total_rentable_sf"):
+                errors.append(("Total Rentable SF", "Total Rentable SF is required for commercial."))
+
+            if errors:
+                for field, msg in errors:
+                    st.error(msg)
+            else:
+                st.session_state.property_details = pd
+                _auto_save()
+                st.session_state.wizard_step = 3
+                st.rerun()
 
 
+# ══════════════════════════════════════════════════════════════════════
+# STEP 3 — Branding & Contact
+# ══════════════════════════════════════════════════════════════════════
 def _step_3():
     _show_progress()
-    st.info("Step 3 — Branding & Contact (coming next)")
+
+    br = st.session_state.branding
+
+    br["broker_firm"] = st.text_input(
+        "Broker Firm Name *",
+        value=br.get("broker_firm", ""),
+        key="br_broker_firm",
+    )
+    st.caption(
+        f"*{_BRAND_NAME} branding appears on the cover page and final "  # PLACEHOLDER — replace when platform name confirmed
+        "attribution page automatically. No upload needed.*"
+    )
+
+    br["broker_name"] = st.text_input(
+        "Broker Name *",
+        value=br.get("broker_name", ""),
+        key="br_broker_name",
+    )
+    br["broker_title"] = st.text_input(
+        "Broker Title",
+        value=br.get("broker_title", ""),
+        key="br_broker_title",
+    )
+    br["phone"] = st.text_input(
+        "Phone *",
+        value=br.get("phone", ""),
+        key="br_phone",
+    )
+    br["email"] = st.text_input(
+        "Email *",
+        value=br.get("email", ""),
+        key="br_email",
+    )
+    br["offer_due_date"] = st.date_input(
+        "Offer Due Date",
+        value=br.get("offer_due_date", None),
+        key="br_offer_due_date",
+    )
+
+    # ── Broker logo upload ───────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### Broker Logo Upload")
+    st.caption("Accepted formats: PNG, JPG  |  Max size: 5 MB")
+    logo_file = st.file_uploader(
+        "Broker Logo",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=False,
+        key="br_logo_upload",
+        label_visibility="collapsed",
+    )
+    if logo_file is not None:
+        if logo_file.size > 5 * 1024 * 1024:
+            st.error("Logo file exceeds 5 MB limit.")
+        else:
+            st.image(logo_file, width=200)
+            # Save on Continue (not on every rerun)
+            br["_logo_file_name"] = logo_file.name
+
+    # ── Validation + navigation ──────────────────────────────────────
+    st.markdown("---")
+    errors = []
+
     col_b, col_c, _ = st.columns([1, 1, 3])
     with col_b:
         if st.button("Back"):
+            st.session_state.branding = br
             st.session_state.wizard_step = 2
             st.rerun()
     with col_c:
         if st.button("Continue", type="primary"):
-            st.session_state.wizard_step = 4
-            st.rerun()
+            if not br.get("broker_firm", "").strip():
+                errors.append("Broker Firm Name is required.")
+            if not br.get("broker_name", "").strip():
+                errors.append("Broker Name is required.")
+            if not br.get("phone", "").strip():
+                errors.append("Phone is required.")
+            email = br.get("email", "").strip()
+            if not email:
+                errors.append("Email is required.")
+            elif "@" not in email:
+                errors.append("Email must contain @.")
+
+            if errors:
+                for msg in errors:
+                    st.error(msg)
+            else:
+                # Save logo to disk if uploaded
+                if logo_file is not None and logo_file.size <= 5 * 1024 * 1024:
+                    slug = make_slug(st.session_state.address)
+                    ext = Path(logo_file.name).suffix.lower()
+                    logo_path = str(
+                        _OM_DIR / "data" / "broker_assets" / slug
+                        / f"logo{ext}"
+                    )
+                    write_file(logo_path, logo_file.getvalue())
+                    br["logo_path"] = logo_path
+
+                # Serialize date for auto-save
+                if br.get("offer_due_date") is not None:
+                    import datetime
+                    if isinstance(br["offer_due_date"], datetime.date):
+                        br["offer_due_date"] = br["offer_due_date"].isoformat()
+
+                st.session_state.branding = br
+                _auto_save()
+                st.session_state.wizard_step = 4
+                st.rerun()
 
 
 def _step_4():

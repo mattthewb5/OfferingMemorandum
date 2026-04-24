@@ -26,8 +26,7 @@ New files:
   om_generator/commercial_financials.py   — office/retail/industrial manual-entry engine
   om_generator/financial_formatter.py     — numeric → display string formatting
   om_generator/financial_defaults.py      — all default assumptions, county-keyed where applicable
-  test_inputs/financial_inputs_clocktower.json   — MF test fixture (Clocktower Place)
-  test_inputs/financial_inputs_sycolin.json      — MF test fixture (Sycolin Rd)
+  data/property_inputs/property_<slug>.json     — v1.0 sidecars (replaces test_inputs/financial_inputs_*.json)
 
 Modified files:
   om_generator/generate_om.py             — wire financial engine as builder #17,
@@ -166,24 +165,28 @@ parse_pct(s: str) -> float
 PART 4 — financial_defaults.py sidecar loader
 ════════════════════════════════════════════════════════════
 
-Add to financial_defaults.py (or a separate financial_inputs_loader.py):
+Add to financial_defaults.py:
 
-def load_financial_inputs(address: str, county: str) -> dict:
+def load_property_inputs(address: str, county: str, path: str = None) -> PropertyInputs:
     """
-    Load broker financial inputs for this property.
+    Load broker property inputs for this property (v1.0 schema).
+
+    (load_financial_inputs is kept as a deprecated alias returning the flat
+    .financial dict; new code should use load_property_inputs.)
 
     Search order:
-    1. test_inputs/financial_inputs_{slug}.json where slug is address
-       lowercased, spaces→underscores, non-alphanumeric stripped
+    1. data/property_inputs/property_{slug}.json (v1.0 canonical) where slug
+       is address lowercased, spaces→underscores, non-alphanumeric stripped
        e.g. "21001 Sycolin Rd, Ashburn VA" → "21001_sycolin_rd_ashburn_va"
-    2. test_inputs/financial_inputs_{county}.json (county-level fallback)
-    3. Return empty dict (engine runs on defaults + RentCast only)
+    2. test_inputs/financial_inputs_{slug}.json (legacy, emits DeprecationWarning)
+    3. test_inputs/financial_inputs_{county}.json (legacy county fallback)
+    4. Return PropertyInputs with empty identity and defaults-only financials.
 
     In production (STORAGE_BACKEND=s3), this function will call
-    storage.read(f"sessions/{firm_id}/{session_id}/financial_inputs.json")
+    storage.read(f"sessions/{firm_id}/{session_id}/property_inputs/property_{slug}.json")
     instead. The dict shape is identical.
 
-    The returned dict is merged over defaults:
+    The returned PropertyInputs.financial is merged over defaults:
       inputs = get_defaults(county)
       inputs.update(loaded_json)  ← broker values win over defaults
     """
@@ -253,7 +256,7 @@ market_rents dict as a parameter (caller fetches from RentCast).
 def compute_mf_financials(inputs: dict, defaults: dict,
                            market_rents: dict) -> dict:
     """
-    inputs: merged broker inputs (load_financial_inputs output)
+    inputs: merged broker inputs (load_property_inputs(...).financial output)
     defaults: county defaults (get_defaults output)
     market_rents: {bedroom_count: avg_rent} from RentCast
                   (empty dict if API unavailable)
@@ -398,7 +401,7 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
   Returns: dict of ctx keys — different key set from MF
   """
 
-Input schema for commercial types (in financial_inputs JSON):
+Input schema for commercial types (flat fields in the v1.0 property sidecar):
   {
     "property_type": "office",
     "asking_price": 25000000,
@@ -466,7 +469,7 @@ def build_financial_context(address: str, lat: float, lon: float,
 
   1. Load inputs:
      defaults = get_defaults(county)
-     inputs = load_financial_inputs(address, county)
+     inputs = load_property_inputs(address, county).financial
      property_type = inputs.get("property_type", "multifamily")
 
   2. Fetch market rents (MF only):
@@ -578,14 +581,14 @@ File: om_generator/generate_om.py
 PART 10 — Test Fixtures
 ════════════════════════════════════════════════════════════
 
-Create test_inputs/ directory in om_generator/.
+Test fixtures live under data/property_inputs/ in v1.0 schema.
 
-File: test_inputs/financial_inputs_9333_clocktower_place_fairfax_va.json
+File: data/property_inputs/property_9333_clocktower_place_fairfax_va_22031.json
   MF fixture for Fairfax test property. Use values consistent with
   the Regent's Park hardcoded data in context_sample.py as the starting
   point. All numeric values as int/float (not formatted strings).
 
-File: test_inputs/financial_inputs_21001_sycolin_rd_ashburn_va.json
+File: data/property_inputs/property_21001_sycolin_rd_ashburn_va.json
   MF fixture for Loudoun test property. Use same structure.
   Scale financial values proportionally — Sycolin Rd is industrial/
   commercial zoned, so use a hypothetical MF scenario for testing

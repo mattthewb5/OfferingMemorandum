@@ -643,7 +643,7 @@ At the bottom of Step 5, before the Continue button, evaluate which strongly-enc
 
 **Continue button:** Always enabled (warnings are non-blocking).
 
-**On advance:** Assemble `st.session_state.financials` into the sidecar JSON shape expected by `financial_context.py`. Write sidecar to `om_generator/data/financial_inputs/{slug}.json` via `storage.write_json()`. Trigger auto-save.
+**On advance:** Assemble `st.session_state.financials` into the sidecar JSON shape expected by `financial_context.py`. Write sidecar to `om_generator/data/property_inputs/property_{slug}.json` (v1.0 schema) via `storage.write_json()`. Trigger auto-save.
 
 ---
 
@@ -788,7 +788,7 @@ def make_slug(address: str) -> str:
 | Comps CSV | `om_generator/data/comps/{slug}.csv` |
 | Rent roll | `om_generator/data/rent_rolls/{slug}/rent_roll.{ext}` |
 | T-12 | `om_generator/data/t12/{slug}/t12.{ext}` |
-| Financial sidecar | `om_generator/data/financial_inputs/{slug}.json` |
+| Property sidecar (v1.0) | `om_generator/data/property_inputs/property_{slug}.json` |
 | Broker assets | `om_generator/data/broker_assets/{slug}/logo.{ext}` |
 | Generated OM output | `om_generator/output/{slug}_om.html` |
 

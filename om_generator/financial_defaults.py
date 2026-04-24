@@ -7,9 +7,19 @@ these values.
 """
 
 import json
-import os
 import re
+import warnings
 from pathlib import Path
+
+from property_identity import (
+    AUTO_SOURCE_PREFIX,
+    IDENTITY_FIELDS,
+    KNOWN_SOURCES,
+    IdentityValue,
+    PropertyInputs,
+    SCHEMA_VERSION,
+    SchemaVersionError,
+)
 
 
 # ============================================================================
@@ -60,6 +70,7 @@ def get_defaults(county: str) -> dict:
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _TEST_INPUTS_DIR = _SCRIPT_DIR / "test_inputs"
+_PROPERTY_INPUTS_DIR = _SCRIPT_DIR / "data" / "property_inputs"
 
 
 def _slugify(address: str) -> str:
@@ -74,65 +85,207 @@ def _slugify(address: str) -> str:
     return slug
 
 
-def load_financial_inputs(address: str, county: str,
-                          financial_inputs_path: str = None) -> dict:
-    """
-    Load broker financial inputs for this property.
+def _validate_identity_entry(field_name: str, entry) -> IdentityValue:
+    """Validate a single ``property.<field>`` entry and return an IdentityValue."""
+    if not isinstance(entry, dict):
+        raise SchemaVersionError(
+            f"property.{field_name} must be a dict; got {type(entry).__name__}"
+        )
+    if "value" not in entry:
+        raise SchemaVersionError(
+            f"property.{field_name} is missing required 'value' key"
+        )
+    source = entry.get("source", "broker")
+    if source not in KNOWN_SOURCES and not source.startswith(AUTO_SOURCE_PREFIX):
+        raise SchemaVersionError(
+            f"property.{field_name}.source={source!r} is not a known source"
+        )
+    return IdentityValue(
+        value=entry["value"],
+        source=source,
+        confirmed_by_broker=bool(entry.get("confirmed_by_broker", False)),
+    )
 
-    Args:
-        financial_inputs_path: Optional explicit path to a financial sidecar
-            JSON file. When provided, this file is loaded first (highest
-            priority) before falling back to the default search order.
+
+def _parse_canonical(raw: dict, fallback_address: str,
+                     fallback_county: str) -> PropertyInputs:
+    """Parse a v1.0 sidecar dict into a PropertyInputs instance."""
+    schema_version = raw.get("schema_version")
+    if schema_version != SCHEMA_VERSION:
+        raise SchemaVersionError(
+            f"Expected schema_version={SCHEMA_VERSION!r}, got {schema_version!r}"
+        )
+
+    identity_raw = raw.get("property", {})
+    if not isinstance(identity_raw, dict):
+        raise SchemaVersionError(
+            f"'property' block must be a dict; got {type(identity_raw).__name__}"
+        )
+
+    identity = {
+        name: _validate_identity_entry(name, entry)
+        for name, entry in identity_raw.items()
+    }
+
+    # Anything outside the structural keys is treated as a flat financial field.
+    structural_keys = {"schema_version", "slug", "address", "county", "property"}
+    financial = {k: v for k, v in raw.items() if k not in structural_keys}
+
+    return PropertyInputs(
+        schema_version=schema_version,
+        slug=raw.get("slug", _slugify(fallback_address)),
+        address=raw.get("address", fallback_address),
+        county=raw.get("county", fallback_county),
+        identity=identity,
+        financial=financial,
+    )
+
+
+def _wrap_legacy(raw: dict, address: str, county: str) -> PropertyInputs:
+    """Wrap a legacy flat-financial dict into a PropertyInputs with empty identity."""
+    return PropertyInputs(
+        schema_version=SCHEMA_VERSION,
+        slug=_slugify(address),
+        address=address,
+        county=county,
+        identity={},
+        financial=dict(raw),
+    )
+
+
+def _read_json(path: Path):
+    """Read JSON, returning the parsed object or raising on parse error."""
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_property_inputs(address: str, county: str,
+                         path: str = None) -> PropertyInputs:
+    """
+    Load broker property inputs for this property.
 
     Search order:
-    0. financial_inputs_path (explicit path — from wizard or CLI)
-    1. test_inputs/financial_inputs_{slug}.json (address-level match)
-    2. test_inputs/financial_inputs_{county}.json (county-level fallback)
-    3. Return empty dict (engine runs on defaults + RentCast only)
+    0. ``path`` (explicit path — from wizard or CLI). If the file contains
+       ``schema_version`` it's parsed as v1.0; otherwise it's treated as a
+       legacy flat-financial sidecar with a one-shot DeprecationWarning.
+    1. ``data/property_inputs/property_<slug>.json`` (NEW CANONICAL, v1.0)
+    2. ``test_inputs/financial_inputs_<slug>.json`` (LEGACY — emits
+       DeprecationWarning once per load)
+    3. ``test_inputs/financial_inputs_<county>.json`` (county fallback,
+       legacy flat format — unchanged behavior)
+    4. Defaults only (returns a PropertyInputs whose ``financial`` is the
+       merged county defaults and ``identity`` is empty).
 
-    The returned dict is merged over defaults:
-      defaults ← loaded_json (broker values win over defaults)
+    The returned ``financial`` dict is merged over defaults: broker values
+    win over defaults at the top level (nested dicts replace wholesale,
+    matching the prior behavior).
     """
-    inputs = get_defaults(county)
+    defaults = get_defaults(county)
 
-    # Search order 0: explicit path (wizard / CLI override)
-    if financial_inputs_path:
-        explicit_path = Path(financial_inputs_path)
+    # Tier 0: explicit path
+    if path:
+        explicit_path = Path(path)
         if explicit_path.exists():
             try:
-                with open(explicit_path, 'r', encoding='utf-8') as f:
-                    broker = json.load(f)
-                inputs.update(broker)
-                print(f"  Financial inputs loaded (explicit): {explicit_path}")
-                return inputs
+                raw = _read_json(explicit_path)
             except (json.JSONDecodeError, IOError) as e:
                 print(f"  Warning: Could not parse {explicit_path}: {e}")
+            else:
+                if isinstance(raw, dict) and "schema_version" in raw:
+                    inputs = _parse_canonical(raw, address, county)
+                    print(f"  Property inputs loaded (explicit, v1.0): {explicit_path}")
+                else:
+                    warnings.warn(
+                        "Loaded a legacy flat-financial sidecar via "
+                        "load_property_inputs(path=...); migrate to v1.0.",
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
+                    inputs = _wrap_legacy(raw, address, county)
+                    print(f"  Property inputs loaded (explicit, legacy): {explicit_path}")
+                merged = dict(defaults)
+                merged.update(inputs.financial)
+                inputs.financial = merged
+                return inputs
 
-    # Search order 1: address-specific file
     slug = _slugify(address)
-    address_file = _TEST_INPUTS_DIR / f"financial_inputs_{slug}.json"
-    if address_file.exists():
-        try:
-            with open(address_file, 'r', encoding='utf-8') as f:
-                broker = json.load(f)
-            inputs.update(broker)
-            print(f"  Financial inputs loaded: {address_file.name}")
-            return inputs
-        except (json.JSONDecodeError, IOError) as e:
-            print(f"  Warning: Could not parse {address_file.name}: {e}")
 
-    # Search order 2: county-level fallback
-    county_file = _TEST_INPUTS_DIR / f"financial_inputs_{county.lower()}.json"
-    if county_file.exists():
+    # Tier 1: canonical address-level
+    canonical_file = _PROPERTY_INPUTS_DIR / f"property_{slug}.json"
+    if canonical_file.exists():
         try:
-            with open(county_file, 'r', encoding='utf-8') as f:
-                broker = json.load(f)
-            inputs.update(broker)
-            print(f"  Financial inputs loaded (county fallback): {county_file.name}")
-            return inputs
+            raw = _read_json(canonical_file)
         except (json.JSONDecodeError, IOError) as e:
-            print(f"  Warning: Could not parse {county_file.name}: {e}")
+            print(f"  Warning: Could not parse {canonical_file.name}: {e}")
+        else:
+            inputs = _parse_canonical(raw, address, county)
+            merged = dict(defaults)
+            merged.update(inputs.financial)
+            inputs.financial = merged
+            print(f"  Property inputs loaded: {canonical_file.name}")
+            return inputs
 
-    # Search order 3: defaults only
-    print(f"  No financial inputs file found for '{address}' — using defaults only")
-    return inputs
+    # Tier 1b: legacy address-level
+    legacy_address_file = _TEST_INPUTS_DIR / f"financial_inputs_{slug}.json"
+    if legacy_address_file.exists():
+        try:
+            raw = _read_json(legacy_address_file)
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"  Warning: Could not parse {legacy_address_file.name}: {e}")
+        else:
+            warnings.warn(
+                f"Loaded legacy sidecar {legacy_address_file.name}; "
+                "migrate to data/property_inputs/property_<slug>.json (v1.0).",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            inputs = _wrap_legacy(raw, address, county)
+            merged = dict(defaults)
+            merged.update(inputs.financial)
+            inputs.financial = merged
+            print(f"  Property inputs loaded (legacy): {legacy_address_file.name}")
+            return inputs
+
+    # Tier 2: county-level legacy fallback (unchanged)
+    legacy_county_file = _TEST_INPUTS_DIR / f"financial_inputs_{county.lower()}.json"
+    if legacy_county_file.exists():
+        try:
+            raw = _read_json(legacy_county_file)
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"  Warning: Could not parse {legacy_county_file.name}: {e}")
+        else:
+            inputs = _wrap_legacy(raw, address, county)
+            merged = dict(defaults)
+            merged.update(inputs.financial)
+            inputs.financial = merged
+            print(
+                f"  Property inputs loaded (county fallback): "
+                f"{legacy_county_file.name}"
+            )
+            return inputs
+
+    # Tier 3: defaults only
+    print(f"  No property inputs file found for '{address}' — using defaults only")
+    return PropertyInputs(
+        schema_version=SCHEMA_VERSION,
+        slug=slug,
+        address=address,
+        county=county,
+        identity={},
+        financial=dict(defaults),
+    )
+
+
+def load_financial_inputs(address: str, county: str,
+                          financial_inputs_path: str = None) -> dict:
+    """Deprecated. Returns the flat ``financial`` dict from the sidecar.
+
+    Use :func:`load_property_inputs` for new code — it returns the full
+    PropertyInputs object including the identity block.
+    """
+    warnings.warn(
+        "load_financial_inputs is deprecated; use load_property_inputs",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return load_property_inputs(address, county, path=financial_inputs_path).financial

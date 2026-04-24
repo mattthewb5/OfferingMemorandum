@@ -1,4 +1,9 @@
 {
+  "schema_version": "1.0",
+  "slug": "test_office",
+  "address": "",
+  "county": "",
+  "property": {},
   "property_type": "office",
   "asking_price": 25000000,
   "total_sf": 85000,

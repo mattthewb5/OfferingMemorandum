@@ -1,4 +1,9 @@
 {
+  "schema_version": "1.0",
+  "slug": "21001_sycolin_rd_ashburn_va",
+  "address": "",
+  "county": "",
+  "property": {},
   "property_type": "multifamily",
   "asking_price": 85000000,
   "total_units": 220,

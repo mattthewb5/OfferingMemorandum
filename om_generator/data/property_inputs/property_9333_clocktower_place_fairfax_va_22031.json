@@ -1,4 +1,9 @@
 {
+  "schema_version": "1.0",
+  "slug": "9333_clocktower_place_fairfax_va_22031",
+  "address": "",
+  "county": "",
+  "property": {},
   "property_type": "multifamily",
   "asking_price": 232000000,
   "total_units": 552,

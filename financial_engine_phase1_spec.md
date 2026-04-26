@@ -26,7 +26,14 @@ New files:
   om_generator/commercial_financials.py   — office/retail/industrial manual-entry engine
   om_generator/financial_formatter.py     — numeric → display string formatting
   om_generator/financial_defaults.py      — all default assumptions, county-keyed where applicable
-  data/property_inputs/property_<slug>.json     — v1.0 sidecars (replaces test_inputs/financial_inputs_*.json)
+  om_generator/data/property_inputs/property_<slug>.json
+                                          — live runtime v1.0 sidecars
+                                            written by the wizard
+                                            (gitignored; replaces
+                                            test_inputs/financial_inputs_*.json)
+  om_generator/data/test_fixtures/wizard/property_<slug>.json
+                                          — static v1.0 fixtures used
+                                            by tests / smoke renders
 
 Modified files:
   om_generator/generate_om.py             — wire financial engine as builder #17,
@@ -175,9 +182,12 @@ def load_property_inputs(address: str, county: str, path: str = None) -> Propert
     .financial dict; new code should use load_property_inputs.)
 
     Search order:
-    1. data/property_inputs/property_{slug}.json (v1.0 canonical) where slug
-       is address lowercased, spaces→underscores, non-alphanumeric stripped
-       e.g. "21001 Sycolin Rd, Ashburn VA" → "21001_sycolin_rd_ashburn_va"
+    1. om_generator/data/property_inputs/property_{slug}.json — live
+       runtime v1.0 sidecar location (gitignored; written by the wizard).
+       slug is address lowercased, spaces→underscores, non-alphanumeric
+       stripped, e.g. "21001 Sycolin Rd, Ashburn VA" →
+       "21001_sycolin_rd_ashburn_va". Static test fixtures live
+       separately under om_generator/data/test_fixtures/wizard/.
     2. test_inputs/financial_inputs_{slug}.json (legacy, emits DeprecationWarning)
     3. test_inputs/financial_inputs_{county}.json (legacy county fallback)
     4. Return PropertyInputs with empty identity and defaults-only financials.
@@ -581,14 +591,17 @@ File: om_generator/generate_om.py
 PART 10 — Test Fixtures
 ════════════════════════════════════════════════════════════
 
-Test fixtures live under data/property_inputs/ in v1.0 schema.
+Test fixtures live under om_generator/data/test_fixtures/wizard/ in
+v1.0 schema. (The sibling om_generator/data/property_inputs/
+directory is the gitignored runtime location written by the wizard;
+it is NOT where checked-in test fixtures belong.)
 
-File: data/property_inputs/property_9333_clocktower_place_fairfax_va_22031.json
+File: om_generator/data/test_fixtures/wizard/property_9333_clocktower_place_fairfax_va_22031.json
   MF fixture for Fairfax test property. Use values consistent with
   the Regent's Park hardcoded data in context_sample.py as the starting
   point. All numeric values as int/float (not formatted strings).
 
-File: data/property_inputs/property_21001_sycolin_rd_ashburn_va.json
+File: om_generator/data/test_fixtures/wizard/property_21001_sycolin_rd_ashburn_va.json
   MF fixture for Loudoun test property. Use same structure.
   Scale financial values proportionally — Sycolin Rd is industrial/
   commercial zoned, so use a hypothetical MF scenario for testing

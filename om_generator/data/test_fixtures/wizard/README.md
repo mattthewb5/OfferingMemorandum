@@ -1,4 +1,4 @@
-# Wizard Fixture Corpus
+# Wizard Fixture Library
 
 Tracked test fixtures captured deliberately for regression testing.
 Distinct from `data/audit_trail/` (auto-generated, gitignored,

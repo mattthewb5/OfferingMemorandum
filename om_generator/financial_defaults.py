@@ -179,7 +179,10 @@ def load_property_inputs(address: str, county: str,
     0. ``path`` (explicit path — from wizard or CLI). If the file contains
        ``schema_version`` it's parsed as v1.0; otherwise it's treated as a
        legacy flat-financial sidecar with a one-shot DeprecationWarning.
-    1. ``data/property_inputs/property_<slug>.json`` (NEW CANONICAL, v1.0)
+    1. ``om_generator/data/property_inputs/property_<slug>.json`` — the
+       canonical v1.0 runtime location written by the wizard. This
+       directory is gitignored; static test fixtures live separately
+       under ``om_generator/data/test_fixtures/wizard/``.
     2. ``test_inputs/financial_inputs_<slug>.json`` (LEGACY — emits
        DeprecationWarning once per load)
     3. ``test_inputs/financial_inputs_<county>.json`` (county fallback,
@@ -246,7 +249,8 @@ def load_property_inputs(address: str, county: str,
         else:
             warnings.warn(
                 f"Loaded legacy sidecar {legacy_address_file.name}; "
-                "migrate to data/property_inputs/property_<slug>.json (v1.0).",
+                "migrate to om_generator/data/property_inputs/"
+                "property_<slug>.json (v1.0 runtime location, gitignored).",
                 DeprecationWarning,
                 stacklevel=2,
             )

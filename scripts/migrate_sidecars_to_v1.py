@@ -8,6 +8,10 @@ For each file under:
 write a v1.0 wrapper at:
     om_generator/data/property_inputs/property_<slug>.json
 
+That directory is the live runtime location written by the wizard
+and is gitignored. Static test fixtures used for tests live
+separately under om_generator/data/test_fixtures/wizard/.
+
 Identity block is intentionally empty: legacy sidecars never carried
 identity values — those bled through from context_sample.py. Future
 wizard runs populate the property block; this script only preserves

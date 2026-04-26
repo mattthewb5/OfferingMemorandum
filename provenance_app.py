@@ -1896,7 +1896,11 @@ def _build_property_sidecar_dict(
 
 
 def _assemble_property_json(fin: dict):
-    """Build the v1.0 sidecar JSON and write to ``data/property_inputs/``."""
+    """Build the v1.0 sidecar JSON and write to the live runtime
+    directory ``om_generator/data/property_inputs/`` (gitignored).
+    Static test fixtures live separately under
+    ``om_generator/data/test_fixtures/wizard/``.
+    """
     address = st.session_state.address
     slug = make_slug(address)
     sidecar = _build_property_sidecar_dict(

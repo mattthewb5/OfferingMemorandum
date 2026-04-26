@@ -49,3 +49,10 @@ om_generator/data/employer_geocache.json
 om_generator/data/comps/*
 !om_generator/data/comps/.gitkeep
 !om_generator/data/comps/README.md
+
+# Wizard runtime state — per-property user data, not for source control
+om_generator/data/drafts/
+om_generator/data/property_inputs/
+
+# Audit trail — auto-managed local diagnostics, not for source control
+om_generator/data/audit_trail/

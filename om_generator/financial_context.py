@@ -15,6 +15,7 @@ sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
 
 from core.api_config import get_api_key
 from core.rentcast_client import RentCastClient
+from exceptions import OMFinancialEngineInputError
 from financial_defaults import get_defaults, load_financial_inputs
 from mf_financials import compute_mf_financials
 from commercial_financials import compute_commercial_financials
@@ -32,56 +33,67 @@ def build_financial_context(address: str, lat: float, lon: float,
             default test_inputs/ search.
 
     Returns ctx_update dict ready for ctx.update().
-    On any failure, returns {} so ctx.update({}) is a no-op and the
-    hardcoded seed values remain in ctx.
+
+    Error handling: ``OMFinancialEngineInputError`` (raised by an engine
+    when its sidecar inputs are missing or inconsistent) propagates
+    unchanged so the wizard surfaces the engine's diagnostic to the
+    broker. Unrelated errors — network failures fetching market rents,
+    unexpected runtime errors — are still trapped and yield ``{}`` so
+    the OM falls back to seed values rather than blocking generation.
     """
-    try:
-        # 1. Load inputs
-        defaults = get_defaults(county)
-        inputs = load_financial_inputs(address, county,
-                                       financial_inputs_path=financial_inputs_path)
-        property_type = inputs.get("property_type", "multifamily")
+    # 1. Load inputs (schema validation lives in load_financial_inputs;
+    #    SchemaVersionError surfaces for sidecar-format problems and
+    #    OMFinancialEngineInputError for engine-input problems below).
+    defaults = get_defaults(county)
+    inputs = load_financial_inputs(address, county,
+                                   financial_inputs_path=financial_inputs_path)
+    property_type = inputs.get("property_type", "multifamily")
 
-        # 2. Fetch market rents (MF only)
-        market_rents = {}
-        if property_type == "multifamily":
-            zipcode = ctx.get("property_zip", "")
-            if zipcode:
-                try:
-                    api_key = get_api_key("RENTCAST_API_KEY")
-                    if api_key:
-                        rentcast = RentCastClient(api_key=api_key)
-                        market_rents = rentcast.get_market_rent_for_unit_mix(
-                            zipcode, inputs.get("unit_mix", []))
-                        if market_rents:
-                            print(f"  Market rents fetched via RentCast: {market_rents}")
-                        else:
-                            print("  Warning: RentCast returned empty market rents — "
-                                  "falling back to 10% premium")
+    # 2. Fetch market rents (MF only) — network failures swallowed
+    market_rents = {}
+    if property_type == "multifamily":
+        zipcode = ctx.get("property_zip", "")
+        if zipcode:
+            try:
+                api_key = get_api_key("RENTCAST_API_KEY")
+                if api_key:
+                    rentcast = RentCastClient(api_key=api_key)
+                    market_rents = rentcast.get_market_rent_for_unit_mix(
+                        zipcode, inputs.get("unit_mix", []))
+                    if market_rents:
+                        print(f"  Market rents fetched via RentCast: {market_rents}")
                     else:
-                        print("  Warning: RENTCAST_API_KEY not found — "
+                        print("  Warning: RentCast returned empty market rents — "
                               "falling back to 10% premium")
-                except Exception as e:
-                    print(f"  Warning: RentCast API error: {e} — "
+                else:
+                    print("  Warning: RENTCAST_API_KEY not found — "
                           "falling back to 10% premium")
-                    market_rents = {}
+            except Exception as e:
+                print(f"  Warning: RentCast API error: {e} — "
+                      "falling back to 10% premium")
+                market_rents = {}
 
-        # 3. Route to engine
+    # 3. Route to engine. OMFinancialEngineInputError propagates so the
+    #    wizard can surface the engine's diagnostic. Unrelated runtime
+    #    errors are still trapped to keep seed-value fallback working.
+    try:
         if property_type == "multifamily":
             result = compute_mf_financials(inputs, defaults, market_rents)
         elif property_type in ("office", "retail", "industrial"):
             result = compute_commercial_financials(inputs, defaults, property_type)
         else:
             raise ValueError(f"Unknown property_type: {property_type}")
-
-        print(f"  Financial engine ({property_type}): "
-              f"cap={result.get('t12_cap_rate', 'N/A')}, "
-              f"CoC={result.get('cash_on_cash', 'N/A')}, "
-              f"IRR={result.get('irr', 'N/A')}")
-        return result
-
+    except OMFinancialEngineInputError:
+        # Engine input failures must reach the broker — re-raise.
+        raise
     except Exception as e:
         print(f"  ERROR in financial engine: {e}")
         import traceback
         traceback.print_exc()
         return {}
+
+    print(f"  Financial engine ({property_type}): "
+          f"cap={result.get('t12_cap_rate', 'N/A')}, "
+          f"CoC={result.get('cash_on_cash', 'N/A')}, "
+          f"IRR={result.get('irr', 'N/A')}")
+    return result

@@ -200,17 +200,61 @@ def compute_mf_financials(inputs: dict, defaults: dict,
     defaults: county defaults (get_defaults output)
     market_rents: {bedroom_count: avg_rent} from RentCast
                   (empty dict if API unavailable)
-    Returns: dict of all ~35 financial ctx keys, all pre-formatted strings
+    Returns: dict of all ~35 financial ctx keys, all pre-formatted strings.
+
+    POR mode (price_upon_request=True AND asking_price is null AND
+    cap_rate_override is set) yields a price-on-request FinancialContext:
+    asking_price_display='Price on request', price_per_unit hidden,
+    t12_cap_rate from override, pro_forma_cap_rate hidden, Embedded Value
+    skipped. The downstream cash-flow / financing / IRR chain still runs
+    against a synthesized asking_price = NOI / cap_rate_override so that
+    the rest of the OM has self-consistent numbers.
     """
 
-    # ── LAYER 0 — Parse and validate inputs ─────────────────────────────
-    asking_price = float(inputs.get("asking_price", 0))
-    if asking_price <= 0:
-        raise ValueError("asking_price is required and must be > 0")
+    # ── LAYER 0 — POR detection + input validation ─────────────────────
+    from exceptions import OMFinancialEngineInputError
 
-    unit_mix_raw = inputs.get("unit_mix", [])
+    price_upon_request = bool(inputs.get("price_upon_request", False))
+    cap_rate_override = inputs.get("cap_rate_override")
+    asking_price_raw = inputs.get("asking_price")
+    asking_price_provided = (
+        asking_price_raw is not None and float(asking_price_raw or 0) > 0
+    )
+
+    if price_upon_request and cap_rate_override is None:
+        raise OMFinancialEngineInputError(
+            "Price-on-request mode requires cap_rate_override. "
+            "Sidecar has POR=true but no override."
+        )
+    if not asking_price_provided and cap_rate_override is None:
+        raise OMFinancialEngineInputError(
+            "Engine requires either asking_price or cap_rate_override "
+            "to compute cap rate display. Sidecar has neither."
+        )
+
+    is_por_mode = (
+        price_upon_request
+        and not asking_price_provided
+        and cap_rate_override is not None
+    )
+
+    unit_mix_raw = inputs.get("unit_mix") or []
     if not unit_mix_raw:
-        raise ValueError("unit_mix is required for multifamily")
+        raise OMFinancialEngineInputError(
+            "Multifamily engine requires unit_mix. Sidecar has none. "
+            "Use commercial engine for non-MF property types or "
+            "supply unit_mix."
+        )
+
+    # In POR mode, asking_price is unknown until NOI is computed —
+    # we'll synthesize it from cap_rate_override below. Initialise to
+    # 0 so the tax fallback (asking_price * rate) yields 0 instead of
+    # raising; the broker is expected to supply t12.real_estate_taxes
+    # directly when running POR.
+    if is_por_mode:
+        asking_price = 0.0
+    else:
+        asking_price = float(asking_price_raw)
 
     # Build enriched unit_mix (work with floats/ints)
     unit_mix = []
@@ -335,12 +379,26 @@ def compute_mf_financials(inputs: dict, defaults: dict,
     opex_ratio = total_opex / egi if egi > 0 else 0
 
     # ── LAYER 4 — Valuation metrics ────────────────────────────────────
-    t12_cap_rate = noi / asking_price if asking_price > 0 else 0
-    price_per_unit = asking_price / total_units
-    value_cap_rate = defaults.get("value_cap_rate", t12_cap_rate)
-    if value_cap_rate == 0:
-        value_cap_rate = t12_cap_rate
-    embedded_value = annual_noi_potential / value_cap_rate if value_cap_rate > 0 else 0
+    if is_por_mode:
+        # Synthesize asking_price so the downstream cash-flow / financing
+        # chain has a self-consistent price. Display tokens are overridden
+        # at ctx assembly to surface "Price on request" instead.
+        asking_price = noi / float(cap_rate_override) if cap_rate_override else 0
+        t12_cap_rate = float(cap_rate_override)
+    else:
+        t12_cap_rate = noi / asking_price if asking_price > 0 else 0
+    price_per_unit = asking_price / total_units if total_units > 0 else 0
+
+    if is_por_mode:
+        # Wave 2: Embedded Value is skipped entirely in POR mode.
+        value_cap_rate = 0
+        embedded_value = 0
+    else:
+        value_cap_rate = defaults.get("value_cap_rate", t12_cap_rate)
+        if value_cap_rate == 0:
+            value_cap_rate = t12_cap_rate
+        embedded_value = (annual_noi_potential / value_cap_rate
+                          if value_cap_rate > 0 else 0)
 
     # ── LAYER 5 — Pro forma Year 1 ─────────────────────────────────────
     rent_growth = float(
@@ -516,28 +574,43 @@ def compute_mf_financials(inputs: dict, defaults: dict,
         "dscr": fmt_ratio(dscr),
     }
 
+    # POR-mode display tokens. The hidden flags (None) signal templates
+    # to skip the corresponding rows; Wave 2 C4 wires the {% if %} guards.
+    if is_por_mode:
+        asking_price_display = "Price on request"
+        price_per_unit_display = None
+        proforma_cap_rate_display = None
+        embedded_value_display = None
+    else:
+        asking_price_display = fmt_dollar(asking_price)
+        price_per_unit_display = fmt_dollar(price_per_unit)
+        proforma_cap_rate_display = fmt_pct(proforma_cap_rate)
+        embedded_value_display = fmt_dollar_medium(embedded_value)
+
     ctx = {
         # Property type marker
         "property_type": "multifamily",
+        "is_por_mode": is_por_mode,
 
         # Scalar financial keys
-        "asking_price_display": fmt_dollar(asking_price),
-        "asking_price_full": fmt_dollar(asking_price),
-        "asking_price_short": fmt_dollar_medium(asking_price),
-        "price_per_unit_display": fmt_dollar(price_per_unit),
+        "asking_price_display": asking_price_display,
+        "asking_price_full": asking_price_display,
+        "asking_price_short": (asking_price_display
+                               if is_por_mode else fmt_dollar_medium(asking_price)),
+        "price_per_unit_display": price_per_unit_display,
         "t12_cap_rate": fmt_pct(t12_cap_rate),
-        "proforma_cap_rate": fmt_pct(proforma_cap_rate),
+        "proforma_cap_rate": proforma_cap_rate_display,
         "t12_noi_short": fmt_dollar_short(noi),
         "avg_monthly_rent": fmt_dollar(avg_monthly_rent),
         "opex_ratio": fmt_pct(opex_ratio),
 
-        # Value-add / rent gap
-        "embedded_value_display": fmt_dollar_medium(embedded_value),
+        # Value-add / rent gap (Embedded Value computation skipped in POR)
+        "embedded_value_display": embedded_value_display,
         "portfolio_rent_gap_pct": fmt_pct(portfolio_rent_gap_pct),
         "below_market_units": fmt_int(below_market_units),
         "avg_gap_per_unit": fmt_dollar(portfolio_avg_gap),
         "annual_noi_potential": fmt_dollar(annual_noi_potential),
-        "value_cap_rate": fmt_pct(value_cap_rate),
+        "value_cap_rate": fmt_pct(value_cap_rate) if not is_por_mode else None,
         "portfolio_avg_market_rent": fmt_dollar(portfolio_avg_market_rent),
         "portfolio_avg_gap": fmt_dollar(portfolio_avg_gap),
 

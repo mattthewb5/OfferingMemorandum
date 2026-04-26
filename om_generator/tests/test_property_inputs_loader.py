@@ -266,12 +266,6 @@ def test_missing_property_type_raises_documented_message(tmp_path, canonical_pay
     assert str(excinfo.value) == PROPERTY_TYPE_MISSING_MSG
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Wave 2 Commit 2 wires the engine to raise OMFinancialEngineInputError "
-           "for POR mode without cap_rate_override; pending until that ships.",
-    raises=OMFinancialEngineInputError,
-)
 def test_por_mode_missing_cap_rate_override_raises(tmp_path, canonical_payload):
     """POR=true and no cap_rate_override → engine raises
     OMFinancialEngineInputError (not silent {} return)."""
@@ -283,21 +277,16 @@ def test_por_mode_missing_cap_rate_override_raises(tmp_path, canonical_payload):
     canonical_payload["cap_rate_override"] = None
     path = _write(tmp_path, "por_no_override.json", canonical_payload)
 
-    build_financial_context(
-        address="9333 Clocktower Place, Fairfax VA 22031",
-        lat=38.87, lon=-77.27, county="fairfax",
-        ctx={"property_zip": "22031"},
-        financial_inputs_path=str(path),
-    )
+    with pytest.raises(OMFinancialEngineInputError) as excinfo:
+        build_financial_context(
+            address="9333 Clocktower Place, Fairfax VA 22031",
+            lat=38.87, lon=-77.27, county="fairfax",
+            ctx={"property_zip": "22031"},
+            financial_inputs_path=str(path),
+        )
+    assert "Price-on-request mode requires cap_rate_override" in str(excinfo.value)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Wave 2 Commit 2 wires the engine to raise OMFinancialEngineInputError "
-           "when neither asking_price nor cap_rate_override is supplied; "
-           "pending until that ships.",
-    raises=OMFinancialEngineInputError,
-)
 def test_no_price_no_override_raises(tmp_path, canonical_payload):
     """asking_price=None, price_upon_request=False, cap_rate_override=None
     → engine raises OMFinancialEngineInputError."""
@@ -309,12 +298,14 @@ def test_no_price_no_override_raises(tmp_path, canonical_payload):
     canonical_payload["cap_rate_override"] = None
     path = _write(tmp_path, "no_price_no_override.json", canonical_payload)
 
-    build_financial_context(
-        address="9333 Clocktower Place, Fairfax VA 22031",
-        lat=38.87, lon=-77.27, county="fairfax",
-        ctx={"property_zip": "22031"},
-        financial_inputs_path=str(path),
-    )
+    with pytest.raises(OMFinancialEngineInputError) as excinfo:
+        build_financial_context(
+            address="9333 Clocktower Place, Fairfax VA 22031",
+            lat=38.87, lon=-77.27, county="fairfax",
+            ctx={"property_zip": "22031"},
+            financial_inputs_path=str(path),
+        )
+    assert "either asking_price or cap_rate_override" in str(excinfo.value)
 
 
 def test_cap_rate_override_out_of_range_raises(tmp_path, canonical_payload):

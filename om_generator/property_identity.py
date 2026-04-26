@@ -52,6 +52,24 @@ BRANDING_FIELDS = [
     "offer_due_date",
 ]
 
+# Recognised values for the structural ``property_type`` field. The
+# wizard captures this in step 1 and the engine dispatch keys off it.
+# Treat as a Literal at the schema-validation layer; ``_parse_canonical``
+# raises ``SchemaVersionError`` when the sidecar's value is missing or
+# not in this set.
+VALID_PROPERTY_TYPES = (
+    "multifamily",
+    "retail",
+    "office",
+    "industrial",
+    "land",
+)
+
+PROPERTY_TYPE_MISSING_MSG = (
+    "property_type missing from sidecar — wizard step 1 must capture this. "
+    "Valid values: multifamily, retail, office, industrial, land."
+)
+
 # Recognised provenance labels for an :class:`IdentityValue`. Any string
 # beginning with :data:`AUTO_SOURCE_PREFIX` is also accepted (e.g.
 # ``"auto:loudoun_community_lookup"``).
@@ -74,12 +92,20 @@ class IdentityValue:
 
 @dataclass
 class PropertyInputs:
-    """Loaded sidecar — identity, branding, and flat financial inputs."""
+    """Loaded sidecar — identity, branding, and flat financial inputs.
+
+    ``property_type`` is required: every well-formed sidecar must declare
+    one of :data:`VALID_PROPERTY_TYPES`. There is no schema-level default
+    — the wizard captures it in step 1, and the engine dispatcher routes
+    on it. Loaders that synthesise a ``PropertyInputs`` without a sidecar
+    must raise rather than guess.
+    """
 
     schema_version: str
     slug: str
     address: str
     county: str
+    property_type: str
     identity: Dict[str, IdentityValue] = field(default_factory=dict)
     financial: Dict[str, Any] = field(default_factory=dict)
     branding: Dict[str, Any] = field(default_factory=dict)

@@ -32,6 +32,7 @@ def canonical_payload():
         "slug": "9333_clocktower_place_fairfax_va_22031",
         "address": "9333 Clocktower Place, Fairfax VA 22031",
         "county": "fairfax",
+        "property_type": "multifamily",
         "property": {
             "property_name": {
                 "value": "Regent's Park",
@@ -244,3 +245,81 @@ def test_load_financial_inputs_alias_emits_deprecation(tmp_path, canonical_paylo
     # Returns the financial dict, not a PropertyInputs
     assert isinstance(flat, dict)
     assert flat["asking_price"] == 232000000
+
+
+# ---------------------------------------------------------------------------
+# Wave 2 — schema-level property_type enforcement + engine input validation
+# ---------------------------------------------------------------------------
+
+
+from exceptions import OMFinancialEngineInputError  # noqa: E402
+from property_identity import PROPERTY_TYPE_MISSING_MSG  # noqa: E402
+
+
+def test_missing_property_type_raises_documented_message(tmp_path, canonical_payload):
+    """A v1.0 sidecar without property_type must fail at sidecar load with
+    the wizard-facing documented error string — not at engine entry."""
+    canonical_payload.pop("property_type")
+    path = _write(tmp_path, "no_ptype.json", canonical_payload)
+    with pytest.raises(SchemaVersionError) as excinfo:
+        load_property_inputs("addr", "fairfax", path=str(path))
+    assert str(excinfo.value) == PROPERTY_TYPE_MISSING_MSG
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Wave 2 Commit 2 wires the engine to raise OMFinancialEngineInputError "
+           "for POR mode without cap_rate_override; pending until that ships.",
+    raises=OMFinancialEngineInputError,
+)
+def test_por_mode_missing_cap_rate_override_raises(tmp_path, canonical_payload):
+    """POR=true and no cap_rate_override → engine raises
+    OMFinancialEngineInputError (not silent {} return)."""
+    pytest.importorskip("requests")  # financial_context pulls in network deps
+    from financial_context import build_financial_context
+
+    canonical_payload["asking_price"] = None
+    canonical_payload["price_upon_request"] = True
+    canonical_payload["cap_rate_override"] = None
+    path = _write(tmp_path, "por_no_override.json", canonical_payload)
+
+    build_financial_context(
+        address="9333 Clocktower Place, Fairfax VA 22031",
+        lat=38.87, lon=-77.27, county="fairfax",
+        ctx={"property_zip": "22031"},
+        financial_inputs_path=str(path),
+    )
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Wave 2 Commit 2 wires the engine to raise OMFinancialEngineInputError "
+           "when neither asking_price nor cap_rate_override is supplied; "
+           "pending until that ships.",
+    raises=OMFinancialEngineInputError,
+)
+def test_no_price_no_override_raises(tmp_path, canonical_payload):
+    """asking_price=None, price_upon_request=False, cap_rate_override=None
+    → engine raises OMFinancialEngineInputError."""
+    pytest.importorskip("requests")  # financial_context pulls in network deps
+    from financial_context import build_financial_context
+
+    canonical_payload["asking_price"] = None
+    canonical_payload["price_upon_request"] = False
+    canonical_payload["cap_rate_override"] = None
+    path = _write(tmp_path, "no_price_no_override.json", canonical_payload)
+
+    build_financial_context(
+        address="9333 Clocktower Place, Fairfax VA 22031",
+        lat=38.87, lon=-77.27, county="fairfax",
+        ctx={"property_zip": "22031"},
+        financial_inputs_path=str(path),
+    )
+
+
+def test_cap_rate_override_out_of_range_raises(tmp_path, canonical_payload):
+    """cap_rate_override outside [0.01, 0.20] is a schema-format error."""
+    canonical_payload["cap_rate_override"] = 0.5  # 50% — clearly out of range
+    path = _write(tmp_path, "bad_override.json", canonical_payload)
+    with pytest.raises(SchemaVersionError):
+        load_property_inputs("addr", "fairfax", path=str(path))

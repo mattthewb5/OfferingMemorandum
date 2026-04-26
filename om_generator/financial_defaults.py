@@ -15,6 +15,8 @@ from property_identity import (
     AUTO_SOURCE_PREFIX,
     IDENTITY_FIELDS,
     KNOWN_SOURCES,
+    PROPERTY_TYPE_MISSING_MSG,
+    VALID_PROPERTY_TYPES,
     IdentityValue,
     PropertyInputs,
     SCHEMA_VERSION,
@@ -107,6 +109,37 @@ def _validate_identity_entry(field_name: str, entry) -> IdentityValue:
     )
 
 
+def _validate_property_type(value) -> str:
+    """Enforce the schema-level requirement that ``property_type`` is set
+    to one of :data:`VALID_PROPERTY_TYPES`. Raises :class:`SchemaVersionError`
+    with the documented missing-field message when the value is absent;
+    raises with a value-list message when the value is present but invalid.
+    """
+    if value is None:
+        raise SchemaVersionError(PROPERTY_TYPE_MISSING_MSG)
+    if value not in VALID_PROPERTY_TYPES:
+        raise SchemaVersionError(
+            f"property_type={value!r} is not one of: "
+            f"{', '.join(VALID_PROPERTY_TYPES)}"
+        )
+    return value
+
+
+def _validate_cap_rate_override(financial: dict) -> None:
+    """Enforce 0.01 <= cap_rate_override <= 0.20 when the field is set."""
+    value = financial.get("cap_rate_override")
+    if value is None:
+        return
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise SchemaVersionError(
+            f"cap_rate_override must be numeric; got {type(value).__name__}"
+        )
+    if not (0.01 <= float(value) <= 0.20):
+        raise SchemaVersionError(
+            f"cap_rate_override={value!r} out of range [0.01, 0.20]"
+        )
+
+
 def _parse_canonical(raw: dict, fallback_address: str,
                      fallback_county: str) -> PropertyInputs:
     """Parse a v1.0 sidecar dict into a PropertyInputs instance."""
@@ -115,6 +148,8 @@ def _parse_canonical(raw: dict, fallback_address: str,
         raise SchemaVersionError(
             f"Expected schema_version={SCHEMA_VERSION!r}, got {schema_version!r}"
         )
+
+    property_type = _validate_property_type(raw.get("property_type"))
 
     identity_raw = raw.get("property", {})
     if not isinstance(identity_raw, dict):
@@ -134,17 +169,24 @@ def _parse_canonical(raw: dict, fallback_address: str,
         )
     branding = dict(branding_raw)
 
-    # Anything outside the structural keys is treated as a flat financial field.
+    # Anything outside the structural keys is treated as a flat financial
+    # field. ``property_type`` is intentionally NOT in this set: the engine
+    # dispatcher in build_financial_context still reads it from the
+    # ``.financial`` dict via the deprecated alias until Wave 2 Commit 3
+    # rewires the dispatcher to consume it from the dataclass directly.
     structural_keys = {
         "schema_version", "slug", "address", "county", "property", "branding",
     }
     financial = {k: v for k, v in raw.items() if k not in structural_keys}
+
+    _validate_cap_rate_override(financial)
 
     return PropertyInputs(
         schema_version=schema_version,
         slug=raw.get("slug", _slugify(fallback_address)),
         address=raw.get("address", fallback_address),
         county=raw.get("county", fallback_county),
+        property_type=property_type,
         identity=identity,
         financial=financial,
         branding=branding,
@@ -152,14 +194,22 @@ def _parse_canonical(raw: dict, fallback_address: str,
 
 
 def _wrap_legacy(raw: dict, address: str, county: str) -> PropertyInputs:
-    """Wrap a legacy flat-financial dict into a PropertyInputs with empty identity."""
+    """Wrap a legacy flat-financial dict into a PropertyInputs with empty identity.
+
+    Legacy sidecars must still declare ``property_type`` — the
+    'no code path defaults to multifamily' rule applies here too.
+    """
+    property_type = _validate_property_type(raw.get("property_type"))
+    financial = dict(raw)
+    _validate_cap_rate_override(financial)
     return PropertyInputs(
         schema_version=SCHEMA_VERSION,
         slug=_slugify(address),
         address=address,
         county=county,
+        property_type=property_type,
         identity={},
-        financial=dict(raw),
+        financial=financial,
         branding={},
     )
 
@@ -279,15 +329,12 @@ def load_property_inputs(address: str, county: str,
             )
             return inputs
 
-    # Tier 3: defaults only
-    print(f"  No property inputs file found for '{address}' — using defaults only")
-    return PropertyInputs(
-        schema_version=SCHEMA_VERSION,
-        slug=slug,
-        address=address,
-        county=county,
-        identity={},
-        financial=dict(defaults),
+    # Tier 3: no sidecar found. The 'no code path defaults to multifamily'
+    # rule (Wave 2) means we cannot synthesise a PropertyInputs without a
+    # property_type — raise so the caller knows the wizard must supply one.
+    raise SchemaVersionError(
+        f"No property-inputs sidecar found for '{address}'. "
+        + PROPERTY_TYPE_MISSING_MSG
     )
 
 

@@ -8,7 +8,7 @@
     <div class="sec-title">{{ footer_section_names[2] }}</div>
     <div class="gold-rule"></div>
 
-    {% if property_type == 'multifamily' or property_type is not defined %}
+    {% if property_type == "multifamily" %}
     <!-- Unit Mix Table — v3: full spec data -->
     <h4 style="margin-bottom:7px;">Unit Mix &amp; In-Place Rents</h4>
     <table class="dtable" style="margin-bottom:5px;">
@@ -171,9 +171,13 @@
         <div style="background:var(--bg);border:1px solid var(--rule);padding:8px 10px;">
           <h4 style="margin-bottom:5px;">Key Metrics</h4>
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Asking Price</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ asking_price_full }}</span></div>
+          {% if price_per_unit_display %}
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Price / Unit</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ price_per_unit_display }}</span></div>
+          {% endif %}
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">T-12 Cap Rate</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ t12_cap_rate }}</span></div>
+          {% if proforma_cap_rate %}
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Pro Forma Cap Rate</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ proforma_cap_rate }}</span></div>
+          {% endif %}
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">OpEx Ratio</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ opex_ratio }}</span></div>
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">Cash-on-Cash (YR1)</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ cash_on_cash }}</span></div>
           <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate);">IRR ({{ hold_period }}yr)</span><span style="font-size:8px;font-weight:600;color:var(--navy);">{{ irr }}</span></div>

@@ -46,13 +46,27 @@
       <div class="kpi-dark" style="flex:1.4;">
         <div class="kl">Asking Price</div>
         <div class="kv">{{ asking_price_display }}</div>
+        {% if price_per_unit_display %}
         <div class="ks">{{ price_per_unit_display }} / Unit</div>
+        {% endif %}
       </div>
+      {% if property_type == "multifamily" %}
       <div class="kpi-dark">
         <div class="kl">Total Units</div>
         <div class="kv">{{ total_units }}</div>
         <div class="ks">{{ stories }} Stories &middot; {{ floor_plan_count }} Floor Plans</div>
       </div>
+      {% else %}
+      <!-- Commercial KPI cell 2: rentable SF + occupancy. The engine
+           emits vacancy_pct_display today; occupancy is shown as
+           "(100% - vacancy)" copy until a dedicated occupancy_pct_display
+           field lands in a later wave (PLACEHOLDER). -->
+      <div class="kpi-dark">
+        <div class="kl">Rentable SF</div>
+        <div class="kv">{{ total_rentable_sf }}</div>
+        <div class="ks">{{ vacancy_pct_display | default('—') }} Vacancy</div>
+      </div>
+      {% endif %}
       <div class="kpi-dark">
         <div class="kl">Cap Rate</div>
         <div class="kv">{{ t12_cap_rate }}</div>
@@ -66,13 +80,22 @@
       <div class="kpi-dark">
         <div class="kl">Year Built</div>
         <div class="kv">{{ year_built }}</div>
-        <div class="ks">{{ management_company_short }} Managed</div>
+        <div class="ks">{{ management_company_short | default('—') }} Managed</div>
       </div>
+      {% if property_type == "multifamily" %}
       <div class="kpi-dark">
         <div class="kl">Avg. Monthly Rent</div>
         <div class="kv">{{ avg_monthly_rent }}</div>
         <div class="ks">{{ min_unit_sf }}&#8211;{{ max_unit_sf }} SF Units</div>
       </div>
+      {% else %}
+      <!-- Commercial KPI cell 6: WALT + avg rent PSF (both engine-emitted) -->
+      <div class="kpi-dark">
+        <div class="kl">WALT</div>
+        <div class="kv">{{ walt_display | default('—') }}</div>
+        <div class="ks">{{ avg_rent_psf_display | default('—') }}</div>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Property summary -->
@@ -90,11 +113,24 @@
       </div>
       <div class="vdiv" style="height:110px;margin-top:10px;"></div>
       <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px 16px;padding-top:12px;">
+        {% if property_type == "multifamily" %}
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Total Units</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ total_units }} Units</div></div>
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Avg. Unit Size</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ avg_unit_sf }} SF avg</div></div>
+        {% else %}
+        <!-- Commercial summary slots 1–2: year built + vacancy.
+             vacancy_pct_display is a PLACEHOLDER stand-in for occupancy
+             until the commercial engine emits a dedicated occupancy field. -->
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Year Built</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ year_built }}</div></div>
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Vacancy</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ vacancy_pct_display | default('—') }}</div></div>
+        {% endif %}
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Rentable Area</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ total_rentable_sf }} SF</div></div>
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Zoning</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ zoning_code }}</div></div>
+        {% if property_type == "multifamily" %}
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Utility Structure</div><div style="font-size:9px;font-weight:600;color:var(--navy);">Tenant-Paid: Electric + Gas<br><span style="color:var(--slate-light);font-weight:400;">Landlord-Paid: Water / Common Area</span></div></div>
+        {% else %}
+        <!-- Commercial summary slot 5: WALT (engine-emitted) -->
+        <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">WALT</div><div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--navy);">{{ walt_display | default('—') }}</div></div>
+        {% endif %}
         <div><div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Management</div><div style="font-size:9px;font-weight:600;color:var(--navy);">{{ management_company | default('—') }}<br><span style="color:var(--slate-light);font-weight:400;">Institutional Operator</span></div></div>
       </div>
     </div>

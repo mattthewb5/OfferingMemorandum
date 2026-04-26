@@ -18,7 +18,11 @@
           <div style="font-size:7px;color:rgba(42,82,160,0.55);margin-top:7px;font-style:italic;font-family:var(--sans);">&#8857; Synthesized by NewCo AI Platform from permit, zoning, demographic, and market data &middot; {{ report_date }}</div>
         </div>
 
-        <!-- Value-add thesis box — v3: populated with spec numbers -->
+        {# Value-add thesis box — populated from MF engine output;
+           skipped entirely in POR mode (engine does not compute the
+           value-add metrics in POR). Use a Jinja comment so the
+           string token doesn't leak into the rendered HTML. #}
+        {% if not is_por_mode %}
         <div class="value-add-box" style="margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
             <div style="font-size:8px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--wo-blue);font-family:var(--sans);">{{ embedded_value_display }} Embedded Value &#8212; {{ portfolio_rent_gap_pct }} Mark-to-Market Opportunity</div>
@@ -36,6 +40,7 @@
           </div>
           <div style="font-size:7.5px;color:var(--slate-light);margin-top:7px;font-style:italic;">~{{ below_market_units }} below-market units &times; {{ avg_gap_per_unit }}/unit/month avg gap &times; 12 = {{ annual_noi_potential }}/yr additional NOI. At {{ value_cap_rate }} cap rate = {{ embedded_value_display }} implied embedded value.</div>
         </div>
+        {% endif %}
 
         <h4 style="margin-bottom:10px;">Investment Highlights</h4>
 
@@ -54,10 +59,18 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);">
             <div class="kpi-light"><div class="kl">Asking Price</div><div class="kv">{{ asking_price_short }}</div></div>
             <div class="kpi-light"><div class="kl">T-12 Cap Rate <span style="text-transform:none;letter-spacing:0;">(Actual)</span></div><div class="kv">{{ t12_cap_rate }}</div></div>
+            {% if proforma_cap_rate %}
             <div class="kpi-light"><div class="kl">Pro Forma Cap Rate</div><div class="kv">{{ proforma_cap_rate }}</div><div class="ks">Stabilized YR 1</div></div>
+            {% endif %}
             <div class="kpi-light"><div class="kl">T-12 NOI <span style="text-transform:none;letter-spacing:0;">(Actual)</span></div><div class="kv">{{ t12_noi_short }}</div></div>
+            {% if property_type == "multifamily" %}
             <div class="kpi-light"><div class="kl">Total Units</div><div class="kv">{{ total_units }}</div></div>
+            {% else %}
+            <div class="kpi-light"><div class="kl">Rentable SF</div><div class="kv">{{ total_rentable_sf | default('—') }}</div></div>
+            {% endif %}
+            {% if price_per_unit_display %}
             <div class="kpi-light"><div class="kl">Price / Unit</div><div class="kv">{{ price_per_unit_display }}</div></div>
+            {% endif %}
           </div>
           <div style="font-size:7px;color:var(--red);font-weight:600;padding:4px 0;font-family:var(--sans);">&#9888; Cap rate labels distinguish T-12 Actual vs. Pro Forma throughout this document.</div>
         </div>

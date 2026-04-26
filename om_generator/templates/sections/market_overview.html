@@ -50,7 +50,11 @@
           <div style="font-size:7.5px;color:var(--slate-light);margin-top:4px;font-style:italic;">{{ demo.income_source_footnote }}</div>
         </div>
 
-        <!-- Fairfax market summary -->
+        <!-- Multifamily market summary — MF-only panel.
+             Hardcodes 'Multifamily' in heading and uses unit-based metrics
+             (Avg. Price / Unit, Rent Growth). Commercial market context is
+             a Wave 3+ builder; until then the panel is hidden for non-MF. -->
+        {% if property_type == "multifamily" %}
         <div style="background:rgba(42,82,160,0.05);border:1px solid rgba(42,82,160,0.2);padding:11px 13px;">
           <h4 style="margin-bottom:7px;color:var(--wo-blue);">{{ property_county }} Multifamily Market Context</h4>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px;">
@@ -74,6 +78,7 @@
           <p style="font-size:8.5px;line-height:1.6;color:var(--slate);">{{ market.narrative_text }}</p>
           <div style="font-size:7.5px;color:var(--slate-light);margin-top:5px;font-style:italic;">{{ market.source_attribution }}</div>
         </div>
+        {% endif %}
 
       </div>
 

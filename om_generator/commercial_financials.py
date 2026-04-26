@@ -4,9 +4,19 @@ Commercial Financial Engine — office, retail, and industrial.
 Manual-entry engine for commercial property types. Broker provides
 rent roll and key financials; engine formats and computes NOI, cap rate,
 WALT. No automated data sourcing in Phase 1.
+
+POR mode (price_upon_request=True AND asking_price absent AND
+cap_rate_override set) yields a price-on-request FinancialContext
+mirroring the multifamily engine: asking_price_display='Price on
+request', price_per_unit_display / proforma_cap_rate hidden, t12_cap_rate
+formatted from the override, is_por_mode=True. The downstream financing
+/ IRR chain still runs against a synthesized
+asking_price = NOI / cap_rate_override so the OM has self-consistent
+numbers; the synthesized value is never surfaced as a display token.
 """
 
 from datetime import datetime
+from exceptions import OMFinancialEngineInputError
 from financial_formatter import (
     fmt_dollar, fmt_dollar_short, fmt_dollar_medium,
     fmt_pct, fmt_int, fmt_ratio,
@@ -24,13 +34,46 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
     Returns: dict of ctx keys for commercial template sections
     """
 
-    asking_price = float(inputs.get("asking_price", 0))
-    if asking_price <= 0:
-        raise ValueError("asking_price is required and must be > 0")
+    # ── POR detection + input validation ────────────────────────────
+    price_upon_request = bool(inputs.get("price_upon_request", False))
+    cap_rate_override = inputs.get("cap_rate_override")
+    asking_price_raw = inputs.get("asking_price")
+    asking_price_provided = (
+        asking_price_raw is not None and float(asking_price_raw or 0) > 0
+    )
+
+    if price_upon_request and cap_rate_override is None:
+        raise OMFinancialEngineInputError(
+            "Price-on-request mode requires cap_rate_override. "
+            "Sidecar has POR=true but no override."
+        )
+    if not asking_price_provided and cap_rate_override is None:
+        raise OMFinancialEngineInputError(
+            "Engine requires either asking_price or cap_rate_override "
+            "to compute cap rate display. Sidecar has neither."
+        )
+
+    is_por_mode = (
+        price_upon_request
+        and not asking_price_provided
+        and cap_rate_override is not None
+    )
 
     total_sf = int(inputs.get("total_sf", 0))
     if total_sf <= 0:
-        raise ValueError("total_sf is required and must be > 0")
+        raise OMFinancialEngineInputError(
+            "Commercial engine requires total_sf. Sidecar has none. "
+            "Capture total rentable SF in the wizard property-details "
+            "step."
+        )
+
+    if is_por_mode:
+        # Same pattern as MF engine: synthesize asking_price after NOI
+        # is computed so the financing / IRR chain has a price to work
+        # against. Display tokens are overridden at ctx assembly.
+        asking_price = 0.0
+    else:
+        asking_price = float(asking_price_raw)
 
     rent_roll_raw = inputs.get("rent_roll", [])
     vacancy_sf = float(inputs.get("vacancy_sf", 0))
@@ -82,7 +125,11 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
     vacancy_pct = (total_sf - occupied_sf) / total_sf if total_sf > 0 else 0
     egi = gross_revenue  # NNN: expenses pass through to tenants
     noi = egi - operating_expenses
-    t12_cap_rate = noi / asking_price if asking_price > 0 else 0
+    if is_por_mode:
+        asking_price = noi / float(cap_rate_override) if cap_rate_override else 0
+        t12_cap_rate = float(cap_rate_override)
+    else:
+        t12_cap_rate = noi / asking_price if asking_price > 0 else 0
     price_per_sf = asking_price / total_sf if total_sf > 0 else 0
     walt = (weighted_months / occupied_sf / 12) if occupied_sf > 0 else 0
     avg_rent_psf = gross_revenue / occupied_sf if occupied_sf > 0 else 0
@@ -153,23 +200,44 @@ def compute_commercial_financials(inputs: dict, defaults: dict,
         default_rent_growth=rent_growth,
     )
 
+    # POR-mode display tokens. Hidden flags (None) signal templates to
+    # skip the corresponding rows; Wave 2 C4 wires the {% if %} guards.
+    if is_por_mode:
+        asking_price_display = "Price on request"
+        price_per_sf_display = None
+        price_per_unit_display = None
+        proforma_cap_rate_display = None
+    else:
+        asking_price_display = fmt_dollar(asking_price)
+        price_per_sf_display = fmt_dollar(price_per_sf)
+        # Commercial doesn't have units, so price_per_unit_display is
+        # always hidden — emit None for parity with the MF context.
+        price_per_unit_display = None
+        proforma_cap_rate_display = fmt_pct(proforma_cap_rate)
+
     # ── Output dict ─────────────────────────────────────────────────────
+    # ``total_rentable_sf`` matches the cover-template variable name (see
+    # cover.html); the prior ``total_sf_display`` key was unreachable from
+    # the cover. Renamed in Wave 2 C3.
     ctx = {
         "property_type": property_type,
+        "is_por_mode": is_por_mode,
         "rent_roll": rent_roll,
-        "total_sf_display": f"{total_sf:,}",
+        "total_rentable_sf": f"{total_sf:,}",
         "occupied_sf_display": f"{int(occupied_sf):,}",
         "vacancy_pct_display": fmt_pct(vacancy_pct),
         "gross_revenue_display": fmt_dollar(gross_revenue),
         "noi_display": fmt_dollar(noi),
         "t12_cap_rate": fmt_pct(t12_cap_rate),
-        "proforma_cap_rate": fmt_pct(proforma_cap_rate),
-        "price_per_sf_display": fmt_dollar(price_per_sf),
+        "proforma_cap_rate": proforma_cap_rate_display,
+        "price_per_sf_display": price_per_sf_display,
+        "price_per_unit_display": price_per_unit_display,
         "walt_display": f"{walt:.1f} years",
         "avg_rent_psf_display": f"${avg_rent_psf:.2f} / SF",
-        "asking_price_display": fmt_dollar(asking_price),
-        "asking_price_full": fmt_dollar(asking_price),
-        "asking_price_short": fmt_dollar_medium(asking_price),
+        "asking_price_display": asking_price_display,
+        "asking_price_full": asking_price_display,
+        "asking_price_short": (asking_price_display
+                               if is_por_mode else fmt_dollar_medium(asking_price)),
         "cash_on_cash": fmt_pct(cash_on_cash),
         "irr": fmt_pct(irr) if irr is not None else "N/A",
         "hold_period": str(hold_period),

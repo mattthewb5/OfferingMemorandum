@@ -15,10 +15,9 @@ sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
 
 from core.api_config import get_api_key
 from core.rentcast_client import RentCastClient
+from engine_dispatcher import route_financial_engine
 from exceptions import OMFinancialEngineInputError
-from financial_defaults import get_defaults, load_financial_inputs
-from mf_financials import compute_mf_financials
-from commercial_financials import compute_commercial_financials
+from financial_defaults import get_defaults, load_property_inputs
 
 
 def build_financial_context(address: str, lat: float, lon: float,
@@ -41,13 +40,13 @@ def build_financial_context(address: str, lat: float, lon: float,
     unexpected runtime errors — are still trapped and yield ``{}`` so
     the OM falls back to seed values rather than blocking generation.
     """
-    # 1. Load inputs (schema validation lives in load_financial_inputs;
-    #    SchemaVersionError surfaces for sidecar-format problems and
-    #    OMFinancialEngineInputError for engine-input problems below).
+    # 1. Load inputs as the v1.0 PropertyInputs dataclass. Schema-format
+    #    failures surface as SchemaVersionError; the dispatcher reads
+    #    property_type off the dataclass attribute (not the .financial
+    #    catch-all dict).
     defaults = get_defaults(county)
-    inputs = load_financial_inputs(address, county,
-                                   financial_inputs_path=financial_inputs_path)
-    property_type = inputs.get("property_type", "multifamily")
+    inputs = load_property_inputs(address, county, path=financial_inputs_path)
+    property_type = inputs.property_type
 
     # 2. Fetch market rents (MF only) — network failures swallowed
     market_rents = {}
@@ -59,7 +58,7 @@ def build_financial_context(address: str, lat: float, lon: float,
                 if api_key:
                     rentcast = RentCastClient(api_key=api_key)
                     market_rents = rentcast.get_market_rent_for_unit_mix(
-                        zipcode, inputs.get("unit_mix", []))
+                        zipcode, inputs.financial.get("unit_mix", []))
                     if market_rents:
                         print(f"  Market rents fetched via RentCast: {market_rents}")
                     else:
@@ -73,18 +72,14 @@ def build_financial_context(address: str, lat: float, lon: float,
                       "falling back to 10% premium")
                 market_rents = {}
 
-    # 3. Route to engine. OMFinancialEngineInputError propagates so the
-    #    wizard can surface the engine's diagnostic. Unrelated runtime
-    #    errors are still trapped to keep seed-value fallback working.
+    # 3. Route to engine via the dispatcher. OMFinancialEngineInputError
+    #    propagates so the wizard can surface the engine's diagnostic.
+    #    Unrelated runtime errors are still trapped to keep seed-value
+    #    fallback working.
     try:
-        if property_type == "multifamily":
-            result = compute_mf_financials(inputs, defaults, market_rents)
-        elif property_type in ("office", "retail", "industrial"):
-            result = compute_commercial_financials(inputs, defaults, property_type)
-        else:
-            raise ValueError(f"Unknown property_type: {property_type}")
-    except OMFinancialEngineInputError:
-        # Engine input failures must reach the broker — re-raise.
+        result = route_financial_engine(inputs, defaults, market_rents)
+    except (OMFinancialEngineInputError, NotImplementedError):
+        # Engine input failures and stubbed paths must reach the broker.
         raise
     except Exception as e:
         print(f"  ERROR in financial engine: {e}")

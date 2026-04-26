@@ -56,7 +56,7 @@ def _format_offer_due(value) -> Optional[str]:
             d = date.fromisoformat(str(value))
         except (TypeError, ValueError):
             return str(value)
-    return d.strftime("%B %-d, %Y")
+    return f"{d.strftime('%B')} {d.day}, {d.year}"
 
 
 def build_identity_context(financial_inputs_path: Optional[str]) -> dict:

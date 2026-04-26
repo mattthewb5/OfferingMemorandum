@@ -169,6 +169,10 @@ def _run_om_generation_inner(address: str, output_path: str,
         from context_sample import get_sample_context
         ctx = get_sample_context()
 
+        # ── Static page chrome (footer section names + page numbers) ──
+        from chrome_context import build_chrome_context
+        ctx.update(build_chrome_context())
+
         # ── Property identity (must run first) ─────────────────────────
         from property_context import build_property_context
         prop_ctx = build_property_context(address, lat, lon, county)

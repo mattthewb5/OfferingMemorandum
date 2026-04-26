@@ -49,9 +49,6 @@ def get_sample_context():
         "zoning_display": "PDH \u00b7 Planned Dev. Housing",
         "utility_structure_short": "Tenant: Elec+Gas | LL: Water",
 
-        # Photo strip placeholders
-        "photo_labels": ["Aerial View", "Clubhouse", "Pool Deck", "Unit Interior"],
-
         # ============================================================
         # PRICING / VALUATION
         # ============================================================
@@ -210,24 +207,6 @@ def get_sample_context():
         "utility_benchmark_low": "$820",
         "utility_benchmark_high": "$960",
         "utility_assessment": "Within Normal Range",
-
-        # ============================================================
-        # CASH FLOW PROJECTION
-        # ============================================================
-        "cashflow": {
-            "yr1_egi": "$15.89M",
-            "yr3_egi": "$16.51M",
-            "yr5_egi": "$17.16M",
-            "yr1_noi": "$12.20M",
-            "yr3_noi": "$12.73M",
-            "yr5_noi": "$13.29M",
-            "yr1_debt_svc": "$5.99M",
-            "yr3_debt_svc": "$5.99M",
-            "yr5_debt_svc": "$5.99M",
-            "yr1_cashflow": "$6.22M",
-            "yr3_cashflow": "$6.75M",
-            "yr5_cashflow": "$7.30M",
-        },
 
         # ============================================================
         # FINANCING
@@ -476,25 +455,4 @@ def get_sample_context():
             "score": "88/100 Top Tier",
         },
 
-        # ============================================================
-        # PAGE INFRASTRUCTURE
-        # ============================================================
-        "footer_section_names": [
-            "",  # index 0 unused (cover has custom footer)
-            "Executive Summary",
-            "Financial Analysis",
-            "Development Intelligence",
-            "Market Overview",
-            "Location Analysis",
-            "Contact & Next Steps",
-        ],
-        "page_numbers": [
-            "",  # index 0 unused
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-        ],
     }

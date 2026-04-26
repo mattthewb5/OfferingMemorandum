@@ -12,7 +12,6 @@ The builder never raises. Any analyzer exception falls through to Tier 3.
 
 import csv
 import logging
-import re
 import sys
 from pathlib import Path
 
@@ -21,6 +20,8 @@ from pathlib import Path
 # isn't possible; sys.path + `from core.*` is the house convention).
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
+
+from address_slug import make_address_slug
 
 logger = logging.getLogger(__name__)
 
@@ -77,13 +78,6 @@ _BROKER_METHODOLOGY = (
 _BROKER_DEED_SOURCE = "Broker-Provided / CREXi / CoStar"
 
 
-def _slugify(address: str) -> str:
-    """Match the photo strip slugifier so broker drops line up with photos."""
-    slug = re.sub(r"[^a-z0-9]+", "-", address.lower())
-    slug = re.sub(r"-+", "-", slug)
-    return slug.strip("-")
-
-
 def _format_dollars(amount) -> str:
     """Render a numeric sale price as a display string: '$NNN,NNN,NNN'."""
     try:
@@ -116,7 +110,7 @@ def _format_sale_date(date_str) -> str:
 
 def _load_broker_csv(address: str) -> list[dict] | None:
     """Tier 1: return broker-provided comp rows, or None if no file exists."""
-    slug = _slugify(address)
+    slug = make_address_slug(address)
     csv_path = _COMPS_ROOT / f"{slug}.csv"
     if not csv_path.is_file():
         logger.info("Broker comps file not found at %s", csv_path)

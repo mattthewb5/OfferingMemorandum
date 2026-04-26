@@ -16,7 +16,6 @@ Usage:
 
 import base64
 import logging
-import re
 import sys
 from pathlib import Path
 
@@ -27,6 +26,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "multi-county-real-estate-research"))
 
 from core.api_config import get_api_key
+from address_slug import make_address_slug
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +48,6 @@ _EXT_MIME = {
     ".png": "image/png",
     ".webp": "image/webp",
 }
-
-
-def _slugify(address: str) -> str:
-    """Lowercase, non-alphanumeric → hyphen, collapse, strip edges."""
-    slug = re.sub(r"[^a-z0-9]+", "-", address.lower())
-    slug = re.sub(r"-+", "-", slug)
-    return slug.strip("-")
 
 
 def _encode_file(path: Path) -> str | None:
@@ -84,7 +77,7 @@ def _find_broker_photo(slot_dir: Path, slot_num: int) -> Path | None:
 
 def _load_broker_photos(address: str) -> list[str | None]:
     """Tier 1: return 4-element list of data-URI strings or None per slot."""
-    slug = _slugify(address)
+    slug = make_address_slug(address)
     slot_dir = _PHOTOS_ROOT / slug
     urls: list[str | None] = [None, None, None, None]
 

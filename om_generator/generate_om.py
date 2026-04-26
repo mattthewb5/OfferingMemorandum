@@ -179,6 +179,14 @@ def _run_om_generation_inner(address: str, output_path: str,
               f"metro={prop_ctx['metro_station_name']} ({prop_ctx['metro_distance']}) | "
               f"uni={prop_ctx['university_name_short']} ({prop_ctx['university_distance']})")
 
+        # ── Broker-confirmed identity + branding overrides ────────────
+        from identity_context import build_identity_context
+        identity_ctx = build_identity_context(financial_inputs_path)
+        ctx.update(identity_ctx)
+        if identity_ctx:
+            print(f"  Identity wired: {len(identity_ctx)} broker-confirmed "
+                  f"keys ({', '.join(sorted(identity_ctx))})")
+
         # ── County-aware data sources sidebar ──────────────────────────
         from data_sources_context import build_data_sources_context
         data_sources_ctx = build_data_sources_context(county)

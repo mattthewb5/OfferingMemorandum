@@ -11,6 +11,7 @@ Best-effort by design: any failure (missing file, parse error, schema
 mismatch) yields an empty dict so upstream context defaults stand.
 """
 
+from datetime import date, datetime
 from typing import Optional
 
 from financial_defaults import load_property_inputs
@@ -36,6 +37,26 @@ _BRANDING_KEYS = (
     "broker_email",
     "offer_due_date",
 )
+
+
+def _format_offer_due(value) -> Optional[str]:
+    """Convert an ISO date (or date object) to 'April 30, 2026'.
+
+    Returns the original string unchanged if it isn't ISO-parseable.
+    Returns None if the input is empty.
+    """
+    if value in (None, ""):
+        return None
+    if isinstance(value, datetime):
+        d = value.date()
+    elif isinstance(value, date):
+        d = value
+    else:
+        try:
+            d = date.fromisoformat(str(value))
+        except (TypeError, ValueError):
+            return str(value)
+    return d.strftime("%B %-d, %Y")
 
 
 def build_identity_context(financial_inputs_path: Optional[str]) -> dict:
@@ -77,6 +98,13 @@ def build_identity_context(financial_inputs_path: Optional[str]) -> dict:
             if value is None:
                 continue
             ctx[key] = value
+
+        # Companion display field: human-readable offer due date so
+        # templates can render "April 30, 2026" without a strftime filter.
+        if "offer_due_date" in ctx:
+            display = _format_offer_due(ctx["offer_due_date"])
+            if display:
+                ctx["offer_due_date_display"] = display
     except Exception:
         return {}
 

@@ -1,0 +1,65 @@
+<!-- ═══════════════════════════════════
+     PAGE 7 — CONTACT & NEXT STEPS
+════════════════════════════════════ -->
+<div class="page">
+  <div style="padding:48px 56px 60px;">
+    <div class="sec-label">Contact &amp; Next Steps</div>
+    <div class="sec-title">Offering Process</div>
+    <div class="gold-rule"></div>
+
+    <p style="margin-bottom:18px;">
+      Direct all inquiries, due-diligence requests, and offers to the
+      exclusive advisor named below. Confidentiality and qualification
+      requirements apply; please refer to the executed CA for terms.
+    </p>
+
+    <!-- Offer due banner -->
+    <div style="background:rgba(184,150,106,0.08);border:1px solid rgba(184,150,106,0.3);padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:7.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:3px;">Call For Offers</div>
+        <div style="font-family:var(--serif);font-size:18px;font-weight:600;color:var(--navy);">Offers Due: {{ offer_due_date_display | default('TBD') }}</div>
+      </div>
+      <div style="font-size:8px;color:var(--slate-light);text-align:right;line-height:1.6;">
+        Submit via email to the advisor at right.<br>
+        Late submissions accepted at seller's discretion.
+      </div>
+    </div>
+
+    <!-- Broker contact card -->
+    <div style="border:1px solid var(--rule);padding:24px 28px;margin-bottom:24px;">
+      <div style="font-size:7.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">Exclusive Advisor</div>
+      <div style="font-family:var(--serif);font-size:24px;font-weight:600;color:var(--navy);line-height:1.15;">{{ broker_name | default('—') }}</div>
+      <div style="font-size:10px;color:var(--slate);margin-top:2px;">{{ broker_title | default('—') }}</div>
+      <div style="font-size:11px;color:var(--navy);font-weight:600;margin-top:4px;">{{ broker_firm | default('West Oxford Advisors') }}</div>
+
+      <hr class="rule" style="margin:14px 0;">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;">
+        <div>
+          <div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Phone</div>
+          <div style="font-size:11px;font-weight:600;color:var(--navy);">{{ broker_phone | default('—') }}</div>
+        </div>
+        <div>
+          <div style="font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--slate-light);margin-bottom:2px;">Email</div>
+          <div style="font-size:11px;font-weight:600;color:var(--navy);">{{ broker_email | default('—') }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div style="font-size:8px;color:var(--slate-light);line-height:1.6;font-style:italic;">
+      This Offering Memorandum has been prepared for informational purposes
+      only and does not constitute an offer to sell or a solicitation of an
+      offer to buy. All information contained herein is from sources deemed
+      reliable; however, no representation or warranty is made as to its
+      accuracy or completeness. Recipients are advised to conduct their own
+      independent due diligence.
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div class="pf-left">{{ footer_section_names[6] }}</div>
+    <div class="pf-center">{{ property_name }} &middot; {{ property_city }}, {{ property_state }} {{ property_zip }}</div>
+    <div style="display:flex;align-items:center;gap:10px;"><div class="wo-mark"><img src="{{ wo_logo_base64 }}" alt="WO"><span class="pf-right">{{ broker_firm | default('West Oxford Advisors') }}</span></div><span class="pf-right">Page {{ page_numbers[6] }}</span></div>
+  </div>
+</div>

@@ -26,7 +26,7 @@ def get_sample_context():
         "metro_badge_text": "Vienna Metro",
         "metro_distance": "1.3 mi",
         "hero_image_label": "[ Aerial / Drone Hero Image ]",
-        "broker_name": "West Oxford Advisors",
+        "broker_firm": "West Oxford Advisors",
         "report_date": "March 2026",
 
         # West Oxford logo (base64) &#8212; loaded at runtime by generate_om.py
@@ -486,6 +486,7 @@ def get_sample_context():
             "Development Intelligence",
             "Market Overview",
             "Location Analysis",
+            "Contact & Next Steps",
         ],
         "page_numbers": [
             "",  # index 0 unused
@@ -494,5 +495,6 @@ def get_sample_context():
             "4",
             "5",
             "6",
+            "7",
         ],
     }

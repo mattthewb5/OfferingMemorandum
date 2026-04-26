@@ -30,6 +30,13 @@
 
     <!-- Image area label -->
     <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.18);font-family:var(--sans);">{{ hero_image_label }}</div>
+
+    <!-- Broker contact (bottom-right of hero) -->
+    <div style="position:absolute;bottom:16px;right:36px;text-align:right;font-family:var(--sans);color:rgba(255,255,255,0.55);font-size:8px;line-height:1.55;">
+      <div style="font-size:7px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:3px;">Offers Due {{ offer_due_date_display | default('TBD') }}</div>
+      <div style="font-weight:600;color:rgba(255,255,255,0.8);">{{ broker_name | default('—') }}{% if broker_title %} &middot; {{ broker_title }}{% endif %}</div>
+      <div>{{ broker_phone | default('—') }} &middot; {{ broker_email | default('—') }}</div>
+    </div>
   </div>
 
   <!-- WHITE BOTTOM HALF -->
@@ -120,7 +127,7 @@
   <div class="page-footer">
     <div class="pf-left">{{ property_name }} &middot; {{ property_address }} &middot; {{ property_city }}, {{ property_state_abbr }} {{ property_zip }}</div>
     <div class="pf-center">Investment Offering Memorandum &middot; Confidential</div>
-    <div class="wo-mark"><img src="{{ wo_logo_base64 }}" alt="WO"><span class="pf-right">{{ broker_name }}</span></div>
+    <div class="wo-mark"><img src="{{ wo_logo_base64 }}" alt="WO"><span class="pf-right">{{ broker_firm | default('West Oxford Advisors') }}</span></div>
   </div>
 </div>
 

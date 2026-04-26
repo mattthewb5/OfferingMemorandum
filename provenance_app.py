@@ -35,8 +35,9 @@ _SUPPORTED_COUNTIES = {"fairfax", "loudoun"}
 
 
 # ── Slug helper ──────────────────────────────────────────────────────
-def make_slug(address: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", address.lower()).strip("-")
+# Single source of truth lives in om_generator/address_slug.py so the
+# audit-trail filenames stay byte-identical with the wizard's writes.
+from address_slug import make_address_slug as make_slug  # noqa: E402
 
 
 # ── Data directory scaffolding ───────────────────────────────────────
@@ -46,7 +47,7 @@ _DATA_DIRS = [
     _OM_DIR / "data" / "comps",
     _OM_DIR / "data" / "rent_rolls",
     _OM_DIR / "data" / "t12",
-    _OM_DIR / "data" / "financial_inputs",
+    _OM_DIR / "data" / "property_inputs",
     _OM_DIR / "data" / "broker_assets",
     _OM_DIR / "output",
 ]
@@ -1058,7 +1059,7 @@ Avg monthly rent:&nbsp;${avg_rent:,.0f}
     with col_c:
         if st.button("Continue", type="primary"):
             st.session_state.financials = fin
-            _assemble_sidecar_json(fin)
+            _assemble_property_json(fin)
             _auto_save()
             st.session_state.wizard_step = 6
             st.rerun()
@@ -1625,15 +1626,132 @@ def _step_5_missing_field_warnings(
 
 
 # ── Sidecar JSON assembly ──────────────────────────────────────────
-def _assemble_sidecar_json(fin: dict):
-    """Build the sidecar JSON expected by financial_context.py and write to disk."""
+# Wizard form keys (left) renamed to canonical sidecar keys (right) before
+# being written into the v1.0 ``property`` block.
+_WIZARD_TO_IDENTITY_KEYS = {
+    "property_name": "property_name",
+    "year_built": "year_built",
+    "stories": "stories",
+    "floor_plan_count": "floor_plan_count",
+    "management_company": "management_company",
+    "submarket_label": "submarket_name",
+    "utility_structure": "utility_structure_short",
+}
+
+
+def _broker_identity(value):
+    """Wrap a wizard-supplied value as a broker-confirmed identity entry."""
+    return {"value": value, "source": "broker", "confirmed_by_broker": True}
+
+
+def _derive_management_company_short(full_name: str) -> str:
+    """Shorten a management company name for the cover-page badge.
+
+    Strips trailing common qualifiers; falls back to the first whitespace token.
+    """
+    if not full_name:
+        return ""
+    cleaned = full_name.strip()
+    for suffix in (" Residential", " Management Company", " Management"):
+        if cleaned.endswith(suffix):
+            cleaned = cleaned[: -len(suffix)].strip()
+            break
+    return cleaned.split()[0] if " " in cleaned else cleaned
+
+
+def _build_property_sidecar_dict(
+    *,
+    ptype: str,
+    pd_details: dict,
+    fin: dict,
+    address: str,
+    county: str,
+    geocode: dict,
+    slug: str,
+) -> dict:
+    """Pure builder — produces the v1.0 sidecar dict; no I/O, no globals."""
     import datetime as _dt
+    sidecar = {
+        "schema_version": "1.0",
+        "slug": slug,
+        "address": address,
+        "county": county,
+        "property": {},
+        "property_type": ptype,
+    }
 
-    ptype = st.session_state.property_type
-    pd_details = st.session_state.property_details
-    slug = make_slug(st.session_state.address)
+    # ── Identity block — broker-supplied wizard fields ───────────────
+    identity = sidecar["property"]
+    for wizard_key, sidecar_key in _WIZARD_TO_IDENTITY_KEYS.items():
+        v = pd_details.get(wizard_key)
+        # Skip empty strings, None, and 0/None numeric placeholders for fields
+        # that streamlit number_input returns as None when blank.
+        if v in (None, ""):
+            continue
+        identity[sidecar_key] = _broker_identity(v)
 
-    sidecar = {"property_type": ptype}
+    # ── Derived: management_company_short ───────────────────────────
+    full_mgmt = pd_details.get("management_company")
+    if full_mgmt:
+        short = _derive_management_company_short(full_mgmt)
+        if short:
+            identity["management_company_short"] = {
+                "value": short,
+                "source": "derived",
+                "confirmed_by_broker": False,
+            }
+
+    # ── Default: hero_image_label ───────────────────────────────────
+    identity["hero_image_label"] = {
+        "value": "Property Exterior",
+        "source": "default",
+        "confirmed_by_broker": False,
+    }
+
+    # ── Auto-derivation: only fills fields the wizard did NOT provide ─
+    try:
+        from property_identity_helpers import (
+            derive_submarket_name,
+            derive_management_company,
+        )
+
+        if "submarket_name" not in identity:
+            auto = derive_submarket_name(
+                county, address, geocode.get("lat"), geocode.get("lon")
+            )
+            if auto is not None:
+                identity["submarket_name"] = {
+                    "value": auto.value,
+                    "source": auto.source,
+                    "confirmed_by_broker": auto.confirmed_by_broker,
+                }
+
+        if "management_company" not in identity:
+            subdivision = (
+                pd_details.get("subdivision")
+                or fin.get("subdivision")
+                or ""
+            )
+            auto = derive_management_company(county, subdivision)
+            if auto is not None:
+                identity["management_company"] = {
+                    "value": auto.value,
+                    "source": auto.source,
+                    "confirmed_by_broker": auto.confirmed_by_broker,
+                }
+                if "management_company_short" not in identity:
+                    short = _derive_management_company_short(auto.value)
+                    if short:
+                        identity["management_company_short"] = {
+                            "value": short,
+                            "source": "derived",
+                            "confirmed_by_broker": False,
+                        }
+    except ImportError:
+        # Helpers not yet available; identity stays as-is.
+        pass
+
+    # ── Flat financial fields (unchanged shape) ──────────────────────
 
     # Asking price (from Step 2)
     if not pd_details.get("price_upon_request"):
@@ -1757,8 +1875,25 @@ def _assemble_sidecar_json(fin: dict):
         if sidecar_debt:
             sidecar["existing_debt"] = sidecar_debt
 
-    # Write sidecar
-    sidecar_path = str(_OM_DIR / "data" / "financial_inputs" / f"{slug}.json")
+    return sidecar
+
+
+def _assemble_property_json(fin: dict):
+    """Build the v1.0 sidecar JSON and write to ``data/property_inputs/``."""
+    address = st.session_state.address
+    slug = make_slug(address)
+    sidecar = _build_property_sidecar_dict(
+        ptype=st.session_state.property_type,
+        pd_details=st.session_state.property_details,
+        fin=fin,
+        address=address,
+        county=(st.session_state.get("county") or "").lower(),
+        geocode=st.session_state.get("geocode_result") or {},
+        slug=slug,
+    )
+    sidecar_path = str(
+        _OM_DIR / "data" / "property_inputs" / f"property_{slug}.json"
+    )
     write_json(sidecar_path, sidecar)
     fin["_sidecar_path"] = sidecar_path
 
@@ -1864,7 +1999,7 @@ def _step_6():
 
     output_path = str(_OM_DIR / "output" / f"{slug}_om.html")
     sidecar_path = str(
-        _OM_DIR / "data" / "financial_inputs" / f"{slug}.json"
+        _OM_DIR / "data" / "property_inputs" / f"property_{slug}.json"
     )
     fin_path = sidecar_path if file_exists(sidecar_path) else None
 

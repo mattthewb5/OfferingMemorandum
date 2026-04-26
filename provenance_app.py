@@ -1668,6 +1668,7 @@ def _build_property_sidecar_dict(
     county: str,
     geocode: dict,
     slug: str,
+    branding: dict | None = None,
 ) -> dict:
     """Pure builder — produces the v1.0 sidecar dict; no I/O, no globals."""
     import datetime as _dt
@@ -1679,6 +1680,22 @@ def _build_property_sidecar_dict(
         "property": {},
         "property_type": ptype,
     }
+
+    # ── Branding block — broker contact / offer metadata ───────────
+    if branding:
+        sidecar_branding: dict = {}
+        for key in (
+            "broker_firm", "broker_name", "broker_title",
+            "broker_phone", "broker_email", "offer_due_date",
+        ):
+            v = branding.get(key)
+            if v in (None, ""):
+                continue
+            if isinstance(v, _dt.date):
+                v = v.isoformat()
+            sidecar_branding[key] = v
+        if sidecar_branding:
+            sidecar["branding"] = sidecar_branding
 
     # ── Identity block — broker-supplied wizard fields ───────────────
     identity = sidecar["property"]
@@ -1890,6 +1907,7 @@ def _assemble_property_json(fin: dict):
         county=(st.session_state.get("county") or "").lower(),
         geocode=st.session_state.get("geocode_result") or {},
         slug=slug,
+        branding=st.session_state.get("branding") or {},
     )
     sidecar_path = str(
         _OM_DIR / "data" / "property_inputs" / f"property_{slug}.json"

@@ -40,6 +40,18 @@ IDENTITY_FIELDS = [
     "hero_image_label",
 ]
 
+# Branding fields that may appear inside the ``branding`` block. These
+# are broker-supplied marketing/contact strings; they do not carry
+# provenance triplets (unlike identity).
+BRANDING_FIELDS = [
+    "broker_firm",
+    "broker_name",
+    "broker_title",
+    "broker_phone",
+    "broker_email",
+    "offer_due_date",
+]
+
 # Recognised provenance labels for an :class:`IdentityValue`. Any string
 # beginning with :data:`AUTO_SOURCE_PREFIX` is also accepted (e.g.
 # ``"auto:loudoun_community_lookup"``).
@@ -62,7 +74,7 @@ class IdentityValue:
 
 @dataclass
 class PropertyInputs:
-    """Loaded sidecar — both identity block and flat financial inputs."""
+    """Loaded sidecar — identity, branding, and flat financial inputs."""
 
     schema_version: str
     slug: str
@@ -70,3 +82,4 @@ class PropertyInputs:
     county: str
     identity: Dict[str, IdentityValue] = field(default_factory=dict)
     financial: Dict[str, Any] = field(default_factory=dict)
+    branding: Dict[str, Any] = field(default_factory=dict)

@@ -127,8 +127,17 @@ def _parse_canonical(raw: dict, fallback_address: str,
         for name, entry in identity_raw.items()
     }
 
+    branding_raw = raw.get("branding", {}) or {}
+    if not isinstance(branding_raw, dict):
+        raise SchemaVersionError(
+            f"'branding' block must be a dict; got {type(branding_raw).__name__}"
+        )
+    branding = dict(branding_raw)
+
     # Anything outside the structural keys is treated as a flat financial field.
-    structural_keys = {"schema_version", "slug", "address", "county", "property"}
+    structural_keys = {
+        "schema_version", "slug", "address", "county", "property", "branding",
+    }
     financial = {k: v for k, v in raw.items() if k not in structural_keys}
 
     return PropertyInputs(
@@ -138,6 +147,7 @@ def _parse_canonical(raw: dict, fallback_address: str,
         county=raw.get("county", fallback_county),
         identity=identity,
         financial=financial,
+        branding=branding,
     )
 
 
@@ -150,6 +160,7 @@ def _wrap_legacy(raw: dict, address: str, county: str) -> PropertyInputs:
         county=county,
         identity={},
         financial=dict(raw),
+        branding={},
     )
 
 

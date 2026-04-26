@@ -4,6 +4,14 @@
   "address": "",
   "county": "",
   "property": {},
+  "branding": {
+    "broker_firm": "West Oxford Advisors",
+    "broker_name": "Test Broker",
+    "broker_title": "Managing Director",
+    "broker_phone": "555-0102",
+    "broker_email": "regents-broker@example.com",
+    "offer_due_date": "2026-07-10"
+  },
   "property_type": "multifamily",
   "asking_price": 232000000,
   "total_units": 552,

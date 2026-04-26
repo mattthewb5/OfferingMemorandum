@@ -4,6 +4,14 @@
   "address": "",
   "county": "",
   "property": {},
+  "branding": {
+    "broker_firm": "West Oxford Advisors",
+    "broker_name": "Test Broker",
+    "broker_title": "Managing Director",
+    "broker_phone": "555-0100",
+    "broker_email": "broker@example.com",
+    "offer_due_date": "2026-06-15"
+  },
   "property_type": "office",
   "asking_price": 25000000,
   "total_sf": 85000,

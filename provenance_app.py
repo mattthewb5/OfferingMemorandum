@@ -35,8 +35,9 @@ _SUPPORTED_COUNTIES = {"fairfax", "loudoun"}
 
 
 # ── Slug helper ──────────────────────────────────────────────────────
-def make_slug(address: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", address.lower()).strip("-")
+# Single source of truth lives in om_generator/address_slug.py so the
+# audit-trail filenames stay byte-identical with the wizard's writes.
+from address_slug import make_address_slug as make_slug  # noqa: E402
 
 
 # ── Data directory scaffolding ───────────────────────────────────────

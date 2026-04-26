@@ -21,6 +21,11 @@ from pathlib import Path
 
 # Paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Local om_generator/ module imports — sys.path bootstrap matches the
+# convention used by every *_context.py file in this package.
+sys.path.insert(0, SCRIPT_DIR)
+from audit_trail import setup_audit, finalize_audit  # noqa: E402
 TEMPLATE_DIR = os.path.join(SCRIPT_DIR, 'templates')
 V3_PATH = os.path.join(SCRIPT_DIR, '..', 'investigation', 'newco_om_v3_regents_park.html')
 DEFAULT_OUTPUT = os.path.join(SCRIPT_DIR, 'om_output.html')
@@ -124,6 +129,20 @@ def run_om_generation(address: str, output_path: str,
     Returns:
         {"success": bool, "output_path": str, "error": str | None}
     """
+    audit_handle = setup_audit(address, financial_inputs_path)
+    result = {"success": False, "output_path": output_path,
+              "error": "Unknown failure"}
+    try:
+        result = _run_om_generation_inner(address, output_path,
+                                          financial_inputs_path)
+        return result
+    finally:
+        finalize_audit(audit_handle, result, output_path)
+
+
+def _run_om_generation_inner(address: str, output_path: str,
+                             financial_inputs_path: str = None) -> dict:
+    """Existing OM-generation body. Returns the result dict."""
     import traceback
 
     try:

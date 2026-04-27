@@ -196,8 +196,14 @@
       </div>
     </div>
 
-    <!-- CRE Comps — v3: populated with spec data -->
-    <h4 style="margin-bottom:7px;">Comparable Sales &#8212; Multifamily / Commercial</h4>
+    {# Comps section heading swap. Wave 2 retains the same data plumbing
+       (the comps engine emits a single comps[] list keyed off property
+       type internally); the outer heading is the only swap point. #}
+    {% if property_type == "multifamily" %}
+    <h4 style="margin-bottom:7px;">Rental Comps</h4>
+    {% else %}
+    <h4 style="margin-bottom:7px;">Lease Comps</h4>
+    {% endif %}
     <div style="background:#fafaf8;border:1px solid var(--rule);padding:10px 14px;">
       <div style="display:flex;gap:20px;align-items:flex-start;">
         <div style="flex:1;">
@@ -215,7 +221,11 @@
             <th>Property Name / Address</th>
             <th class="r">Units</th>
             <th class="r">Sale Price</th>
+            {% if property_type == "multifamily" %}
             <th class="r">Price / Unit</th>
+            {% else %}
+            <th class="r">Price / SF</th>
+            {% endif %}
             <th class="r">Est. Cap</th>
             <th>Sale Date</th>
             <th>Source</th>
@@ -223,7 +233,10 @@
         </thead>
         <tbody>
           {% for comp in comps %}
-          <tr><td class="strong">{{ comp.name }}</td><td class="r">{{ comp.units }}</td><td class="r">{{ comp.sale_price }}</td><td class="r">{{ comp.price_per_unit }}</td><td class="r">{{ comp.cap_rate }}</td><td>{{ comp.sale_date }}</td><td><span class="score-badge badge-navy">{{ comp.source }}</span></td></tr>
+          {# For commercial, the comps engine does not yet emit a
+             price_per_sf field — render the cell blank with this
+             placeholder until commercial comps engine emits price_per_sf. #}
+          <tr><td class="strong">{{ comp.name }}</td><td class="r">{{ comp.units }}</td><td class="r">{{ comp.sale_price }}</td><td class="r">{% if property_type == "multifamily" %}{{ comp.price_per_unit }}{% endif %}</td><td class="r">{{ comp.cap_rate }}</td><td>{{ comp.sale_date }}</td><td><span class="score-badge badge-navy">{{ comp.source }}</span></td></tr>
 {% endfor %}
         </tbody>
       </table>

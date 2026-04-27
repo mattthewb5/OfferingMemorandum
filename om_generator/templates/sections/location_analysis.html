@@ -40,6 +40,9 @@
           </div>
         </div>
 
+        {# Traffic Volumes — relevant for property types whose underwriting
+           depends on visibility / vehicle counts. Office and Land OMs omit. #}
+        {% if property_type in ["multifamily", "retail", "industrial"] %}
         <!-- Traffic — v3: filled with spec data -->
         <div style="background:#f5f3ef;border:1px solid rgba(184,150,106,0.25);padding:10px 12px;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;">
@@ -58,7 +61,12 @@
           </div>
           <div style="font-size:7.5px;color:var(--slate-light);margin-top:6px;font-style:italic;">Source: VDOT Traffic Volume API &middot; Annual Daily Traffic (ADT)</div>
         </div>
+        {% endif %}
 
+        {# Crime Analysis — relevant for property types whose tenants /
+           occupants are sensitive to neighbourhood safety: residential
+           (MF) and customer-facing retail. Office, industrial, land omit. #}
+        {% if property_type in ["multifamily", "retail"] %}
         <!-- Crime section — v3: filled with spec data -->
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
@@ -97,6 +105,7 @@
           <div style="font-size:7px;color:var(--slate-light);margin-top:4px;font-style:italic;">{{ crime.footnote }}</div>
           {% if crime.trend_narrative is defined and crime.trend_narrative is not none %}<div style="font-size:6.5px;color:var(--slate-light);margin-top:2px;font-style:italic;">{{ crime.trend_narrative }}</div>{% endif %}
         </div>
+        {% endif %}
 
       </div>
 

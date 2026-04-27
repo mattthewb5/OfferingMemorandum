@@ -19,10 +19,11 @@
         </div>
 
         {# Value-add thesis box — populated from MF engine output;
-           skipped entirely in POR mode (engine does not compute the
-           value-add metrics in POR). Use a Jinja comment so the
-           string token doesn't leak into the rendered HTML. #}
-        {% if not is_por_mode %}
+           MF-only (commercial engine has no unit_mix or rent-gap
+           output) and skipped entirely in POR mode (engine does not
+           compute the value-add metrics in POR). Both conditions
+           must hold for the box to render. #}
+        {% if property_type == "multifamily" and not is_por_mode %}
         <div class="value-add-box" style="margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
             <div style="font-size:8px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--wo-blue);font-family:var(--sans);">{{ embedded_value_display }} Embedded Value &#8212; {{ portfolio_rent_gap_pct }} Mark-to-Market Opportunity</div>
@@ -104,8 +105,12 @@
             <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate-light);">Submarket</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ submarket_name }}</span></div>
             <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate-light);">Zoning</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ zoning_display }}</span></div>
             <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate-light);">Metro Station</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ metro_station_name }} &#8212; 1.3 mi</span></div>
+            {% if property_type == "multifamily" %}
             <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);"><span style="font-size:8px;color:var(--slate-light);">Year Built / Mgr.</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ year_built }} / {{ management_company_short }} Mgmt</span></div>
             <div style="display:flex;justify-content:space-between;padding:4px 0;"><span style="font-size:8px;color:var(--slate-light);">Utility Structure</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ utility_structure_short }}</span></div>
+            {% else %}
+            <div style="display:flex;justify-content:space-between;padding:4px 0;"><span style="font-size:8px;color:var(--slate-light);">Year Built</span><span style="font-size:8px;color:var(--navy);font-weight:500;">{{ year_built }}</span></div>
+            {% endif %}
           </div>
         </div>
 

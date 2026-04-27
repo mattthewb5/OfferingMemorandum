@@ -103,6 +103,9 @@
       <!-- RIGHT COL -->
       <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
 
+        {# School Performance — MF-only section. Schools are a
+           residential investment factor; commercial OMs omit. #}
+        {% if property_type == "multifamily" %}
         <!-- Schools — v3: filled with spec data -->
         <div>
           <h4 style="margin-bottom:7px;">School Performance &#9733; (Virginia SOL Data)</h4>
@@ -121,6 +124,7 @@
           </div>
           <div style="font-size:7.5px;color:var(--slate-light);font-style:italic;">{{ school_footnote }}</div>
         </div>
+        {% endif %}
 
         <!-- Healthcare -->
         <div>

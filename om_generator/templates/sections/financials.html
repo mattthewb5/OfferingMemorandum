@@ -66,6 +66,10 @@
 
     <!-- Income/Expense two column + Utility benchmark -->
     <div style="display:flex;gap:14px;margin-bottom:14px;">
+      {# MF-only T-12 / Pro Forma two-col tables. The MF engine emits
+         t12.* and pf.* line items; the commercial engine doesn't.
+         Wave 3 will add a commercial T-12 layout. #}
+      {% if property_type == "multifamily" %}
       <!-- Two-col financials — v3: fully populated from spec -->
       <div style="flex:1.8;">
         <div style="display:flex;gap:1px;background:var(--rule);">
@@ -113,9 +117,14 @@
           <div style="font-size:7.5px;color:var(--slate);font-style:italic;line-height:1.6;"><em>Metric labeling convention: All figures are labeled T-12 Actual or Pro Forma YR1 throughout this document. Mixing trailing actuals with forward projections without clear labels is the most common source of OM credibility errors in the industry (PropRise, 2024). Pro Forma assumes {{ rent_growth_assumption }} rent growth on below-market units at lease renewal.</em></div>
         </div>
       </div>
+      {% endif %}
 
       <!-- Utility benchmark sidebar — v3 Change 2: landlord benchmark only -->
       <div style="flex:0.8;display:flex;flex-direction:column;gap:10px;">
+        {# Landlord utility benchmark — MF-only (uses MF benchmarks
+           and per-unit math). The N-Year Cash Flow Projection below
+           it is universal and stays unconditioned. #}
+        {% if property_type == "multifamily" %}
         <div>
           <h4 style="margin-bottom:7px;">Landlord Utility Expense Benchmark</h4>
           <div class="util-box">
@@ -139,6 +148,7 @@
           </div>
           <div style="font-size:7px;color:var(--slate-light);font-style:italic;margin-top:4px;line-height:1.55;">Utility expense ({{ t12.utilities }} T-12 Actual) reflects landlord-paid water, sewer, and common area electric only &#8212; approximately {{ utility_per_unit }}/unit/year. Individual unit electric and gas are metered directly to tenants by Dominion Energy and Washington Gas respectively and do not appear in the property&#8217;s operating statement.</div>
         </div>
+        {% endif %}
 
         <div>
           <h4 style="margin-bottom:7px;">{{ hold_period }}-Year Cash Flow Projection</h4>

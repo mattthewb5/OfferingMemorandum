@@ -1,33 +1,33 @@
 {
-  "last_updated": "2026-08-27T17:32:03.330344",
-  "total_incidents": 32595,
+  "last_updated": "2026-08-28T18:28:15.165417",
+  "total_incidents": 32748,
   "date_range": {
     "min": "2026-01-18",
-    "max": "2026-08-27"
+    "max": "2026-08-28"
   },
   "sources": {
-    "weekly_api": 32595
+    "weekly_api": 32748
   },
   "categories": {
-    "OTHER": 20145,
-    "PROPERTY": 8291,
-    "VIOLENT": 4159
+    "OTHER": 20247,
+    "PROPERTY": 8328,
+    "VIOLENT": 4173
   },
   "geocoding": {
-    "total": 32595,
-    "geocoded": 29981,
+    "total": 32748,
+    "geocoded": 30122,
     "pct_geocoded": 92.0
   },
   "cities": {
-    "ALEX": 5267,
-    "FLCH": 3244,
-    "Alexandria": 2728,
-    "FRFX": 2455,
-    "RSTN": 1899,
-    "SFLD": 1390,
-    "SPRINGFIELD": 1280,
-    "ANDL": 1186,
-    "MCLN": 1164,
-    "CENT": 1094
+    "ALEX": 5294,
+    "FLCH": 3252,
+    "Alexandria": 2742,
+    "FRFX": 2462,
+    "RSTN": 1907,
+    "SFLD": 1393,
+    "SPRINGFIELD": 1294,
+    "ANDL": 1191,
+    "MCLN": 1168,
+    "CENT": 1099
   }
 }
